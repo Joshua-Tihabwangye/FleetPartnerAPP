@@ -329,7 +329,7 @@ export default function FleetPartnerAppShell() {
         {/* Sidebar desktop */}
         <aside
           className={
-            sideBarBg + " w-64 flex-shrink-0 border-r border-slate-900/60 hidden sm:flex flex-col"
+            sideBarBg + " w-64 flex-shrink-0 border-r border-slate-900/60 hidden sm:flex flex-col overflow-y-auto"
           }
         >
           <SidebarContent activeNavId={activeNavId} onNavClick={handleNavClick} />
@@ -338,7 +338,7 @@ export default function FleetPartnerAppShell() {
         {/* Sidebar mobile */}
         {sidebarOpen && (
           <div className="fixed inset-0 z-30 flex sm:hidden">
-            <div className={sideBarBg + " w-64 flex-shrink-0 shadow-2xl"}>
+            <div className={sideBarBg + " w-64 flex-shrink-0 shadow-2xl overflow-y-auto"}>
               <SidebarContent activeNavId={activeNavId} onNavClick={handleNavClick} />
             </div>
             <div className="flex-1 bg-black/50" onClick={() => setSidebarOpen(false)} />
