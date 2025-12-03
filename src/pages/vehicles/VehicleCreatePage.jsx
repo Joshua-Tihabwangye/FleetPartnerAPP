@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { toastManager } from "../../utils/toastManager";
 
 export default function VehicleCreatePage() {
   const navigate = useNavigate();
@@ -16,7 +17,31 @@ export default function VehicleCreatePage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    alert("Vehicle created successfully. Wire to your API.");
+
+    // Create new vehicle object
+    const newVehicle = {
+      id: Date.now(),
+      plate: formData.plateNumber,
+      model: `${formData.make} ${formData.model}`,
+      status: "active",
+      driver: "Unassigned",
+      mileage: 0,
+      ...formData
+    };
+
+    // Get existing vehicles from localStorage
+    const existingVehicles = JSON.parse(localStorage.getItem("vehicles") || "[]");
+
+    // Add new vehicle
+    existingVehicles.push(newVehicle);
+
+    // Save to localStorage
+    localStorage.setItem("vehicles", JSON.stringify(existingVehicles));
+
+    // Show success toast
+    toastManager.show("Vehicle created successfully!", "success");
+
+    // Navigate to vehicles list
     navigate("/vehicles");
   };
 

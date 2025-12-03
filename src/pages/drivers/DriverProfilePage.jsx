@@ -3,6 +3,34 @@ import { Link, useParams } from "react-router-dom";
 
 export default function DriverProfilePage() {
   const { driverId } = useParams();
+  const [driver, setDriver] = React.useState(null);
+
+  React.useEffect(() => {
+    // Load from localStorage
+    const storedDrivers = JSON.parse(localStorage.getItem("drivers") || "[]");
+    const foundDriver = storedDrivers.find(d => d.id.toString() === driverId);
+
+    if (foundDriver) {
+      setDriver(foundDriver);
+    } else {
+      // Fallback for demo
+      setDriver({
+        id: driverId,
+        name: "John Doe",
+        email: "john.doe@example.com",
+        phone: "+256 700 000 001",
+        status: "active",
+        trips: 142,
+        rating: 4.8,
+        earnings: "UGX 2.4M",
+        license: "DL-123456",
+        expiry: "2025-12-31",
+        address: "Kampala, Uganda"
+      });
+    }
+  }, [driverId]);
+
+  if (!driver) return <div className="p-6">Loading...</div>;
 
   return (
     <div className="min-h-[calc(100vh-56px)] px-4 sm:px-6 lg:px-10 py-6 bg-slate-50">
@@ -18,10 +46,10 @@ export default function DriverProfilePage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="h-16 w-16 rounded-full bg-emerald-100 flex items-center justify-center text-xl font-semibold text-emerald-700">
-                JD
+                {driver.name ? driver.name.split(' ').map(n => n[0]).join('') : 'DR'}
               </div>
               <div>
-                <h1 className="text-2xl font-semibold text-slate-900 mb-1">John Doe</h1>
+                <h1 className="text-2xl font-semibold text-slate-900 mb-1">{driver.name}</h1>
                 <p className="text-sm text-slate-600">Driver ID: {driverId}</p>
               </div>
             </div>
@@ -43,19 +71,21 @@ export default function DriverProfilePage() {
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-xl border border-slate-200 p-4">
             <div className="text-xs text-slate-500 mb-1">Total trips</div>
-            <div className="text-2xl font-semibold text-slate-900">142</div>
+            <div className="text-2xl font-semibold text-slate-900">{driver.trips || 0}</div>
           </div>
           <div className="bg-white rounded-xl border border-slate-200 p-4">
             <div className="text-xs text-slate-500 mb-1">Rating</div>
-            <div className="text-2xl font-semibold text-slate-900">4.8 ⭐</div>
+            <div className="text-2xl font-semibold text-slate-900">{driver.rating || 'N/A'} ⭐</div>
           </div>
           <div className="bg-white rounded-xl border border-slate-200 p-4">
             <div className="text-xs text-slate-500 mb-1">Status</div>
-            <div className="text-2xl font-semibold text-emerald-600">Active</div>
+            <div className={`text-2xl font-semibold ${driver.status === 'active' ? 'text-emerald-600' : 'text-slate-900'}`}>
+              {driver.status ? driver.status.charAt(0).toUpperCase() + driver.status.slice(1) : 'Active'}
+            </div>
           </div>
           <div className="bg-white rounded-xl border border-slate-200 p-4">
             <div className="text-xs text-slate-500 mb-1">Earnings</div>
-            <div className="text-2xl font-semibold text-slate-900">UGX 2.4M</div>
+            <div className="text-2xl font-semibold text-slate-900">{driver.earnings || 'UGX 0'}</div>
           </div>
         </div>
 
@@ -67,15 +97,15 @@ export default function DriverProfilePage() {
               <dl className="space-y-3">
                 <div>
                   <dt className="text-sm text-slate-500">Email</dt>
-                  <dd className="text-sm font-medium text-slate-900">john.doe@example.com</dd>
+                  <dd className="text-sm font-medium text-slate-900">{driver.email || '-'}</dd>
                 </div>
                 <div>
                   <dt className="text-sm text-slate-500">Phone</dt>
-                  <dd className="text-sm font-medium text-slate-900">+256 700 000 001</dd>
+                  <dd className="text-sm font-medium text-slate-900">{driver.phone || '-'}</dd>
                 </div>
                 <div>
                   <dt className="text-sm text-slate-500">Address</dt>
-                  <dd className="text-sm font-medium text-slate-900">Kampala, Uganda</dd>
+                  <dd className="text-sm font-medium text-slate-900">{driver.address || '-'}</dd>
                 </div>
               </dl>
             </div>
@@ -85,11 +115,11 @@ export default function DriverProfilePage() {
               <dl className="space-y-3">
                 <div>
                   <dt className="text-sm text-slate-500">License number</dt>
-                  <dd className="text-sm font-medium text-slate-900">DL-123456</dd>
+                  <dd className="text-sm font-medium text-slate-900">{driver.license || '-'}</dd>
                 </div>
                 <div>
                   <dt className="text-sm text-slate-500">Expiry date</dt>
-                  <dd className="text-sm font-medium text-slate-900">2025-12-31</dd>
+                  <dd className="text-sm font-medium text-slate-900">{driver.expiry || '-'}</dd>
                 </div>
               </dl>
             </div>
@@ -98,14 +128,7 @@ export default function DriverProfilePage() {
           <div className="space-y-6">
             <div className="bg-white rounded-xl border border-slate-200 p-6">
               <h2 className="text-lg font-semibold text-slate-900 mb-4">Recent trips</h2>
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="pb-3 border-b border-slate-100 last:border-0">
-                    <div className="text-sm font-medium text-slate-900">Trip #{i}</div>
-                    <div className="text-xs text-slate-500">2 hours ago</div>
-                  </div>
-                ))}
-              </div>
+              <div className="text-sm text-slate-500 italic">No recent trips recorded</div>
             </div>
           </div>
         </div>

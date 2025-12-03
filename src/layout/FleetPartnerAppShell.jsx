@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import Typography from "../components/ui/Typography";
 import Chip from "../components/ui/Chip";
+import { ToastContainer } from "../components/ui/Toast";
+import { useToast } from "../hooks/useToast";
 
 // Small internal button components
 function IconButton({ children, className = "", ...rest }) {
@@ -167,6 +169,7 @@ export default function FleetPartnerAppShell() {
   const location = useLocation();
   const navigate = useNavigate();
   const notificationsRef = useRef(null);
+  const { toasts, removeToast } = useToast();
 
   const isLight = theme === "light";
 
@@ -329,7 +332,7 @@ export default function FleetPartnerAppShell() {
         {/* Sidebar desktop */}
         <aside
           className={
-            sideBarBg + " w-64 flex-shrink-0 border-r border-slate-900/60 hidden sm:flex flex-col overflow-y-auto"
+            sideBarBg + " w-64 flex-shrink-0 border-r border-slate-900/60 hidden sm:flex flex-col"
           }
         >
           <SidebarContent activeNavId={activeNavId} onNavClick={handleNavClick} />
@@ -338,7 +341,7 @@ export default function FleetPartnerAppShell() {
         {/* Sidebar mobile */}
         {sidebarOpen && (
           <div className="fixed inset-0 z-30 flex sm:hidden">
-            <div className={sideBarBg + " w-64 flex-shrink-0 shadow-2xl overflow-y-auto"}>
+            <div className={sideBarBg + " w-64 flex-shrink-0 shadow-2xl flex flex-col h-full"}>
               <SidebarContent activeNavId={activeNavId} onNavClick={handleNavClick} />
             </div>
             <div className="flex-1 bg-black/50" onClick={() => setSidebarOpen(false)} />
@@ -350,6 +353,9 @@ export default function FleetPartnerAppShell() {
           <Outlet />
         </main>
       </div>
+
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
     </div>
   );
 }

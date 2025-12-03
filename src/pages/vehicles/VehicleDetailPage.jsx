@@ -3,6 +3,33 @@ import { Link, useParams } from "react-router-dom";
 
 export default function VehicleDetailPage() {
   const { vehicleId } = useParams();
+  const [vehicle, setVehicle] = React.useState(null);
+
+  React.useEffect(() => {
+    // Load from localStorage
+    const storedVehicles = JSON.parse(localStorage.getItem("vehicles") || "[]");
+    const foundVehicle = storedVehicles.find(v => v.id.toString() === vehicleId);
+
+    if (foundVehicle) {
+      setVehicle(foundVehicle);
+    } else {
+      // Fallback for demo if not found in local storage (e.g. direct link)
+      setVehicle({
+        id: vehicleId,
+        plate: "UAA 123A",
+        model: "Tesla Model 3",
+        year: "2023",
+        color: "White",
+        vin: "5YJ3E1EA1KF123456",
+        status: "active",
+        mileage: 12500,
+        driver: "John Doe",
+        type: "sedan"
+      });
+    }
+  }, [vehicleId]);
+
+  if (!vehicle) return <div className="p-6">Loading...</div>;
 
   return (
     <div className="min-h-[calc(100vh-56px)] px-4 sm:px-6 lg:px-10 py-6 bg-slate-50">
@@ -17,8 +44,8 @@ export default function VehicleDetailPage() {
           </Link>
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-semibold text-slate-900 mb-1">UAA 123A</h1>
-              <p className="text-sm text-slate-600">Tesla Model 3 • Vehicle ID: {vehicleId}</p>
+              <h1 className="text-2xl font-semibold text-slate-900 mb-1">{vehicle.plate}</h1>
+              <p className="text-sm text-slate-600">{vehicle.model} • Vehicle ID: {vehicleId}</p>
             </div>
             <div className="flex gap-2">
               <Link
@@ -33,9 +60,12 @@ export default function VehicleDetailPage() {
               >
                 Documents
               </Link>
-              <button className="px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark">
+              <Link
+                to={`/vehicles/${vehicleId}/edit`}
+                className="px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark"
+              >
                 Edit vehicle
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -44,19 +74,21 @@ export default function VehicleDetailPage() {
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-xl border border-slate-200 p-4">
             <div className="text-xs text-slate-500 mb-1">Status</div>
-            <div className="text-2xl font-semibold text-emerald-600">Active</div>
+            <div className={`text-2xl font-semibold ${vehicle.status === 'active' ? 'text-emerald-600' : 'text-slate-900'}`}>
+              {vehicle.status ? vehicle.status.charAt(0).toUpperCase() + vehicle.status.slice(1) : 'Active'}
+            </div>
           </div>
           <div className="bg-white rounded-xl border border-slate-200 p-4">
             <div className="text-xs text-slate-500 mb-1">Mileage</div>
-            <div className="text-2xl font-semibold text-slate-900">12,500 km</div>
+            <div className="text-2xl font-semibold text-slate-900">{vehicle.mileage ? vehicle.mileage.toLocaleString() : '0'} km</div>
           </div>
           <div className="bg-white rounded-xl border border-slate-200 p-4">
             <div className="text-xs text-slate-500 mb-1">Current driver</div>
-            <div className="text-2xl font-semibold text-slate-900">John Doe</div>
+            <div className="text-2xl font-semibold text-slate-900">{vehicle.driver || 'Unassigned'}</div>
           </div>
           <div className="bg-white rounded-xl border border-slate-200 p-4">
             <div className="text-xs text-slate-500 mb-1">Total trips</div>
-            <div className="text-2xl font-semibold text-slate-900">342</div>
+            <div className="text-2xl font-semibold text-slate-900">0</div>
           </div>
         </div>
 
@@ -68,46 +100,34 @@ export default function VehicleDetailPage() {
               <dl className="grid grid-cols-2 gap-4">
                 <div>
                   <dt className="text-sm text-slate-500 mb-1">Make</dt>
-                  <dd className="text-sm font-medium text-slate-900">Tesla</dd>
+                  <dd className="text-sm font-medium text-slate-900">{vehicle.model?.split(' ')[0] || '-'}</dd>
                 </div>
                 <div>
                   <dt className="text-sm text-slate-500 mb-1">Model</dt>
-                  <dd className="text-sm font-medium text-slate-900">Model 3</dd>
+                  <dd className="text-sm font-medium text-slate-900">{vehicle.model || '-'}</dd>
                 </div>
                 <div>
                   <dt className="text-sm text-slate-500 mb-1">Year</dt>
-                  <dd className="text-sm font-medium text-slate-900">2023</dd>
+                  <dd className="text-sm font-medium text-slate-900">{vehicle.year || '-'}</dd>
                 </div>
                 <div>
                   <dt className="text-sm text-slate-500 mb-1">Color</dt>
-                  <dd className="text-sm font-medium text-slate-900">White</dd>
+                  <dd className="text-sm font-medium text-slate-900">{vehicle.color || '-'}</dd>
                 </div>
                 <div>
                   <dt className="text-sm text-slate-500 mb-1">VIN</dt>
-                  <dd className="text-sm font-medium text-slate-900">5YJ3E1EA1KF123456</dd>
+                  <dd className="text-sm font-medium text-slate-900">{vehicle.vin || '-'}</dd>
                 </div>
                 <div>
-                  <dt className="text-sm text-slate-500 mb-1">Registration expiry</dt>
-                  <dd className="text-sm font-medium text-slate-900">2025-12-31</dd>
+                  <dt className="text-sm text-slate-500 mb-1">Type</dt>
+                  <dd className="text-sm font-medium text-slate-900">{vehicle.type || '-'}</dd>
                 </div>
               </dl>
             </div>
 
             <div className="bg-white rounded-xl border border-slate-200 p-6">
               <h2 className="text-lg font-semibold text-slate-900 mb-4">Recent trips</h2>
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="pb-3 border-b border-slate-100 last:border-0">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-sm font-medium text-slate-900">Trip #{i}</div>
-                        <div className="text-xs text-slate-500">2 hours ago</div>
-                      </div>
-                      <div className="text-sm font-medium text-slate-900">UGX 15,000</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <div className="text-sm text-slate-500 italic">No recent trips recorded</div>
             </div>
           </div>
 

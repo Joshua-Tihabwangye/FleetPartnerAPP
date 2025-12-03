@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 export default function TrainingCentrePage() {
   const courses = [
@@ -33,9 +34,12 @@ export default function TrainingCentrePage() {
                 </span>
               </div>
             </div>
-            <button className="w-full px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark">
+            <Link
+              to={`/training/course/${course.id}`}
+              className="block w-full px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium text-center hover:bg-ev-green-dark"
+            >
               Start course
-            </button>
+            </Link>
           </div>
         ))}
       </div>

@@ -1,14 +1,47 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import Modal from "../../components/ui/Modal";
 
 export default function VehiclesListPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [filter, setFilter] = useState({ status: "all", type: "all" });
+  const [allVehicles, setAllVehicles] = useState([]);
 
-  const vehicles = [
-    { id: 1, plate: "UAA 123A", model: "Tesla Model 3", status: "active", driver: "John Doe", mileage: 12500 },
-    { id: 2, plate: "UAA 124B", model: "Nissan Leaf", status: "maintenance", driver: "Jane Smith", mileage: 8900 },
-    { id: 3, plate: "UAA 125C", model: "BYD E6", status: "active", driver: "Mike Johnson", mileage: 15200 }
-  ];
+  // Load vehicles from localStorage on mount
+  useEffect(() => {
+    const mockVehicles = [
+      { id: 1, plate: "UAA 123A", model: "Tesla Model 3", status: "active", driver: "John Doe", mileage: 12500, vehicleType: "sedan" },
+      { id: 2, plate: "UAA 124B", model: "Nissan Leaf", status: "maintenance", driver: "Jane Smith", mileage: 8900, vehicleType: "sedan" },
+      { id: 3, plate: "UAA 125C", model: "BYD E6", status: "active", driver: "Mike Johnson", mileage: 15200, vehicleType: "suv" }
+    ];
+
+    const storedVehicles = JSON.parse(localStorage.getItem("vehicles") || "[]");
+    setAllVehicles([...mockVehicles, ...storedVehicles]);
+  }, []);
+
+  // Filter vehicles
+  const vehicles = allVehicles.filter(vehicle => {
+    const matchesSearch = vehicle.plate.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      vehicle.model.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = filter.status === "all" || vehicle.status === filter.status;
+    const matchesType = filter.type === "all" || vehicle.vehicleType === filter.type;
+    return matchesSearch && matchesStatus && matchesType;
+  });
+
+  const handleExport = () => {
+    const csvContent = [
+      ["Plate", "Model", "Status", "Driver", "Mileage"],
+      ...vehicles.map(v => [v.plate, v.model, v.status, v.driver, v.mileage])
+    ].map(row => row.join(",")).join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `vehicles_export_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+  };
 
   return (
     <div className="min-h-[calc(100vh-56px)] px-4 sm:px-6 lg:px-10 py-6 bg-slate-50">
@@ -19,7 +52,7 @@ export default function VehiclesListPage() {
           <p className="text-sm text-slate-600">Manage your fleet vehicles and their status</p>
         </div>
         <Link
-          to="/vehicles/new"
+          to="/vehicles/create"
           className="px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark transition-colors"
         >
           + Add vehicle
@@ -38,10 +71,16 @@ export default function VehiclesListPage() {
           />
         </div>
         <div className="flex gap-2">
-          <button className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">
+          <button
+            onClick={() => setShowFilterModal(true)}
+            className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
             Filter
           </button>
-          <button className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">
+          <button
+            onClick={handleExport}
+            className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
             Export
           </button>
         </div>
@@ -61,11 +100,10 @@ export default function VehiclesListPage() {
                 <div className="text-sm text-slate-600">{vehicle.model}</div>
               </div>
               <span
-                className={`px-2 py-1 text-xs font-medium rounded-full ${
-                  vehicle.status === "active"
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "bg-orange-100 text-orange-700"
-                }`}
+                className={`px-2 py-1 text-xs font-medium rounded-full ${vehicle.status === "active"
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "bg-orange-100 text-orange-700"
+                  }`}
               >
                 {vehicle.status}
               </span>
@@ -99,6 +137,61 @@ export default function VehiclesListPage() {
           </Link>
         ))}
       </div>
+
+      {/* Filter Modal */}
+      <Modal
+        isOpen={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+        title="Filter Vehicles"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <label className="block">
+            <span className="text-sm font-medium text-slate-700 mb-1 block">Status</span>
+            <select
+              value={filter.status}
+              onChange={(e) => setFilter({ ...filter, status: e.target.value })}
+              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green"
+            >
+              <option value="all">All statuses</option>
+              <option value="active">Active</option>
+              <option value="maintenance">Maintenance</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium text-slate-700 mb-1 block">Vehicle Type</span>
+            <select
+              value={filter.type}
+              onChange={(e) => setFilter({ ...filter, type: e.target.value })}
+              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green"
+            >
+              <option value="all">All types</option>
+              <option value="sedan">Sedan</option>
+              <option value="suv">SUV</option>
+              <option value="van">Van</option>
+              <option value="bus">Bus</option>
+            </select>
+          </label>
+          <div className="flex gap-2 pt-4">
+            <button
+              onClick={() => {
+                setFilter({ status: "all", type: "all" });
+                setShowFilterModal(false);
+              }}
+              className="flex-1 px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Reset
+            </button>
+            <button
+              onClick={() => setShowFilterModal(false)}
+              className="flex-1 px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark"
+            >
+              Apply
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

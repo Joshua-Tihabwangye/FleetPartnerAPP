@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { toastManager } from "../../utils/toastManager";
 
 export default function ManualDispatchNewBookingPage() {
   const navigate = useNavigate();
@@ -14,8 +15,27 @@ export default function ManualDispatchNewBookingPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    alert("Booking created successfully. Wire to your API.");
-    navigate("/trips");
+
+    // Create new dispatch object
+    const newDispatch = {
+      id: Date.now(),
+      pickup: formData.pickupLocation,
+      dropoff: formData.dropoffLocation,
+      vehicle: formData.vehicle,
+      driver: formData.driver,
+      fare: formData.fare,
+      status: "scheduled",
+      createdAt: new Date().toISOString(),
+      ...formData
+    };
+
+    // Get existing dispatches
+    const existingDispatches = JSON.parse(localStorage.getItem("dispatches") || "[]");
+    existingDispatches.push(newDispatch);
+    localStorage.setItem("dispatches", JSON.stringify(existingDispatches));
+
+    toastManager.show("Dispatch created successfully!", "success");
+    navigate("/dispatch");
   };
 
   return (
