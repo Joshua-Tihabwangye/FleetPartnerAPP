@@ -6,6 +6,7 @@ import { toastManager } from "../../../utils/toastManager";
 export default function ShuttleStudentsListPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+  const [students, setStudents] = useState([]);
   const [studentForm, setStudentForm] = useState({
     name: "",
     grade: "",
@@ -15,41 +16,52 @@ export default function ShuttleStudentsListPage() {
     address: ""
   });
 
-  const students = [
-    {
-      id: 1,
-      name: "Emily Nakato",
-      grade: "Grade 5",
-      route: "Morning Route A",
-      parent: "Mary Nakato",
-      parentPhone: "+256 700 111 222",
-      address: "Kololo, Kampala",
-      status: "active",
-      attendanceRate: 95
-    },
-    {
-      id: 2,
-      name: "Daniel Okello",
-      grade: "Grade 7",
-      route: "Morning Route B",
-      parent: "James Okello",
-      parentPhone: "+256 700 222 333",
-      address: "Nakasero, Kampala",
-      status: "active",
-      attendanceRate: 92
-    },
-    {
-      id: 3,
-      name: "Sarah Nambi",
-      grade: "Grade 6",
-      route: "Morning Route A",
-      parent: "Grace Nambi",
-      parentPhone: "+256 700 333 444",
-      address: "Bugolobi, Kampala",
-      status: "active",
-      attendanceRate: 98
+  // Load students from localStorage on mount
+  React.useEffect(() => {
+    const storedStudents = JSON.parse(localStorage.getItem("shuttleStudents") || "[]");
+    if (storedStudents.length === 0) {
+      // Initialize with mock data if empty
+      const mockStudents = [
+        {
+          id: 1,
+          name: "Emily Nakato",
+          grade: "Grade 5",
+          route: "Morning Route A",
+          parent: "Mary Nakato",
+          parentPhone: "+256 700 111 222",
+          address: "Kololo, Kampala",
+          status: "active",
+          attendanceRate: 95
+        },
+        {
+          id: 2,
+          name: "Daniel Okello",
+          grade: "Grade 7",
+          route: "Morning Route B",
+          parent: "James Okello",
+          parentPhone: "+256 700 222 333",
+          address: "Nakasero, Kampala",
+          status: "active",
+          attendanceRate: 92
+        },
+        {
+          id: 3,
+          name: "Sarah Nambi",
+          grade: "Grade 6",
+          route: "Morning Route A",
+          parent: "Grace Nambi",
+          parentPhone: "+256 700 333 444",
+          address: "Bugolobi, Kampala",
+          status: "active",
+          attendanceRate: 98
+        }
+      ];
+      localStorage.setItem("shuttleStudents", JSON.stringify(mockStudents));
+      setStudents(mockStudents);
+    } else {
+      setStudents(storedStudents);
     }
-  ];
+  }, []);
 
   const filteredStudents = students.filter(s =>
     s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -191,6 +203,17 @@ export default function ShuttleStudentsListPage() {
         <form
           onSubmit={(e) => {
             e.preventDefault();
+            const newStudent = {
+              id: Date.now(),
+              ...studentForm,
+              status: "active",
+              attendanceRate: 100
+            };
+
+            const updatedStudents = [newStudent, ...students];
+            setStudents(updatedStudents);
+            localStorage.setItem("shuttleStudents", JSON.stringify(updatedStudents));
+
             toastManager.show("Student added successfully!", "success");
             setShowAddStudentModal(false);
             setStudentForm({ name: "", grade: "", route: "", parent: "", parentPhone: "", address: "" });

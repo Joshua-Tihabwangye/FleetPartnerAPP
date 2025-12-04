@@ -24,7 +24,7 @@ function IconButton({ children, className = "", ...rest }) {
 
 function NavButton({ active, children, className = "", ...rest }) {
   const base =
-    "w-full flex items-center justify-between gap-2 rounded-xl px-2.5 py-2 text-left transition text-[11px]";
+    "w-full flex items-center justify-between gap-2 rounded-xl px-2.5 py-2 text-left transition text-[10px]";
   const activeClasses =
     "bg-ev-green text-ev-slate shadow-sm shadow-emerald-500/40";
   const inactiveClasses = "text-slate-200 hover:bg-slate-800/80";
@@ -39,7 +39,7 @@ function NavButton({ active, children, className = "", ...rest }) {
   );
 }
 
-// Navigation sections
+// Navigation sections - RESTRUCTURED
 const NAV_SECTIONS = [
   {
     id: "ops",
@@ -52,13 +52,8 @@ const NAV_SECTIONS = [
       { id: "rentals", label: "Car rental", path: "/rentals" },
       { id: "rental-catalog", label: "Rental catalog", path: "/rentals/catalog" },
       { id: "school-shuttles", label: "School shuttles", path: "/school-shuttles/routes" },
-      {
-        id: "shuttle-bulk-reminders",
-        label: "Shuttle bulk reminders",
-        path: "/school-shuttles/bulk-reminders"
-      },
-      { id: "tours", label: "Tours & charters", path: "/tours" },
-      { id: "ambulance", label: "Ambulance / EMS", path: "/ambulance/dispatch" }
+      { id: "tours", label: "Tours", path: "/tours" },
+      { id: "ambulance", label: "Ambulance/EMS", path: "/ambulance/dispatch" }
     ]
   },
   {
@@ -70,17 +65,17 @@ const NAV_SECTIONS = [
     ]
   },
   {
-    id: "earnings",
-    label: "Earnings",
+    id: "money",
+    label: "Money",
     items: [
-      { id: "earnings-overview", label: "Overview", path: "/earnings" },
+      { id: "earnings-overview", label: "Earnings (overview)", path: "/earnings" },
       { id: "earnings-statements", label: "Statements", path: "/earnings/statements" },
       { id: "driver-payouts", label: "Driver payouts", path: "/earnings/payouts" }
     ]
   },
   {
-    id: "compliance",
-    label: "Compliance & safety",
+    id: "safety",
+    label: "Safety & compliance",
     items: [
       { id: "compliance-dashboard", label: "Compliance dashboard", path: "/compliance" },
       { id: "incidents", label: "Incidents", path: "/compliance/incidents" },
@@ -88,8 +83,8 @@ const NAV_SECTIONS = [
     ]
   },
   {
-    id: "training",
-    label: "Training & support",
+    id: "support",
+    label: "Support",
     items: [
       { id: "training-centre", label: "Training centre", path: "/training" },
       { id: "help", label: "Help & support", path: "/help" }
@@ -138,7 +133,6 @@ const NAV_ICONS = {
   rentals: "🚘",
   "rental-catalog": "🧾",
   "school-shuttles": "🚌",
-  "shuttle-bulk-reminders": "📧",
   tours: "🌍",
   ambulance: "🚑",
   drivers: "👤",
@@ -161,14 +155,24 @@ const NAV_ICONS = {
   "settings-sessions": "🖥️"
 };
 
+// Example search queries for dropdown
+const EXAMPLE_QUERIES = [
+  "UAX 123A",
+  "John Doe",
+  "Trip #23421"
+];
+
 export default function FleetPartnerAppShell() {
   const [theme, setTheme] = useState("light");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const [hasSearchedBefore, setHasSearchedBefore] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const notificationsRef = useRef(null);
+  const searchRef = useRef(null);
   const { toasts, removeToast } = useToast();
 
   const isLight = theme === "light";
@@ -179,16 +183,19 @@ export default function FleetPartnerAppShell() {
       if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
         setNotificationsOpen(false);
       }
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowSearchDropdown(false);
+      }
     };
 
-    if (notificationsOpen) {
+    if (notificationsOpen || showSearchDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [notificationsOpen]);
+  }, [notificationsOpen, showSearchDropdown]);
 
   // active nav determined by current path
   const pathname = location.pathname;
@@ -209,6 +216,18 @@ export default function FleetPartnerAppShell() {
 
   const handleToggleTheme = () => {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
+  };
+
+  const handleSearchFocus = () => {
+    if (!hasSearchedBefore) {
+      setShowSearchDropdown(true);
+    }
+  };
+
+  const handleExampleClick = (query) => {
+    setSearchQuery(query);
+    setShowSearchDropdown(false);
+    setHasSearchedBefore(true);
   };
 
   const rootBg = isLight ? "bg-slate-50 text-slate-900" : "bg-slate-900 text-slate-50";
@@ -250,7 +269,8 @@ export default function FleetPartnerAppShell() {
             </button>
           </div>
 
-          <div className="hidden md:flex flex-1 max-w-xl items-center gap-2 mx-4">
+          {/* Global Search Bar with Dropdown */}
+          <div className="hidden md:flex flex-1 max-w-xl items-center gap-2 mx-4 relative" ref={searchRef}>
             <div className="flex-1 flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px]">
               <span className="mr-2 text-slate-500">🔍</span>
               <input
@@ -258,15 +278,36 @@ export default function FleetPartnerAppShell() {
                 placeholder="Search drivers, vehicles, trips or bookings (global search)"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={handleSearchFocus}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && searchQuery.trim()) {
-                    // Implement search functionality here
+                    setShowSearchDropdown(false);
+                    setHasSearchedBefore(true);
                     console.log('Searching for:', searchQuery);
                   }
                 }}
                 className="flex-1 bg-transparent outline-none text-slate-900 placeholder:text-slate-500"
               />
             </div>
+
+            {/* Search Dropdown */}
+            {showSearchDropdown && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50">
+                <div className="px-3 py-1.5 text-[10px] text-slate-400 uppercase tracking-wide">
+                  Example queries
+                </div>
+                {EXAMPLE_QUERIES.map((query, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleExampleClick(query)}
+                    className="w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                  >
+                    <span className="text-slate-400">🔍</span>
+                    {query}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
@@ -363,15 +404,15 @@ export default function FleetPartnerAppShell() {
 function SidebarContent({ activeNavId, onNavClick }) {
   return (
     <div className="h-full flex flex-col">
-      <div className="px-3 pt-3 pb-2 text-[11px] uppercase tracking-wide text-slate-400">
+      <div className="px-3 pt-3 pb-2 text-[10px] uppercase tracking-wider text-slate-400 opacity-60">
         Fleet navigation
       </div>
-      <nav className="flex-1 overflow-y-auto px-2 pb-4 space-y-4 text-[11px]">
-        {NAV_SECTIONS.map((section) => (
-          <div key={section.id}>
+      <nav className="flex-1 overflow-y-auto px-2 pb-4 text-[10px]">
+        {NAV_SECTIONS.map((section, sectionIdx) => (
+          <div key={section.id} className={sectionIdx > 0 ? "mt-5" : ""}>
             <Typography
               variant="caption"
-              className="text-[10px] uppercase tracking-wide text-slate-500 px-2 mb-1"
+              className="text-[9px] uppercase tracking-wider text-slate-500 opacity-60 px-2 mb-1.5"
             >
               {section.label}
             </Typography>
@@ -383,10 +424,10 @@ function SidebarContent({ activeNavId, onNavClick }) {
                       className="flex items-center gap-2 flex-1"
                       onClick={() => onNavClick(item.id)}
                     >
-                      <span className="w-4 text-[13px] opacity-80">
+                      <span className="w-4 text-[12px] opacity-70 flex-shrink-0">
                         {NAV_ICONS[item.id] || "•"}
                       </span>
-                      <span className="truncate text-[11px]">{item.label}</span>
+                      <span className="truncate text-[10px]">{item.label}</span>
                     </span>
                     {item.badge && (
                       <Chip className="bg-emerald-900/60 text-emerald-100 border border-emerald-500/60">

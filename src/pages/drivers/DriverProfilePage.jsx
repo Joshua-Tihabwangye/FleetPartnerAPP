@@ -1,9 +1,12 @@
 import React from "react";
 import { Link, useParams } from "react-router-dom";
+import { toastManager } from "../../utils/toastManager";
 
 export default function DriverProfilePage() {
   const { driverId } = useParams();
   const [driver, setDriver] = React.useState(null);
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editForm, setEditForm] = React.useState({});
 
   React.useEffect(() => {
     // Load from localStorage
@@ -12,9 +15,10 @@ export default function DriverProfilePage() {
 
     if (foundDriver) {
       setDriver(foundDriver);
+      setEditForm(foundDriver);
     } else {
       // Fallback for demo
-      setDriver({
+      const demoDriver = {
         id: driverId,
         name: "John Doe",
         email: "john.doe@example.com",
@@ -26,9 +30,38 @@ export default function DriverProfilePage() {
         license: "DL-123456",
         expiry: "2025-12-31",
         address: "Kampala, Uganda"
-      });
+      };
+      setDriver(demoDriver);
+      setEditForm(demoDriver);
     }
   }, [driverId]);
+
+  const handleEdit = () => {
+    setIsEditing(true);
+    setEditForm({ ...driver });
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setEditForm({ ...driver });
+  };
+
+  const handleSave = () => {
+    // Update localStorage
+    const storedDrivers = JSON.parse(localStorage.getItem("drivers") || "[]");
+    const driverIndex = storedDrivers.findIndex(d => d.id.toString() === driverId);
+
+    if (driverIndex >= 0) {
+      storedDrivers[driverIndex] = editForm;
+    } else {
+      storedDrivers.push(editForm);
+    }
+
+    localStorage.setItem("drivers", JSON.stringify(storedDrivers));
+    setDriver(editForm);
+    setIsEditing(false);
+    toastManager.show("Driver profile updated successfully!", "success");
+  };
 
   if (!driver) return <div className="p-6">Loading...</div>;
 
@@ -60,9 +93,29 @@ export default function DriverProfilePage() {
               >
                 View ratings
               </Link>
-              <button className="px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark">
-                Edit profile
-              </button>
+              {!isEditing ? (
+                <button
+                  onClick={handleEdit}
+                  className="px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark"
+                >
+                  Edit profile
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={handleCancel}
+                    className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    className="px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark"
+                  >
+                    Save changes
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -94,34 +147,89 @@ export default function DriverProfilePage() {
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white rounded-xl border border-slate-200 p-6">
               <h2 className="text-lg font-semibold text-slate-900 mb-4">Contact information</h2>
-              <dl className="space-y-3">
-                <div>
-                  <dt className="text-sm text-slate-500">Email</dt>
-                  <dd className="text-sm font-medium text-slate-900">{driver.email || '-'}</dd>
+              {!isEditing ? (
+                <dl className="space-y-3">
+                  <div>
+                    <dt className="text-sm text-slate-500">Email</dt>
+                    <dd className="text-sm font-medium text-slate-900">{driver.email || '-'}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm text-slate-500">Phone</dt>
+                    <dd className="text-sm font-medium text-slate-900">{driver.phone || '-'}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm text-slate-500">Address</dt>
+                    <dd className="text-sm font-medium text-slate-900">{driver.address || '-'}</dd>
+                  </div>
+                </dl>
+              ) : (
+                <div className="space-y-4">
+                  <label className="block">
+                    <span className="text-sm font-medium text-slate-700 mb-1 block">Email</span>
+                    <input
+                      type="email"
+                      value={editForm.email || ''}
+                      onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-sm font-medium text-slate-700 mb-1 block">Phone</span>
+                    <input
+                      type="tel"
+                      value={editForm.phone || ''}
+                      onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-sm font-medium text-slate-700 mb-1 block">Address</span>
+                    <input
+                      type="text"
+                      value={editForm.address || ''}
+                      onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green"
+                    />
+                  </label>
                 </div>
-                <div>
-                  <dt className="text-sm text-slate-500">Phone</dt>
-                  <dd className="text-sm font-medium text-slate-900">{driver.phone || '-'}</dd>
-                </div>
-                <div>
-                  <dt className="text-sm text-slate-500">Address</dt>
-                  <dd className="text-sm font-medium text-slate-900">{driver.address || '-'}</dd>
-                </div>
-              </dl>
+              )}
             </div>
 
             <div className="bg-white rounded-xl border border-slate-200 p-6">
               <h2 className="text-lg font-semibold text-slate-900 mb-4">License information</h2>
-              <dl className="space-y-3">
-                <div>
-                  <dt className="text-sm text-slate-500">License number</dt>
-                  <dd className="text-sm font-medium text-slate-900">{driver.license || '-'}</dd>
+              {!isEditing ? (
+                <dl className="space-y-3">
+                  <div>
+                    <dt className="text-sm text-slate-500">License number</dt>
+                    <dd className="text-sm font-medium text-slate-900">{driver.license || '-'}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm text-slate-500">Expiry date</dt>
+                    <dd className="text-sm font-medium text-slate-900">{driver.expiry || '-'}</dd>
+                  </div>
+                </dl>
+              ) : (
+                <div className="space-y-4">
+                  <label className="block">
+                    <span className="text-sm font-medium text-slate-700 mb-1 block">License number</span>
+                    <input
+                      type="text"
+                      value={editForm.license || ''}
+                      onChange={(e) => setEditForm({ ...editForm, license: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-sm font-medium text-slate-700 mb-1 block">Expiry date</span>
+                    <input
+                      type="date"
+                      value={editForm.expiry || ''}
+                      onChange={(e) => setEditForm({ ...editForm, expiry: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green"
+                    />
+                  </label>
                 </div>
-                <div>
-                  <dt className="text-sm text-slate-500">Expiry date</dt>
-                  <dd className="text-sm font-medium text-slate-900">{driver.expiry || '-'}</dd>
-                </div>
-              </dl>
+              )}
             </div>
           </div>
 

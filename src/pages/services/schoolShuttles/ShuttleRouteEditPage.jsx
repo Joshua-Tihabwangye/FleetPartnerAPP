@@ -12,6 +12,7 @@ export default function ShuttleRouteEditPage() {
         departureTime: "06:30",
         arrivalTime: "08:30",
         days: "weekdays",
+        customDays: [], // Array to store selected days when "custom" is chosen
         vehicle: "UAA 300K",
         driver: "David Mukasa",
         stops: [
@@ -23,6 +24,23 @@ export default function ShuttleRouteEditPage() {
             { id: 6, location: "School - St. Mary's", time: "08:30", students: 0 }
         ]
     });
+
+    const daysOfWeek = [
+        { value: 'monday', label: 'Monday' },
+        { value: 'tuesday', label: 'Tuesday' },
+        { value: 'wednesday', label: 'Wednesday' },
+        { value: 'thursday', label: 'Thursday' },
+        { value: 'friday', label: 'Friday' },
+        { value: 'saturday', label: 'Saturday' },
+        { value: 'sunday', label: 'Sunday' }
+    ];
+
+    const handleDayToggle = (day) => {
+        const newCustomDays = formData.customDays.includes(day)
+            ? formData.customDays.filter(d => d !== day)
+            : [...formData.customDays, day];
+        setFormData({ ...formData, customDays: newCustomDays });
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -130,6 +148,34 @@ export default function ShuttleRouteEditPage() {
                                 </select>
                             </label>
                         </div>
+
+                        {/* Custom Day Picker */}
+                        {formData.days === 'custom' && (
+                            <div className="mt-4 p-4 rounded-lg bg-slate-50 border border-slate-200">
+                                <span className="text-sm font-medium text-slate-700 mb-3 block">Select Pickup Days *</span>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    {daysOfWeek.map((day) => (
+                                        <label
+                                            key={day.value}
+                                            className="flex items-center gap-2 cursor-pointer"
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={formData.customDays.includes(day.value)}
+                                                onChange={() => handleDayToggle(day.value)}
+                                                className="w-4 h-4 text-ev-green border-slate-300 rounded focus:ring-2 focus:ring-ev-green"
+                                            />
+                                            <span className="text-sm text-slate-700">{day.label}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                                {formData.customDays.length > 0 && (
+                                    <div className="mt-3 text-xs text-slate-600">
+                                        Selected: {formData.customDays.map(d => daysOfWeek.find(day => day.value === d)?.label).join(', ')}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Assignments */}

@@ -47,3 +47,38 @@ body {
 .card-hover-lift:hover {
   transform: translateY(-2px);
 }
+
+/* Alert card gradients */
+.alert-gradient-warning {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+}
+
+.alert-gradient-danger {
+  background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+}
+
+.alert-gradient-info {
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+}
+
+/* Search dropdown animation */
+.search-dropdown {
+  animation: slideIn 0.15s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Sidebar section spacing */
+.sidebar-section-header {
+  letter-spacing: 0.1em;
+  opacity: 0.6;
+}
