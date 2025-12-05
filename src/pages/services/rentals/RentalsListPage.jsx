@@ -3,12 +3,33 @@ import { Link } from "react-router-dom";
 
 export default function RentalsListPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [rentals, setRentals] = useState([]);
 
-  const rentals = [
-    { id: 1, bookingId: "RNT-001", customer: "John Customer", vehicle: "UAA 123A", status: "active", startDate: "2024-01-15", endDate: "2024-01-20" },
-    { id: 2, bookingId: "RNT-002", customer: "Jane Client", vehicle: "UAA 124B", status: "upcoming", startDate: "2024-01-18", endDate: "2024-01-25" },
-    { id: 3, bookingId: "RNT-003", customer: "Mike User", vehicle: "UAA 125C", status: "completed", startDate: "2024-01-10", endDate: "2024-01-14" }
-  ];
+  // Load rentals from localStorage
+  React.useEffect(() => {
+    const storedRentals = JSON.parse(localStorage.getItem("rentals") || "[]");
+    if (storedRentals.length === 0) {
+      // Initialize with mock data if empty
+      const mockRentals = [
+        { id: 1, bookingId: "RNT-001", customerName: "John Customer", vehicleName: "Tesla Model 3", vehiclePlate: "UAA 123A", status: "active", startDate: "2024-01-15", endDate: "2024-01-20" },
+        { id: 2, bookingId: "RNT-002", customerName: "Jane Client", vehicleName: "Nissan Leaf", vehiclePlate: "UAA 124B", status: "upcoming", startDate: "2024-01-18", endDate: "2024-01-25" },
+        { id: 3, bookingId: "RNT-003", customerName: "Mike User", vehicleName: "BYD E6", vehiclePlate: "UAA 125C", status: "completed", startDate: "2024-01-10", endDate: "2024-01-14" }
+      ];
+      localStorage.setItem("rentals", JSON.stringify(mockRentals));
+      setRentals(mockRentals);
+    } else {
+      setRentals(storedRentals);
+    }
+  }, []);
+
+  const filteredRentals = rentals.filter(rental => {
+    const query = searchQuery.toLowerCase();
+    return (
+      (rental.bookingId && rental.bookingId.toLowerCase().includes(query)) ||
+      (rental.customerName && rental.customerName.toLowerCase().includes(query)) ||
+      (rental.vehiclePlate && rental.vehiclePlate.toLowerCase().includes(query))
+    );
+  });
 
   return (
     <div className="min-h-[calc(100vh-56px)] px-4 sm:px-6 lg:px-10 py-6 bg-slate-50">
@@ -47,45 +68,54 @@ export default function RentalsListPage() {
 
       {/* Rentals Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {rentals.map((rental) => (
-          <Link
-            key={rental.id}
-            to={`/rentals/${rental.id}`}
-            className="bg-white rounded-xl border border-slate-200 p-6 hover:border-ev-green hover:shadow-md transition-all"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <div className="text-lg font-semibold text-slate-900 mb-1">{rental.bookingId}</div>
-                <div className="text-sm text-slate-600">{rental.customer}</div>
+        {filteredRentals.length === 0 ? (
+          <div className="col-span-full text-center py-8 text-slate-500">
+            No rentals found. Visit the catalog to rent a vehicle.
+          </div>
+        ) : (
+          filteredRentals.map((rental) => (
+            <Link
+              key={rental.id}
+              to={`/rentals/${rental.id}`}
+              className="bg-white rounded-xl border border-slate-200 p-6 hover:border-ev-green hover:shadow-md transition-all"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <div className="text-lg font-semibold text-slate-900 mb-1">{rental.bookingId || `RNT-${rental.id}`}</div>
+                  <div className="text-sm text-slate-600">{rental.customerName}</div>
+                </div>
+                <span
+                  className={`px-2 py-1 text-xs font-medium rounded-full ${rental.status === "active"
+                      ? "bg-emerald-100 text-emerald-700"
+                      : rental.status === "upcoming"
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-slate-100 text-slate-700"
+                    }`}
+                >
+                  {rental.status}
+                </span>
               </div>
-              <span
-                className={`px-2 py-1 text-xs font-medium rounded-full ${
-                  rental.status === "active"
-                    ? "bg-emerald-100 text-emerald-700"
-                    : rental.status === "upcoming"
-                    ? "bg-blue-100 text-blue-700"
-                    : "bg-slate-100 text-slate-700"
-                }`}
-              >
-                {rental.status}
-              </span>
-            </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-500">Vehicle</span>
-                <span className="font-medium text-slate-900">{rental.vehicle}</span>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Vehicle</span>
+                  <span className="font-medium text-slate-900">{rental.vehicleName || rental.vehiclePlate}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Plate</span>
+                  <span className="font-medium text-slate-900">{rental.vehiclePlate}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Start date</span>
+                  <span className="font-medium text-slate-900">{rental.startDate}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">End date</span>
+                  <span className="font-medium text-slate-900">{rental.endDate}</span>
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-500">Start date</span>
-                <span className="font-medium text-slate-900">{rental.startDate}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-500">End date</span>
-                <span className="font-medium text-slate-900">{rental.endDate}</span>
-              </div>
-            </div>
-          </Link>
-        ))}
+            </Link>
+          ))
+        )}
       </div>
     </div>
   );

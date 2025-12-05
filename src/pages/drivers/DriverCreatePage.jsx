@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { toastManager } from "../../utils/toastManager";
 
 export default function DriverCreatePage() {
   const navigate = useNavigate();
@@ -14,7 +15,30 @@ export default function DriverCreatePage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    alert("Driver created successfully. Wire to your API.");
+
+    // Create new driver object
+    const newDriver = {
+      id: Date.now(),
+      name: formData.name,
+      phone: formData.phone,
+      status: "active",
+      trips: 0,
+      rating: 5.0,
+      ...formData
+    };
+
+    // Get existing drivers from localStorage
+    const existingDrivers = JSON.parse(localStorage.getItem("drivers") || "[]");
+
+    // Add new driver
+    existingDrivers.push(newDriver);
+
+    // Save to localStorage
+    localStorage.setItem("drivers", JSON.stringify(existingDrivers));
+
+    // Show success toast
+    toastManager.show("Driver created successfully!", "success");
+
     navigate("/drivers");
   };
 

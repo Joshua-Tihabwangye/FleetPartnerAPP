@@ -1,8 +1,13 @@
 import React, { useState } from "react";
+import Modal from "../../components/ui/Modal";
+import { toastManager } from "../../utils/toastManager";
 
 export default function DriverPayoutsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [showProcessModal, setShowProcessModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedPayout, setSelectedPayout] = useState(null);
 
   // Summary stats
   const summaryStats = [
@@ -92,7 +97,10 @@ export default function DriverPayoutsPage() {
           </div>
 
           {/* Action Button */}
-          <button className="px-6 py-2 bg-ev-green hover:bg-ev-green-dark text-white font-medium rounded-lg transition-colors shadow-sm hover:shadow-md">
+          <button
+            onClick={() => setShowProcessModal(true)}
+            className="px-6 py-2 bg-ev-green hover:bg-ev-green-dark text-white font-medium rounded-lg transition-colors shadow-sm hover:shadow-md"
+          >
             Process Payouts
           </button>
         </div>
@@ -162,11 +170,20 @@ export default function DriverPayoutsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end gap-2">
-                        <button className="text-ev-green hover:text-ev-green-dark transition-colors">
+                        <button
+                          onClick={() => {
+                            setSelectedPayout(payout);
+                            setShowViewModal(true);
+                          }}
+                          className="text-ev-green hover:text-ev-green-dark transition-colors"
+                        >
                           View
                         </button>
                         {payout.status === "pending" && (
-                          <button className="px-3 py-1 bg-ev-green hover:bg-ev-green-dark text-white text-xs font-medium rounded transition-colors">
+                          <button
+                            onClick={() => toastManager.show(`Payment of ${payout.amount} initiated for ${payout.name}`, "success")}
+                            className="px-3 py-1 bg-ev-green hover:bg-ev-green-dark text-white text-xs font-medium rounded transition-colors"
+                          >
                             Pay Now
                           </button>
                         )}
@@ -197,6 +214,120 @@ export default function DriverPayoutsPage() {
           </div>
         )}
       </div>
+
+      {/* Process Payouts Modal */}
+      <Modal
+        isOpen={showProcessModal}
+        onClose={() => setShowProcessModal(false)}
+        title="Process Batch Payouts"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
+            <p className="text-sm font-medium text-blue-900 mb-1">Pending Payouts</p>
+            <p className="text-2xl font-semibold text-blue-700">
+              {payouts.filter(p => p.status === 'pending').length} drivers
+            </p>
+            <p className="text-sm text-blue-700 mt-1">
+              Total amount: UGX {payouts.filter(p => p.status === 'pending')
+                .reduce((sum, p) => sum + parseInt(p.amount.replace(/[^0-9]/g, '')), 0)
+                .toLocaleString()}
+            </p>
+          </div>
+          <label className="block">
+            <span className="text-sm font-medium text-slate-700 mb-1 block">Payment Method *</span>
+            <select className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green">
+              <option value="mobile-money">Mobile Money</option>
+              <option value="bank-transfer">Bank Transfer</option>
+              <option value="cash">Cash</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium text-slate-700 mb-1 block">Processing Notes</span>
+            <textarea
+              rows={3}
+              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green"
+              placeholder="Optional notes about this batch..."
+            />
+          </label>
+          <div className="flex gap-2 pt-4">
+            <button
+              onClick={() => setShowProcessModal(false)}
+              className="flex-1 px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                toastManager.show(`Processing ${payouts.filter(p => p.status === 'pending').length} payouts...`, "success");
+                setShowProcessModal(false);
+              }}
+              className="flex-1 px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark"
+            >
+              Process All
+            </button>
+          </div>
+        </div>
+      </Modal>
+      {/* View Payout Modal */}
+      <Modal
+        isOpen={showViewModal}
+        onClose={() => {
+          setShowViewModal(false);
+          setSelectedPayout(null);
+        }}
+        title="Payout Details"
+        size="md"
+      >
+        {selectedPayout && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-100">
+              <div>
+                <p className="text-sm text-slate-500">Amount</p>
+                <p className="text-2xl font-semibold text-slate-900">{selectedPayout.amount}</p>
+              </div>
+              <div className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedPayout.status)}`}>
+                {selectedPayout.status.toUpperCase()}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium text-slate-900 border-b border-slate-100 pb-2">Transaction Info</h3>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-slate-500">Driver Name</p>
+                  <p className="font-medium text-slate-900">{selectedPayout.name}</p>
+                </div>
+                <div>
+                  <p className="text-slate-500">Driver ID</p>
+                  <p className="font-medium text-slate-900">{selectedPayout.id}</p>
+                </div>
+                <div>
+                  <p className="text-slate-500">Date</p>
+                  <p className="font-medium text-slate-900">{selectedPayout.date}</p>
+                </div>
+                <div>
+                  <p className="text-slate-500">Trips Covered</p>
+                  <p className="font-medium text-slate-900">{selectedPayout.trips}</p>
+                </div>
+                <div>
+                  <p className="text-slate-500">Transaction Ref</p>
+                  <p className="font-medium text-slate-900">TXN-{Math.random().toString(36).substr(2, 9).toUpperCase()}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-4">
+              <button
+                onClick={() => setShowViewModal(false)}
+                className="px-4 py-2 bg-slate-100 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-200"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
