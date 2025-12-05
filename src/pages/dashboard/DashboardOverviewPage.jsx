@@ -1,9 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 export default function DashboardOverviewPage() {
   const navigate = useNavigate();
   const [dateRange, setDateRange] = useState("today");
+  const [messagesCount, setMessagesCount] = useState(0);
+
+  // Load messages count from localStorage
+  useEffect(() => {
+    const messages = JSON.parse(localStorage.getItem("support_messages") || "[]");
+    setMessagesCount(messages.length);
+  }, []);
 
   // Revenue data based on date range
   const revenueData = {
@@ -27,11 +34,33 @@ export default function DashboardOverviewPage() {
 
   return (
     <div className="min-h-[calc(100vh-56px)] px-4 sm:px-6 lg:px-10 py-6 bg-slate-50">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-slate-900 mb-2">Dashboard overview</h1>
-        <p className="text-sm text-slate-600">
-          Real-time fleet operations and performance metrics
-        </p>
+      {/* Enhanced Header */}
+      <div className="mb-6 pb-6 border-b border-slate-200">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-slate-700 to-slate-900 mb-1">
+              Dashboard Overview
+            </h1>
+            <p className="text-sm text-slate-600">
+              Real-time fleet operations and performance metrics
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/live-map"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-ev-green transition"
+            >
+              🗺️ Live Map
+            </Link>
+            <Link
+              to="/dispatch/new"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-ev-green to-emerald-600 text-white text-sm font-medium shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition"
+            >
+              + New Dispatch
+            </Link>
+          </div>
+        </div>
+        <div className="mt-4 h-1 w-24 rounded-full bg-gradient-to-r from-ev-green via-emerald-400 to-orange-400 opacity-80" />
       </div>
 
       {/* Stats Grid - First Row */}
@@ -173,7 +202,7 @@ export default function DashboardOverviewPage() {
           <h2 className="text-lg font-semibold text-slate-900 mb-4">Quick actions</h2>
           <div className="grid grid-cols-2 gap-3">
             <Link
-              to="/vehicles/new"
+              to="/vehicles/create"
               className="flex flex-col items-center justify-center p-4 rounded-lg border border-slate-200 bg-white shadow-sm hover:border-ev-green hover:bg-emerald-50 hover:shadow-md transition-all"
             >
               <span className="text-2xl mb-2">🚙</span>
@@ -224,6 +253,55 @@ export default function DashboardOverviewPage() {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Messages Card - New Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <Link
+          to="/support/messages"
+          className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-blue-200 p-4 shadow-sm hover:shadow-md transition-all group"
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="text-xs text-blue-600 font-medium mb-1">Support Messages</div>
+              <div className="text-2xl font-bold text-blue-700">{messagesCount}</div>
+              <div className="text-xs text-blue-500 mt-1">View all messages →</div>
+            </div>
+            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+              ✉️
+            </div>
+          </div>
+        </Link>
+        <Link
+          to="/training"
+          className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl border border-emerald-200 p-4 shadow-sm hover:shadow-md transition-all group"
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="text-xs text-emerald-600 font-medium mb-1">Training Centre</div>
+              <div className="text-2xl font-bold text-emerald-700">3 courses</div>
+              <div className="text-xs text-emerald-500 mt-1">Continue learning →</div>
+            </div>
+            <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+              🎓
+            </div>
+          </div>
+        </Link>
+        <Link
+          to="/help"
+          className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-xl border border-violet-200 p-4 shadow-sm hover:shadow-md transition-all group"
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="text-xs text-violet-600 font-medium mb-1">Help & Support</div>
+              <div className="text-2xl font-bold text-violet-700">24/7</div>
+              <div className="text-xs text-violet-500 mt-1">Get assistance →</div>
+            </div>
+            <div className="h-10 w-10 rounded-full bg-violet-100 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+              ❓
+            </div>
+          </div>
+        </Link>
       </div>
     </div>
   );

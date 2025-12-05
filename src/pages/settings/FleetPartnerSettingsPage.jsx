@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { toastManager } from "../../utils/toastManager";
 
 export default function FleetPartnerSettingsPage() {
   const [formData, setFormData] = useState({
@@ -9,9 +10,18 @@ export default function FleetPartnerSettingsPage() {
     taxId: ""
   });
 
+  // Load saved data on mount
+  useEffect(() => {
+    const stored = JSON.parse(localStorage.getItem("fleet_partner_settings") || "null");
+    if (stored) {
+      setFormData(stored);
+    }
+  }, []);
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    alert("Settings saved. Wire to your API.");
+    localStorage.setItem("fleet_partner_settings", JSON.stringify(formData));
+    toastManager.show("Fleet Partner settings saved successfully!", "success");
   };
 
   return (

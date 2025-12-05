@@ -98,16 +98,31 @@ export default function AccountSecurityPage() {
                                 ></label>
                             </div>
                         </div>
-                        {twoFactor && (
+                        {twoFactor ? (
                             <div className="p-4 bg-blue-50 text-blue-800 text-sm rounded-lg border border-blue-100">
                                 Two-factor authentication is currently active. You will be asked for a code when logging in from a new device.
                             </div>
+                        ) : (
+                            <Link
+                                to="/settings/account-security/2fa-setup"
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-ev-green text-white text-sm font-medium rounded-lg hover:bg-ev-green-dark transition"
+                            >
+                                🔐 Setup Two-Factor Authentication
+                            </Link>
                         )}
                     </div>
 
                     {/* Active Sessions */}
                     <div className="bg-white rounded-xl border border-slate-200 p-6">
-                        <h2 className="text-lg font-semibold text-slate-900 mb-4">Active Sessions</h2>
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-semibold text-slate-900">Active Sessions</h2>
+                            <Link
+                                to="/settings/account-security/sessions"
+                                className="text-sm text-ev-green hover:text-ev-green-dark font-medium"
+                            >
+                                View all sessions →
+                            </Link>
+                        </div>
                         <div className="space-y-4">
                             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                                 <div className="flex items-center gap-3">
@@ -136,3 +151,4 @@ export default function AccountSecurityPage() {
         </div>
     );
 }
+

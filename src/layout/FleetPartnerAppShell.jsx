@@ -4,6 +4,8 @@ import Typography from "../components/ui/Typography";
 import Chip from "../components/ui/Chip";
 import { ToastContainer } from "../components/ui/Toast";
 import { useToast } from "../hooks/useToast";
+import { auth } from "../utils/auth";
+import { useTheme, ThemeToggle } from "../context/ThemeContext";
 
 // Small internal button components
 function IconButton({ children, className = "", ...rest }) {
@@ -163,21 +165,23 @@ const EXAMPLE_QUERIES = [
 ];
 
 export default function FleetPartnerAppShell() {
-  const [theme, setTheme] = useState("light");
+  const { isDark } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [hasSearchedBefore, setHasSearchedBefore] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const notificationsRef = useRef(null);
   const searchRef = useRef(null);
+  const userMenuRef = useRef(null);
   const { toasts, removeToast } = useToast();
 
-  const isLight = theme === "light";
+  const isLight = !isDark;
 
-  // Close notifications panel when clicking outside
+  // Close panels when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
@@ -186,16 +190,19 @@ export default function FleetPartnerAppShell() {
       if (searchRef.current && !searchRef.current.contains(event.target)) {
         setShowSearchDropdown(false);
       }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setUserMenuOpen(false);
+      }
     };
 
-    if (notificationsOpen || showSearchDropdown) {
+    if (notificationsOpen || showSearchDropdown || userMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [notificationsOpen, showSearchDropdown]);
+  }, [notificationsOpen, showSearchDropdown, userMenuOpen]);
 
   // active nav determined by current path
   const pathname = location.pathname;
@@ -214,20 +221,22 @@ export default function FleetPartnerAppShell() {
     }
   };
 
-  const handleToggleTheme = () => {
-    setTheme((prev) => (prev === "light" ? "dark" : "light"));
-  };
+
 
   const handleSearchFocus = () => {
-    if (!hasSearchedBefore) {
-      setShowSearchDropdown(true);
-    }
+    // Always show dropdown on focus
+    setShowSearchDropdown(true);
   };
 
   const handleExampleClick = (query) => {
     setSearchQuery(query);
     setShowSearchDropdown(false);
     setHasSearchedBefore(true);
+  };
+
+  const handleLogout = () => {
+    auth.logout();
+    navigate('/login');
   };
 
   const rootBg = isLight ? "bg-slate-50 text-slate-900" : "bg-slate-900 text-slate-50";
@@ -321,6 +330,7 @@ export default function FleetPartnerAppShell() {
             >
               Staging workspace
             </Chip>
+            <ThemeToggle />
             <div className="relative" ref={notificationsRef}>
               <IconButton
                 aria-label="Notifications"
@@ -354,15 +364,56 @@ export default function FleetPartnerAppShell() {
                 </div>
               )}
             </div>
-            <IconButton
-              onClick={handleToggleTheme}
-              className={isLight ? "bg-slate-100 text-slate-900" : "bg-slate-800 text-slate-100"}
-              aria-label="Toggle theme"
-            >
-              {isLight ? "🌙" : "☀️"}
-            </IconButton>
-            <div className="h-8 w-8 rounded-full bg-slate-900 text-slate-50 flex items-center justify-center text-[11px] font-semibold">
-              FO
+
+            {/* User Menu */}
+            <div className="relative" ref={userMenuRef}>
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="h-8 w-8 rounded-full bg-slate-900 text-slate-50 flex items-center justify-center text-[11px] font-semibold hover:ring-2 hover:ring-ev-green transition cursor-pointer"
+                aria-label="User menu"
+              >
+                FO
+              </button>
+
+              {userMenuOpen && (
+                <div className={"absolute right-0 top-10 w-48 rounded-lg shadow-lg border z-50 " + (isLight ? "bg-white border-slate-200" : "bg-slate-800 border-slate-700")}>
+                  <div className="p-2">
+                    <div className="px-3 py-2 border-b border-slate-100 mb-1">
+                      <div className="text-sm font-medium text-slate-900">Fleet Owner</div>
+                      <div className="text-xs text-slate-500">owner@examplefleet.com</div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        navigate('/settings/profile');
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-md"
+                    >
+                      <span>👤</span>
+                      Edit Profile
+                    </button>
+                    <button
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        navigate('/settings/account-security');
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-md"
+                    >
+                      <span>🔐</span>
+                      Account Security
+                    </button>
+                    <div className="border-t border-slate-100 mt-1 pt-1">
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md"
+                      >
+                        <span>🚪</span>
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

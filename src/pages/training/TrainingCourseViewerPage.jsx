@@ -53,7 +53,11 @@ export default function TrainingCourseViewerPage() {
     };
 
     const currentModuleData = course.modules[currentModule];
-    const progress = ((completedModules.length) / course.modules.length) * 100;
+    // Progress includes completed modules + current module being viewed (counts as started)
+    const progressModules = completedModules.includes(currentModule)
+        ? completedModules.length
+        : completedModules.length + 1;
+    const progress = (progressModules / course.modules.length) * 100;
 
     const handleCompleteModule = () => {
         if (!completedModules.includes(currentModule)) {

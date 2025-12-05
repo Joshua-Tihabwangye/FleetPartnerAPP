@@ -45,18 +45,23 @@ export default function VehiclesListPage() {
 
   return (
     <div className="min-h-[calc(100vh-56px)] px-4 sm:px-6 lg:px-10 py-6 bg-slate-50">
-      {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900 mb-2">Vehicles</h1>
-          <p className="text-sm text-slate-600">Manage your fleet vehicles and their status</p>
+      {/* Enhanced Header */}
+      <div className="mb-6 pb-6 border-b border-slate-200">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-slate-700 to-slate-900 mb-1">
+              Fleet Vehicles
+            </h1>
+            <p className="text-sm text-slate-600">Manage your fleet vehicles and their status</p>
+          </div>
+          <Link
+            to="/vehicles/create"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-ev-green to-emerald-600 text-white text-sm font-medium shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition"
+          >
+            + Add Vehicle
+          </Link>
         </div>
-        <Link
-          to="/vehicles/create"
-          className="px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark transition-colors"
-        >
-          + Add vehicle
-        </Link>
+        <div className="mt-4 h-1 w-24 rounded-full bg-gradient-to-r from-ev-green via-emerald-400 to-orange-400 opacity-80" />
       </div>
 
       {/* Search and Filters */}
