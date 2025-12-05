@@ -1,4 +1,5 @@
 import React from "react";
+import { toastManager } from "../../utils/toastManager";
 
 export default function FleetPartnerProfilePage() {
   const [profile, setProfile] = React.useState({
@@ -22,15 +23,12 @@ export default function FleetPartnerProfilePage() {
 
   const handleSaveProfile = () => {
     localStorage.setItem("fleet_partner_profile", JSON.stringify(profile));
-    // Show success toast (assuming toastManager is available or just alert for now since not imported)
-    // Adding toastManager import would be better but trying to minimize changes. 
-    // Actually, let's add toastManager import.
-    alert("Profile saved successfully!");
+    toastManager.show("Profile saved successfully!", "success");
   };
 
   const handleSaveNotifications = () => {
     localStorage.setItem("fleet_partner_profile", JSON.stringify(profile));
-    alert("Notification settings saved!");
+    toastManager.show("Notification settings saved!", "success");
   };
 
   return (

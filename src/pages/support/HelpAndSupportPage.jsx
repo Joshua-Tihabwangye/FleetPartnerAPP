@@ -41,13 +41,13 @@ export default function HelpAndSupportPage() {
       id: Date.now(),
       ...emailForm,
       createdAt: new Date().toISOString(),
-      status: "pending"
+      status: "sent"
     };
 
     // Save to localStorage
-    const storedRequests = JSON.parse(localStorage.getItem("supportRequests") || "[]");
+    const storedRequests = JSON.parse(localStorage.getItem("support_messages") || "[]");
     const updatedRequests = [supportRequest, ...storedRequests];
-    localStorage.setItem("supportRequests", JSON.stringify(updatedRequests));
+    localStorage.setItem("support_messages", JSON.stringify(updatedRequests));
 
     toastManager.show("Support request submitted successfully! We'll get back to you soon.", "success");
     setShowEmailModal(false);
