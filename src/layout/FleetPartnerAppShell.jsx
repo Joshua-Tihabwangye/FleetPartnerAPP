@@ -26,9 +26,9 @@ function IconButton({ children, className = "", ...rest }) {
 
 function NavButton({ active, children, className = "", ...rest }) {
   const base =
-    "w-full flex items-center justify-between gap-2 rounded-xl px-2.5 py-2 text-left transition text-[10px]";
+    "w-full flex items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left transition text-[13px]";
   const activeClasses =
-    "bg-ev-green text-ev-slate shadow-sm shadow-emerald-500/40";
+    "bg-ev-green text-ev-slate shadow-sm shadow-emerald-500/40 font-medium";
   const inactiveClasses = "text-slate-200 hover:bg-slate-800/80";
   return (
     <button
@@ -419,12 +419,12 @@ export default function FleetPartnerAppShell() {
         </div>
       </header>
 
-      {/* Main area */}
-      <div className="flex flex-1 min-h-0">
-        {/* Sidebar desktop */}
+      {/* Main area - sidebar fixed, content scrolls */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar desktop - sticky with independent scroll */}
         <aside
           className={
-            sideBarBg + " w-64 flex-shrink-0 border-r border-slate-900/60 hidden sm:flex flex-col"
+            sideBarBg + " w-72 flex-shrink-0 border-r border-slate-900/60 hidden sm:flex flex-col sticky top-14 h-[calc(100vh-56px)] overflow-y-auto"
           }
         >
           <SidebarContent activeNavId={activeNavId} onNavClick={handleNavClick} />
@@ -433,15 +433,15 @@ export default function FleetPartnerAppShell() {
         {/* Sidebar mobile */}
         {sidebarOpen && (
           <div className="fixed inset-0 z-30 flex sm:hidden">
-            <div className={sideBarBg + " w-64 flex-shrink-0 shadow-2xl flex flex-col h-full"}>
+            <div className={sideBarBg + " w-72 flex-shrink-0 shadow-2xl flex flex-col h-full overflow-y-auto"}>
               <SidebarContent activeNavId={activeNavId} onNavClick={handleNavClick} />
             </div>
             <div className="flex-1 bg-black/50" onClick={() => setSidebarOpen(false)} />
           </div>
         )}
 
-        {/* Routed content */}
-        <main className={"flex-1 min-w-0 overflow-y-auto " + mainBg}>
+        {/* Routed content - full width, independent scroll */}
+        <main className={"flex-1 min-w-0 overflow-y-auto h-[calc(100vh-56px)] " + mainBg}>
           <Outlet />
         </main>
       </div>
@@ -455,15 +455,15 @@ export default function FleetPartnerAppShell() {
 function SidebarContent({ activeNavId, onNavClick }) {
   return (
     <div className="h-full flex flex-col">
-      <div className="px-3 pt-3 pb-2 text-[10px] uppercase tracking-wider text-slate-400 opacity-60">
+      <div className="px-3 pt-4 pb-2 text-[11px] uppercase tracking-wider text-slate-400 font-medium">
         Fleet navigation
       </div>
-      <nav className="flex-1 overflow-y-auto px-2 pb-4 text-[10px]">
+      <nav className="flex-1 overflow-y-auto px-2 pb-4">
         {NAV_SECTIONS.map((section, sectionIdx) => (
           <div key={section.id} className={sectionIdx > 0 ? "mt-5" : ""}>
             <Typography
               variant="caption"
-              className="text-[9px] uppercase tracking-wider text-slate-500 opacity-60 px-2 mb-1.5"
+              className="text-[11px] uppercase tracking-wider text-slate-500 font-medium px-2 mb-2"
             >
               {section.label}
             </Typography>
@@ -472,13 +472,13 @@ function SidebarContent({ activeNavId, onNavClick }) {
                 <li key={item.id}>
                   <NavButton active={item.id === activeNavId} onNavClick={onNavClick}>
                     <span
-                      className="flex items-center gap-2 flex-1"
+                      className="flex items-center gap-2.5 flex-1"
                       onClick={() => onNavClick(item.id)}
                     >
-                      <span className="w-4 text-[12px] opacity-70 flex-shrink-0">
+                      <span className="w-5 text-[15px] flex-shrink-0">
                         {NAV_ICONS[item.id] || "•"}
                       </span>
-                      <span className="truncate text-[10px]">{item.label}</span>
+                      <span className="truncate text-[13px]">{item.label}</span>
                     </span>
                     {item.badge && (
                       <Chip className="bg-emerald-900/60 text-emerald-100 border border-emerald-500/60">
@@ -492,7 +492,7 @@ function SidebarContent({ activeNavId, onNavClick }) {
           </div>
         ))}
       </nav>
-      <div className="border-t border-slate-800/60 px-3 py-3 text-[10px] text-slate-500 flex items-center justify-between">
+      <div className="border-t border-slate-800/60 px-3 py-3 text-[11px] text-slate-500 flex items-center justify-between">
         <span>© {new Date().getFullYear()} EVzone</span>
         <span className="text-slate-400">Fleet Partner</span>
       </div>

@@ -17,8 +17,8 @@ export default function AccountSecurityPage() {
     };
 
     return (
-        <div className="min-h-[calc(100vh-56px)] px-4 sm:px-6 lg:px-10 py-6 bg-slate-50">
-            <div className="max-w-3xl mx-auto">
+        <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50">
+            <div className="w-full">
                 <div className="mb-6">
                     <h1 className="text-2xl font-semibold text-slate-900 mb-1">Account Security</h1>
                     <p className="text-sm text-slate-600">Manage your password and security settings</p>

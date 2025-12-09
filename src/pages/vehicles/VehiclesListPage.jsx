@@ -44,7 +44,7 @@ export default function VehiclesListPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-56px)] px-4 sm:px-6 lg:px-10 py-6 bg-slate-50">
+    <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50">
       {/* Enhanced Header */}
       <div className="mb-6 pb-6 border-b border-slate-200">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

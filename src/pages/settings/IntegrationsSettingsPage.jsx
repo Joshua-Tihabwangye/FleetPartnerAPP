@@ -161,8 +161,8 @@ export default function IntegrationsSettingsPage() {
   const connectedCount = integrations.filter(i => i.status === "connected").length;
 
   return (
-    <div className="min-h-[calc(100vh-56px)] px-4 sm:px-6 lg:px-10 py-6 bg-slate-50">
-      <div className="max-w-5xl mx-auto">
+    <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50">
+      <div className="w-full">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-semibold text-slate-900 mb-1">Integrations</h1>
@@ -196,8 +196,8 @@ export default function IntegrationsSettingsPage() {
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${selectedCategory === cat.id
-                  ? "bg-ev-green text-white"
-                  : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+                ? "bg-ev-green text-white"
+                : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
                 }`}
             >
               {cat.label}
@@ -220,8 +220,8 @@ export default function IntegrationsSettingsPage() {
                   <div>
                     <h3 className="text-sm font-semibold text-slate-900">{integration.name}</h3>
                     <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-medium ${integration.status === "connected"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-slate-100 text-slate-600"
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-slate-100 text-slate-600"
                       }`}>
                       {integration.status === "connected" ? "✓ Connected" : "Not Connected"}
                     </span>

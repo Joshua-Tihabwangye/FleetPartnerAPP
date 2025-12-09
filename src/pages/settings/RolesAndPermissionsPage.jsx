@@ -201,8 +201,8 @@ export default function RolesAndPermissionsPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-56px)] px-4 sm:px-6 lg:px-10 py-6 bg-slate-50">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50">
+      <div className="w-full">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -228,8 +228,8 @@ export default function RolesAndPermissionsPage() {
                     key={role.id}
                     onClick={() => setSelectedRole(role)}
                     className={`w-full text-left p-3 rounded-lg border transition ${selectedRole?.id === role.id
-                        ? "border-ev-green bg-emerald-50"
-                        : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                      ? "border-ev-green bg-emerald-50"
+                      : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                       }`}
                   >
                     <div className="flex items-center justify-between">

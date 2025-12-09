@@ -37,7 +37,7 @@ export default function SupportMessagesPage() {
     };
 
     return (
-        <div className="min-h-[calc(100vh-56px)] px-4 sm:px-6 lg:px-10 py-6 bg-slate-50">
+        <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50">
             {/* Header */}
             <div className="mb-6">
                 <Link
@@ -71,8 +71,8 @@ export default function SupportMessagesPage() {
                                 key={status}
                                 onClick={() => setFilter(status)}
                                 className={`px-3 py-1.5 text-xs font-medium rounded-lg transition ${filter === status
-                                        ? "bg-ev-green text-white"
-                                        : "border border-slate-300 hover:bg-slate-50"
+                                    ? "bg-ev-green text-white"
+                                    : "border border-slate-300 hover:bg-slate-50"
                                     }`}
                             >
                                 {status.charAt(0).toUpperCase() + status.slice(1)}
