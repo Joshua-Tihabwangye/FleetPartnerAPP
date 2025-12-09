@@ -47,7 +47,7 @@ export default function DriverPayoutsPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-56px)] px-4 sm:px-6 lg:px-10 py-6 bg-slate-50">
+    <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-slate-900 mb-2">Driver payouts</h1>

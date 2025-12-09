@@ -31,7 +31,7 @@ export default function FleetPartnerWebsiteHomePage() {
         ? "sticky top-0 z-50 bg-slate-900/80 backdrop-blur-xl border-b border-slate-800"
         : "sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-slate-200 shadow-sm"
       }>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 py-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-3">
           <div className="flex items-center justify-between">
             {/* Logo */}
             <div className="flex items-center gap-3">
@@ -83,7 +83,7 @@ export default function FleetPartnerWebsiteHomePage() {
           </div>
         )}
 
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 py-16 sm:py-24">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-16 sm:py-24">
           <div className="text-center mb-12">
             <div className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm mb-6 ${isDark
               ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
@@ -152,7 +152,7 @@ export default function FleetPartnerWebsiteHomePage() {
 
       {/* Features Section */}
       <div id="features" className={`py-16 ${isDark ? '' : 'bg-slate-50'}`}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
           <div className="text-center mb-12">
             <h2 className={`text-3xl sm:text-4xl font-bold mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>
               Everything You Need to Run Your Fleet
@@ -183,7 +183,7 @@ export default function FleetPartnerWebsiteHomePage() {
 
       {/* Benefits Section */}
       <div className={`py-16 ${isDark ? 'bg-slate-800/30' : 'bg-white'}`}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className={`rounded-2xl border p-6 hover-lift ${isDark
               ? "bg-gradient-to-br from-emerald-900/50 to-emerald-800/30 border-emerald-700/50"
@@ -221,7 +221,7 @@ export default function FleetPartnerWebsiteHomePage() {
 
       {/* CTA Section */}
       <div className={`py-16 ${isDark ? '' : 'bg-slate-50'}`}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
           <div className={`rounded-2xl border p-8 sm:p-12 text-center ${isDark
             ? "bg-gradient-to-r from-ev-green/20 to-emerald-600/20 border-emerald-500/30"
             : "bg-gradient-to-r from-ev-green/10 to-orange-500/10 border-ev-green/30"
@@ -245,7 +245,7 @@ export default function FleetPartnerWebsiteHomePage() {
 
       {/* Footer */}
       <footer className={`border-t py-8 ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
           <div className={`flex flex-col sm:flex-row items-center justify-between gap-4 text-sm ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
             <div className="flex items-center gap-2">
               <div className="h-6 w-6 rounded-lg bg-ev-green flex items-center justify-center text-[9px] font-bold text-white">

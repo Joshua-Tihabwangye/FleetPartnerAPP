@@ -33,8 +33,8 @@ export default function FleetPartnerTwoFactorSetupPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-56px)] px-4 sm:px-6 lg:px-10 py-6 bg-slate-50">
-      <div className="max-w-lg mx-auto">
+    <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50">
+      <div className="w-full max-w-2xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <Link
@@ -53,8 +53,8 @@ export default function FleetPartnerTwoFactorSetupPage() {
             <div key={s} className="flex items-center">
               <div
                 className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= s
-                    ? "bg-ev-green text-white"
-                    : "bg-slate-200 text-slate-500"
+                  ? "bg-ev-green text-white"
+                  : "bg-slate-200 text-slate-500"
                   }`}
               >
                 {step > s ? "✓" : s}

@@ -11,7 +11,7 @@ export default function ToursListPage() {
   ];
 
   return (
-    <div className="min-h-[calc(100vh-56px)] px-4 sm:px-6 lg:px-10 py-6 bg-slate-50">
+    <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
@@ -60,10 +60,10 @@ export default function ToursListPage() {
               </div>
               <span
                 className={`px-2 py-1 text-xs font-medium rounded-full ${tour.status === "active"
-                    ? "bg-emerald-100 text-emerald-700"
-                    : tour.status === "scheduled"
-                      ? "bg-blue-100 text-blue-700"
-                      : "bg-slate-100 text-slate-700"
+                  ? "bg-emerald-100 text-emerald-700"
+                  : tour.status === "scheduled"
+                    ? "bg-blue-100 text-blue-700"
+                    : "bg-slate-100 text-slate-700"
                   }`}
               >
                 {tour.status}
