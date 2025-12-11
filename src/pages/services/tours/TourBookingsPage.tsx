@@ -52,7 +52,7 @@ export default function TourBookingsPage() {
     return matchesSearch && matchesFilter;
   });
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case "confirmed": return "bg-emerald-100 text-emerald-700";
       case "pending": return "bg-yellow-100 text-yellow-700";

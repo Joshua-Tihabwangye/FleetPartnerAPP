@@ -32,7 +32,7 @@ export default function ShuttleTrackLivePage() {
         return () => clearInterval(interval);
     }, []);
 
-    const getStatusColor = (status) => {
+    const getStatusColor = (status: string) => {
         switch (status) {
             case "completed":
                 return "bg-emerald-100 text-emerald-700 border-emerald-200";
@@ -126,10 +126,10 @@ export default function ShuttleTrackLivePage() {
                                 <div className="flex items-center gap-3 flex-1">
                                     <div
                                         className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${stop.status === "completed"
-                                                ? "bg-emerald-500 text-white"
-                                                : stop.status === "current"
-                                                    ? "bg-blue-500 text-white"
-                                                    : "bg-slate-300 text-slate-600"
+                                            ? "bg-emerald-500 text-white"
+                                            : stop.status === "current"
+                                                ? "bg-blue-500 text-white"
+                                                : "bg-slate-300 text-slate-600"
                                             }`}
                                     >
                                         {stop.status === "completed" ? "✓" : index + 1}
@@ -145,10 +145,10 @@ export default function ShuttleTrackLivePage() {
                                 <div className="text-right">
                                     <span
                                         className={`px-3 py-1 text-xs font-medium rounded-full ${stop.status === "completed"
-                                                ? "bg-emerald-100 text-emerald-700"
-                                                : stop.status === "current"
-                                                    ? "bg-blue-100 text-blue-700"
-                                                    : "bg-slate-100 text-slate-600"
+                                            ? "bg-emerald-100 text-emerald-700"
+                                            : stop.status === "current"
+                                                ? "bg-blue-100 text-blue-700"
+                                                : "bg-slate-100 text-slate-600"
                                             }`}
                                     >
                                         {stop.status === "completed"

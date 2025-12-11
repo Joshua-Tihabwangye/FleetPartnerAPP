@@ -3,10 +3,22 @@ import { Link } from "react-router-dom";
 import Modal from "../../../components/ui/Modal";
 import { toastManager } from "../../../utils/toastManager";
 
+interface Student {
+  id: number;
+  name: string;
+  grade: string;
+  route: string;
+  parent: string;
+  parentPhone: string;
+  address: string;
+  status: string;
+  attendanceRate: number;
+}
+
 export default function ShuttleStudentsListPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
-  const [students, setStudents] = useState([]);
+  const [students, setStudents] = useState<Student[]>([]);
   const [studentForm, setStudentForm] = useState({
     name: "",
     grade: "",
@@ -21,7 +33,7 @@ export default function ShuttleStudentsListPage() {
     const storedStudents = JSON.parse(localStorage.getItem("shuttleStudents") || "[]");
     if (storedStudents.length === 0) {
       // Initialize with mock data if empty
-      const mockStudents = [
+      const mockStudents: Student[] = [
         {
           id: 1,
           name: "Emily Nakato",
