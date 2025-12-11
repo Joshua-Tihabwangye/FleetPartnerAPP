@@ -19,8 +19,7 @@ export default function DriverCreatePage() {
     // Create new driver object
     const newDriver = {
       id: Date.now(),
-      name: formData.name,
-      phone: formData.phone,
+      // name and phone are included in ...formData
       status: "active",
       trips: 0,
       rating: 5.0,

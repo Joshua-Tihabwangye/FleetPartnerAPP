@@ -21,9 +21,7 @@ export default function ManualDispatchNewBookingPage() {
       id: Date.now(),
       pickup: formData.pickupLocation,
       dropoff: formData.dropoffLocation,
-      vehicle: formData.vehicle,
-      driver: formData.driver,
-      fare: formData.fare,
+      // vehicle, driver, and fare are included in ...formData
       status: "scheduled",
       createdAt: new Date().toISOString(),
       ...formData

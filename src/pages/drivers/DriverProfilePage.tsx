@@ -25,7 +25,7 @@ export default function DriverProfilePage() {
   React.useEffect(() => {
     // Load from localStorage
     const storedDrivers: DriverProfile[] = JSON.parse(localStorage.getItem("drivers") || "[]");
-    const foundDriver = storedDrivers.find(d => d.id.toString() === driverId);
+    const foundDriver = storedDrivers.find((d: DriverProfile) => d.id.toString() === driverId);
 
     if (foundDriver) {
       setDriver(foundDriver);
@@ -62,17 +62,17 @@ export default function DriverProfilePage() {
 
   const handleSave = () => {
     // Update localStorage
-    const storedDrivers = JSON.parse(localStorage.getItem("drivers") || "[]");
-    const driverIndex = storedDrivers.findIndex(d => d.id.toString() === driverId);
+    const storedDrivers: DriverProfile[] = JSON.parse(localStorage.getItem("drivers") || "[]");
+    const driverIndex = storedDrivers.findIndex((d: DriverProfile) => d.id.toString() === driverId);
 
     if (driverIndex >= 0) {
-      storedDrivers[driverIndex] = editForm;
+      storedDrivers[driverIndex] = editForm as DriverProfile;
     } else {
-      storedDrivers.push(editForm);
+      storedDrivers.push(editForm as DriverProfile);
     }
 
     localStorage.setItem("drivers", JSON.stringify(storedDrivers));
-    setDriver(editForm);
+    setDriver(editForm as DriverProfile);
     setIsEditing(false);
     toastManager.show("Driver profile updated successfully!", "success");
   };

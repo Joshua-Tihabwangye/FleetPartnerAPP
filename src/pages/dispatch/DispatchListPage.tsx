@@ -1,15 +1,25 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
+interface Dispatch {
+    id: number;
+    pickup: string;
+    dropoff: string;
+    vehicle: string;
+    driver: string;
+    fare: string;
+    status: string;
+}
+
 export default function DispatchListPage() {
-    const [dispatches, setDispatches] = useState([]);
+    const [dispatches, setDispatches] = useState<Dispatch[]>([]);
 
     useEffect(() => {
         const storedDispatches = JSON.parse(localStorage.getItem("dispatches") || "[]");
         setDispatches(storedDispatches);
     }, []);
 
-    const getStatusColor = (status) => {
+    const getStatusColor = (status: string) => {
         switch (status) {
             case "scheduled": return "bg-blue-100 text-blue-700";
             case "in-progress": return "bg-yellow-100 text-yellow-700";
