@@ -12,7 +12,7 @@ export default function ShuttleRouteEditPage() {
         departureTime: "06:30",
         arrivalTime: "08:30",
         days: "weekdays",
-        customDays: [], // Array to store selected days when "custom" is chosen
+        customDays: [] as string[], // Array to store selected days when "custom" is chosen
         vehicle: "UAA 300K",
         driver: "David Mukasa",
         stops: [
@@ -35,7 +35,7 @@ export default function ShuttleRouteEditPage() {
         { value: 'sunday', label: 'Sunday' }
     ];
 
-    const handleDayToggle = (day) => {
+    const handleDayToggle = (day: string) => {
         const newCustomDays = formData.customDays.includes(day)
             ? formData.customDays.filter(d => d !== day)
             : [...formData.customDays, day];
@@ -58,14 +58,14 @@ export default function ShuttleRouteEditPage() {
         setFormData({ ...formData, stops: [...formData.stops, newStop] });
     };
 
-    const handleRemoveStop = (index) => {
+    const handleRemoveStop = (index: number) => {
         const newStops = formData.stops.filter((_, i) => i !== index);
         setFormData({ ...formData, stops: newStops });
     };
 
-    const handleStopChange = (index, field, value) => {
+    const handleStopChange = (index: number, field: keyof typeof formData.stops[0], value: string | number) => {
         const newStops = [...formData.stops];
-        newStops[index][field] = value;
+        newStops[index] = { ...newStops[index], [field]: value };
         setFormData({ ...formData, stops: newStops });
     };
 

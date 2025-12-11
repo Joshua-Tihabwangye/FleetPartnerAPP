@@ -42,7 +42,7 @@ export default function ShuttleRunsBoardPage() {
     }
   ];
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case "in-progress": return "bg-blue-100 text-blue-700";
       case "scheduled": return "bg-yellow-100 text-yellow-700";

@@ -12,7 +12,7 @@ export default function ShuttleRouteCreatePage() {
         vehicle: "",
         driver: "",
         capacity: "",
-        daysOfWeek: [],
+        daysOfWeek: [] as string[],
         stops: [{ name: "", time: "" }]
     });
 
