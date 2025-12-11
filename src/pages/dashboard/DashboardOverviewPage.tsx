@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { BarChart, PieChart, Sparkline } from "../../components/ui/Charts";
 
 export default function DashboardOverviewPage() {
   const navigate = useNavigate();
@@ -29,9 +30,31 @@ export default function DashboardOverviewPage() {
   };
 
   const stats = [
-    { label: "Vehicles online", value: "128", change: "+12", color: "emerald" },
-    { label: "Active drivers", value: "94", change: "+5", color: "blue" },
-    { label: "Trips today", value: "1,420", change: "+8%", color: "purple" }
+    { label: "Vehicles online", value: "128", change: "+12", color: "emerald", sparkline: [95, 102, 110, 108, 115, 120, 128] },
+    { label: "Active drivers", value: "94", change: "+5", color: "blue", sparkline: [78, 82, 85, 88, 90, 92, 94] },
+    { label: "Trips today", value: "1,420", change: "+8%", color: "purple", sparkline: [980, 1100, 1250, 1180, 1320, 1380, 1420] }
+  ];
+
+  // Chart data
+  const tripsTrendData = [120, 145, 132, 168, 195, 210, 185, 220, 245, 230, 260, 280];
+  const tripsTrendLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  const servicesBreakdown = [
+    { label: "Rides", value: 842, color: "#10b981" },
+    { label: "Delivery", value: 312, color: "#3b82f6" },
+    { label: "Rentals", value: 156, color: "#f59e0b" },
+    { label: "Shuttles", value: 82, color: "#8b5cf6" },
+    { label: "Tours", value: 28, color: "#ec4899" }
+  ];
+
+  const weeklyRevenue = [
+    { label: "Mon", value: 14500000 },
+    { label: "Tue", value: 12800000 },
+    { label: "Wed", value: 16200000 },
+    { label: "Thu", value: 15100000 },
+    { label: "Fri", value: 18900000 },
+    { label: "Sat", value: 22100000 },
+    { label: "Sun", value: 17800000 }
   ];
 
   // Alert data
@@ -87,40 +110,102 @@ export default function DashboardOverviewPage() {
 
       {/* Stats Grid - First Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {stats.map((stat, idx) => (
-          <div
-            key={idx}
-            className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-shadow"
-          >
-            <div className="text-xs text-slate-500 mb-1">{stat.label}</div>
-            <div className="flex items-baseline justify-between">
-              <div className="text-2xl font-semibold text-slate-900">{stat.value}</div>
-              <div className={`text-xs font-medium text-${stat.color}-600`}>
-                {stat.change}
+        {stats.map((stat, idx) => {
+          const colors: Record<string, string> = { emerald: "#10b981", blue: "#3b82f6", purple: "#8b5cf6" };
+          return (
+            <div
+              key={idx}
+              className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-xs text-slate-500">{stat.label}</div>
+                <div className={`text-xs font-medium px-1.5 py-0.5 rounded ${stat.color === 'emerald' ? 'bg-emerald-100 text-emerald-600' :
+                  stat.color === 'blue' ? 'bg-blue-100 text-blue-600' :
+                    'bg-purple-100 text-purple-600'
+                  }`}>
+                  {stat.change}
+                </div>
               </div>
+              <div className="text-2xl font-bold text-slate-900 mb-2">{stat.value}</div>
+              <Sparkline data={stat.sparkline} color={colors[stat.color]} height={32} />
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         {/* Net Revenue with Date Range */}
-        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-4 shadow-lg text-white">
           <div className="flex items-center justify-between mb-1">
-            <div className="text-xs text-slate-500">Net revenue</div>
+            <div className="text-xs text-emerald-100">Net revenue</div>
             <select
               value={dateRange}
               onChange={(e) => setDateRange(e.target.value as "today" | "week" | "month")}
-              className="text-[10px] bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5 text-slate-600 cursor-pointer hover:bg-slate-50"
+              className="text-[10px] bg-white/20 border border-white/30 rounded px-1.5 py-0.5 text-white cursor-pointer hover:bg-white/30"
             >
-              <option value="today">Today</option>
-              <option value="week">This Week</option>
-              <option value="month">This Month</option>
+              <option value="today" className="text-slate-800">Today</option>
+              <option value="week" className="text-slate-800">This Week</option>
+              <option value="month" className="text-slate-800">This Month</option>
             </select>
           </div>
           <div className="flex items-baseline justify-between">
-            <div className="text-2xl font-semibold text-slate-900">{revenueData[dateRange].value}</div>
-            <div className="text-xs font-medium text-green-600">
+            <div className="text-2xl font-bold">{revenueData[dateRange].value}</div>
+            <div className="text-xs font-medium bg-white/20 px-1.5 py-0.5 rounded">
               {revenueData[dateRange].change}
             </div>
+          </div>
+          <div className="mt-2">
+            <Sparkline data={[8, 12, 9, 14, 11, 15, 13, 18]} color="#a7f3d0" height={28} />
+          </div>
+        </div>
+      </div>
+
+
+      {/* Analytics Charts Section - One Bar Chart and One Pie Chart */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* Weekly Trip Volume - Bar Chart showing actual trips by day */}
+        <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900">Weekly Trip Volume</h3>
+              <p className="text-xs text-slate-500">Daily trips this week</p>
+            </div>
+            <span className="text-lg font-bold text-slate-900">{stats[2].value}</span>
+          </div>
+          <BarChart
+            data={[
+              { label: "Mon", value: 180 },
+              { label: "Tue", value: 195 },
+              { label: "Wed", value: 210 },
+              { label: "Thu", value: 188 },
+              { label: "Fri", value: 245 },
+              { label: "Sat", value: 280 },
+              { label: "Sun", value: 122 }
+            ]}
+            height={160}
+            showValues={true}
+          />
+        </div>
+
+        {/* Fleet Status - Pie Chart showing vehicle status from stats */}
+        <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900">Fleet Status</h3>
+              <p className="text-xs text-slate-500">Current vehicle distribution</p>
+            </div>
+            <span className="text-lg font-bold text-slate-900">{stats[0].value} online</span>
+          </div>
+          <div className="flex justify-center">
+            <PieChart
+              data={[
+                { label: "Online", value: 128, color: "#10b981" },
+                { label: "On Trip", value: 94, color: "#3b82f6" },
+                { label: "Offline", value: 7, color: "#ef4444" },
+                { label: "Maintenance", value: 5, color: "#f59e0b" }
+              ]}
+              size={140}
+              donut={true}
+              showLabels={true}
+            />
           </div>
         </div>
       </div>
@@ -170,58 +255,58 @@ export default function DashboardOverviewPage() {
           </div>
 
           {/* Offline Vehicles Alert */}
-          <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border border-amber-200 p-4 shadow-sm">
+          <div className="bg-gradient-to-br from-emerald-50 to-green-100 rounded-xl border border-emerald-200 p-4 shadow-sm">
             <div className="flex items-start gap-3">
-              <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center text-xl">
+              <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center text-xl">
                 ⚠️
               </div>
               <div className="flex-1">
-                <div className="text-sm font-medium text-amber-900 mb-1">Offline Vehicles</div>
-                <div className="text-2xl font-bold text-amber-700">{alerts.offlineVehicles.count}</div>
-                <div className="text-xs text-amber-600 mt-1">
+                <div className="text-sm font-medium text-emerald-900 mb-1">Offline Vehicles</div>
+                <div className="text-2xl font-bold text-emerald-700">{alerts.offlineVehicles.count}</div>
+                <div className="text-xs text-emerald-600 mt-1">
                   Offline for {alerts.offlineVehicles.hours}+ hours
                 </div>
               </div>
             </div>
-            <Link to="/vehicles?filter=offline" className="mt-3 block text-xs text-amber-700 hover:text-amber-900 font-medium">
+            <Link to="/vehicles?filter=offline" className="mt-3 block text-xs text-emerald-700 hover:text-emerald-900 font-medium">
               View details →
             </Link>
           </div>
 
           {/* High Cancellations Alert */}
-          <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-xl border border-red-200 p-4 shadow-sm">
+          <div className="bg-gradient-to-br from-orange-50 to-amber-100 rounded-xl border border-orange-200 p-4 shadow-sm">
             <div className="flex items-start gap-3">
-              <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center text-xl">
+              <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center text-xl">
                 🚫
               </div>
               <div className="flex-1">
-                <div className="text-sm font-medium text-red-900 mb-1">High Cancellations</div>
-                <div className="text-2xl font-bold text-red-700">{alerts.highCancellations.count} drivers</div>
-                <div className="text-xs text-red-600 mt-1">
+                <div className="text-sm font-medium text-orange-900 mb-1">High Cancellations</div>
+                <div className="text-2xl font-bold text-orange-700">{alerts.highCancellations.count} drivers</div>
+                <div className="text-xs text-orange-600 mt-1">
                   {alerts.highCancellations.drivers.slice(0, 2).join(", ")}...
                 </div>
               </div>
             </div>
-            <Link to="/drivers?filter=high-cancellation" className="mt-3 block text-xs text-red-700 hover:text-red-900 font-medium">
+            <Link to="/drivers?filter=high-cancellation" className="mt-3 block text-xs text-orange-700 hover:text-orange-900 font-medium">
               Review drivers →
             </Link>
           </div>
 
           {/* Pending Incidents Alert */}
-          <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl border border-purple-200 p-4 shadow-sm">
+          <div className="bg-gradient-to-br from-slate-50 to-gray-100 rounded-xl border border-slate-200 p-4 shadow-sm">
             <div className="flex items-start gap-3">
-              <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center text-xl">
+              <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center text-xl">
                 🚨
               </div>
               <div className="flex-1">
-                <div className="text-sm font-medium text-purple-900 mb-1">Pending Incidents</div>
-                <div className="text-2xl font-bold text-purple-700">{alerts.pendingIncidents.count}</div>
-                <div className="text-xs text-purple-600 mt-1">
+                <div className="text-sm font-medium text-slate-900 mb-1">Pending Incidents</div>
+                <div className="text-2xl font-bold text-slate-700">{alerts.pendingIncidents.count}</div>
+                <div className="text-xs text-slate-600 mt-1">
                   Ambulance cases awaiting review
                 </div>
               </div>
             </div>
-            <Link to="/ambulance/cases?status=pending" className="mt-3 block text-xs text-purple-700 hover:text-purple-900 font-medium">
+            <Link to="/ambulance/cases?status=pending" className="mt-3 block text-xs text-slate-700 hover:text-slate-900 font-medium">
               Review cases →
             </Link>
           </div>

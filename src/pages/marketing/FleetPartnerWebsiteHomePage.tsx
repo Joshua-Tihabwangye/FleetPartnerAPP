@@ -1,9 +1,11 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { ThemeToggle, useTheme } from "../../context/ThemeContext";
+import { useLanguage, LANGUAGES } from "../../context/LanguageContext";
 
 export default function FleetPartnerWebsiteHomePage() {
   const { isDark } = useTheme();
+  const { language, setLanguage } = useLanguage();
 
   const features = [
     { icon: "🚗", title: "Rides & Delivery", desc: "Electric rides and package delivery across the city" },
@@ -55,6 +57,29 @@ export default function FleetPartnerWebsiteHomePage() {
 
             {/* Actions */}
             <div className="flex items-center gap-3">
+              {/* Language Selector */}
+              <div className="relative">
+                <select
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value as typeof language)}
+                  className={`appearance-none pl-8 pr-6 py-1.5 rounded-lg border text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-ev-green ${isDark
+                    ? 'bg-slate-800 border-slate-700 text-white'
+                    : 'bg-white border-slate-300 text-slate-700'
+                    }`}
+                >
+                  {LANGUAGES.map((lang) => (
+                    <option key={lang.code} value={lang.code}>
+                      {lang.flag} {lang.nativeName}
+                    </option>
+                  ))}
+                </select>
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm pointer-events-none">
+                  {LANGUAGES.find(l => l.code === language)?.flag}
+                </span>
+                <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs pointer-events-none ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  ▼
+                </span>
+              </div>
               <ThemeToggle />
               <Link
                 to="/login"

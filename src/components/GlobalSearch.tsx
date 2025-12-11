@@ -20,47 +20,33 @@ const searchableItems: SearchResult[] = [
     { type: "page", id: "7", title: "Rentals", subtitle: "Car rental management", link: "/rentals" },
     { type: "page", id: "8", title: "Settings", subtitle: "Account settings", link: "/settings/profile" },
     { type: "page", id: "9", title: "Help & Support", subtitle: "Get help", link: "/help" },
+    { type: "page", id: "10", title: "School Shuttles", subtitle: "Shuttle management", link: "/school-shuttles/routes" },
+    { type: "page", id: "11", title: "Tours", subtitle: "Tour packages", link: "/tours" },
+    { type: "page", id: "12", title: "Ambulance/EMS", subtitle: "Emergency dispatch", link: "/ambulance/dispatch" },
+    { type: "page", id: "13", title: "Compliance", subtitle: "Incidents & reports", link: "/compliance" },
+    { type: "page", id: "14", title: "Training", subtitle: "Training centre", link: "/training" },
     { type: "driver", id: "d1", title: "John Mukasa", subtitle: "Driver • Active", link: "/drivers/1" },
     { type: "driver", id: "d2", title: "Sarah Namatovu", subtitle: "Driver • Active", link: "/drivers/2" },
+    { type: "driver", id: "d3", title: "Peter Ochieng", subtitle: "Driver • On trip", link: "/drivers/3" },
     { type: "vehicle", id: "v1", title: "UAA 123B", subtitle: "Toyota Prius • Online", link: "/vehicles/1" },
     { type: "vehicle", id: "v2", title: "UAB 456C", subtitle: "Nissan Leaf • Online", link: "/vehicles/2" },
+    { type: "vehicle", id: "v3", title: "UAC 789D", subtitle: "BYD Atto 3 • Offline", link: "/vehicles/3" },
 ];
 
 export default function GlobalSearch() {
-    const [isOpen, setIsOpen] = useState(false);
     const [query, setQuery] = useState("");
     const [results, setResults] = useState<SearchResult[]>([]);
+    const [showDropdown, setShowDropdown] = useState(false);
+    const [selectedIndex, setSelectedIndex] = useState(0);
     const inputRef = useRef<HTMLInputElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
-
-    // Keyboard shortcut (Cmd/Ctrl + K)
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-                e.preventDefault();
-                setIsOpen(true);
-            }
-            if (e.key === "Escape") {
-                setIsOpen(false);
-            }
-        };
-        document.addEventListener("keydown", handleKeyDown);
-        return () => document.removeEventListener("keydown", handleKeyDown);
-    }, []);
-
-    // Focus input when opened
-    useEffect(() => {
-        if (isOpen && inputRef.current) {
-            inputRef.current.focus();
-        }
-    }, [isOpen]);
 
     // Close when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-                setIsOpen(false);
+                setShowDropdown(false);
             }
         };
         document.addEventListener("mousedown", handleClickOutside);
@@ -71,6 +57,7 @@ export default function GlobalSearch() {
     useEffect(() => {
         if (query.trim() === "") {
             setResults([]);
+            setShowDropdown(false);
             return;
         }
 
@@ -80,13 +67,33 @@ export default function GlobalSearch() {
                 item.title.toLowerCase().includes(lowerQuery) ||
                 item.subtitle.toLowerCase().includes(lowerQuery)
         );
-        setResults(filtered.slice(0, 8));
+        setResults(filtered.slice(0, 10));
+        setShowDropdown(true);
+        setSelectedIndex(0);
     }, [query]);
+
+    // Keyboard navigation
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (!showDropdown || results.length === 0) return;
+
+        if (e.key === "ArrowDown") {
+            e.preventDefault();
+            setSelectedIndex((prev) => (prev + 1) % results.length);
+        } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            setSelectedIndex((prev) => (prev - 1 + results.length) % results.length);
+        } else if (e.key === "Enter") {
+            e.preventDefault();
+            handleSelect(results[selectedIndex]);
+        } else if (e.key === "Escape") {
+            setShowDropdown(false);
+        }
+    };
 
     const handleSelect = (result: SearchResult) => {
         navigate(result.link);
-        setIsOpen(false);
         setQuery("");
+        setShowDropdown(false);
     };
 
     const getTypeIcon = (type: SearchResult["type"]) => {
@@ -98,14 +105,25 @@ export default function GlobalSearch() {
         }
     };
 
+    const getTypeColor = (type: SearchResult["type"]) => {
+        switch (type) {
+            case "driver": return "bg-blue-100 text-blue-600";
+            case "vehicle": return "bg-emerald-100 text-emerald-600";
+            case "trip": return "bg-purple-100 text-purple-600";
+            default: return "bg-slate-100 text-slate-600";
+        }
+    };
+
     return (
-        <>
-            {/* Search Trigger */}
-            <button
-                onClick={() => setIsOpen(true)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-sm text-slate-500 hover:border-slate-400 hover:text-slate-600 transition min-w-[200px]"
-            >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="relative" ref={containerRef}>
+            {/* Inline Search Input */}
+            <div className="relative">
+                <svg
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
                     <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -113,83 +131,56 @@ export default function GlobalSearch() {
                         d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                     />
                 </svg>
-                <span>Search...</span>
-                <span className="ml-auto text-xs text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">⌘K</span>
-            </button>
+                <input
+                    ref={inputRef}
+                    type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onFocus={() => query && setShowDropdown(true)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Search drivers, vehicles, pages..."
+                    className="w-64 lg:w-80 pl-9 pr-4 py-2 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-ev-green focus:border-transparent transition"
+                />
+            </div>
 
-            {/* Modal Overlay */}
-            {isOpen && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center pt-[15vh]">
-                    <div
-                        ref={containerRef}
-                        className="w-full max-w-lg bg-white rounded-xl shadow-2xl overflow-hidden border border-slate-200"
-                    >
-                        {/* Search Input */}
-                        <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-200">
-                            <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                                />
-                            </svg>
-                            <input
-                                ref={inputRef}
-                                type="text"
-                                value={query}
-                                onChange={(e) => setQuery(e.target.value)}
-                                placeholder="Search drivers, vehicles, pages..."
-                                className="flex-1 outline-none text-sm text-slate-900 placeholder:text-slate-400"
-                            />
-                            <button
-                                onClick={() => setIsOpen(false)}
-                                className="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded hover:bg-slate-200"
-                            >
-                                ESC
-                            </button>
+            {/* Dropdown Results */}
+            {showDropdown && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-xl border border-slate-200 z-50 overflow-hidden max-h-96 overflow-y-auto">
+                    {results.length === 0 ? (
+                        <div className="px-4 py-6 text-center text-slate-500 text-sm">
+                            No results found for "{query}"
                         </div>
-
-                        {/* Results */}
-                        <div className="max-h-80 overflow-y-auto">
-                            {query === "" ? (
-                                <div className="px-4 py-6 text-center text-slate-500 text-sm">
-                                    Start typing to search...
-                                </div>
-                            ) : results.length === 0 ? (
-                                <div className="px-4 py-6 text-center text-slate-500 text-sm">
-                                    No results found for "{query}"
-                                </div>
-                            ) : (
-                                <ul>
-                                    {results.map((result) => (
-                                        <li key={`${result.type}-${result.id}`}>
-                                            <button
-                                                onClick={() => handleSelect(result)}
-                                                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 text-left transition"
-                                            >
-                                                <span className="text-lg">{getTypeIcon(result.type)}</span>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="text-sm font-medium text-slate-900">{result.title}</div>
-                                                    <div className="text-xs text-slate-500">{result.subtitle}</div>
-                                                </div>
-                                                <span className="text-xs text-slate-400">→</span>
-                                            </button>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </div>
-
-                        {/* Footer Hint */}
-                        <div className="px-4 py-2 border-t border-slate-100 bg-slate-50 text-xs text-slate-500 flex gap-4">
-                            <span>↑↓ Navigate</span>
-                            <span>↵ Select</span>
-                            <span>ESC Close</span>
-                        </div>
+                    ) : (
+                        <ul>
+                            {results.map((result, index) => (
+                                <li key={`${result.type}-${result.id}`}>
+                                    <button
+                                        onClick={() => handleSelect(result)}
+                                        onMouseEnter={() => setSelectedIndex(index)}
+                                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition ${index === selectedIndex ? "bg-slate-100" : "hover:bg-slate-50"
+                                            }`}
+                                    >
+                                        <span className={`h-8 w-8 rounded-lg flex items-center justify-center text-sm ${getTypeColor(result.type)}`}>
+                                            {getTypeIcon(result.type)}
+                                        </span>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-sm font-medium text-slate-900">{result.title}</div>
+                                            <div className="text-xs text-slate-500">{result.subtitle}</div>
+                                        </div>
+                                        <span className="text-xs text-slate-400 capitalize">{result.type}</span>
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                    {/* Keyboard hint */}
+                    <div className="px-4 py-2 border-t border-slate-100 bg-slate-50 text-xs text-slate-500 flex gap-4">
+                        <span>↑↓ Navigate</span>
+                        <span>↵ Select</span>
+                        <span>Esc Close</span>
                     </div>
                 </div>
             )}
-        </>
+        </div>
     );
 }
