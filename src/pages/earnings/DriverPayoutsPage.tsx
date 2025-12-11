@@ -144,7 +144,7 @@ export default function DriverPayoutsPage() {
             <tbody className="bg-cream divide-y divide-slate-200">
               {filteredPayouts.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center text-sm text-slate-500">
+                  <td colSpan={6} className="px-6 py-8 text-center text-sm text-slate-500">
                     No payouts found matching your criteria.
                   </td>
                 </tr>

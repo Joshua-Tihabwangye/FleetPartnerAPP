@@ -2,15 +2,24 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Modal from "../../components/ui/Modal";
 
+interface Driver {
+  id: number;
+  name: string;
+  phone: string;
+  status: string;
+  trips: number;
+  rating: number;
+}
+
 export default function DriversListPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [filter, setFilter] = useState({ status: "all", minRating: "0" });
-  const [allDrivers, setAllDrivers] = useState([]);
+  const [allDrivers, setAllDrivers] = useState<Driver[]>([]);
 
   // Load drivers from localStorage on mount
   useEffect(() => {
-    const mockDrivers = [
+    const mockDrivers: Driver[] = [
       { id: 1, name: "John Doe", phone: "+256 700 000 001", status: "active", trips: 142, rating: 4.8 },
       { id: 2, name: "Jane Smith", phone: "+256 700 000 002", status: "active", trips: 98, rating: 4.9 },
       { id: 3, name: "Mike Johnson", phone: "+256 700 000 003", status: "offline", trips: 203, rating: 4.7 }
