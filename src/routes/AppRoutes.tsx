@@ -100,6 +100,7 @@ import FleetPartnerAccountSecurityPage from "../pages/settings/accountSecurity/F
 import FleetPartnerTwoFactorSetupPage from "../pages/settings/accountSecurity/FleetPartnerTwoFactorSetupPage";
 import FleetPartnerSessionsPage from "../pages/settings/accountSecurity/FleetPartnerSessionsPage";
 import FleetPartnerProfilePage from "../pages/settings/FleetPartnerProfilePage";
+import ActivityLogPage from "../pages/settings/ActivityLogPage";
 
 // Training & Support
 import TrainingCentrePage from "../pages/training/TrainingCentrePage";
@@ -255,6 +256,7 @@ export default function AppRoutes() {
           element={<FleetPartnerSessionsPage />}
         />
         <Route path="/settings/profile" element={<FleetPartnerProfilePage />} />
+        <Route path="/settings/activity-log" element={<ActivityLogPage />} />
 
         {/* Training & support */}
         <Route path="/training" element={<TrainingCentrePage />} />
