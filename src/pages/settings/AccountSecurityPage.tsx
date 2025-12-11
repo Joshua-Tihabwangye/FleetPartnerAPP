@@ -6,7 +6,7 @@ export default function AccountSecurityPage() {
     const [passwords, setPasswords] = useState({ current: "", new: "", confirm: "" });
     const [twoFactor, setTwoFactor] = useState(false);
 
-    const handlePasswordChange = (e) => {
+    const handlePasswordChange = (e: React.FormEvent) => {
         e.preventDefault();
         if (passwords.new !== passwords.confirm) {
             toastManager.show("New passwords do not match", "error");

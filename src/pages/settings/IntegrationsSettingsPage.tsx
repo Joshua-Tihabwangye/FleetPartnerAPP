@@ -102,11 +102,22 @@ const CATEGORIES = [
   { id: "communication", label: "Communication" }
 ];
 
+interface Integration {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  category: string;
+  status: string;
+  provider: string | null;
+  connectedAt: string | null;
+}
+
 export default function IntegrationsSettingsPage() {
-  const [integrations, setIntegrations] = useState([]);
+  const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [showConnectModal, setShowConnectModal] = useState(false);
-  const [connectingIntegration, setConnectingIntegration] = useState(null);
+  const [connectingIntegration, setConnectingIntegration] = useState<Integration | null>(null);
   const [apiKey, setApiKey] = useState("");
 
   useEffect(() => {
@@ -123,12 +134,12 @@ export default function IntegrationsSettingsPage() {
     ? integrations
     : integrations.filter(i => i.category === selectedCategory);
 
-  const handleConnect = (integration) => {
+  const handleConnect = (integration: Integration) => {
     setConnectingIntegration(integration);
     setShowConnectModal(true);
   };
 
-  const handleDisconnect = (integrationId) => {
+  const handleDisconnect = (integrationId: string) => {
     const updated = integrations.map(i =>
       i.id === integrationId
         ? { ...i, status: "disconnected", provider: null, connectedAt: null }
@@ -144,6 +155,8 @@ export default function IntegrationsSettingsPage() {
       toastManager.show("Please enter API key or credentials", "error");
       return;
     }
+
+    if (!connectingIntegration) return;
 
     const updated = integrations.map(i =>
       i.id === connectingIntegration.id

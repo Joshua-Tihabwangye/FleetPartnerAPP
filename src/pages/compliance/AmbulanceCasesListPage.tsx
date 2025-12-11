@@ -91,12 +91,12 @@ export default function AmbulanceCasesListPage() {
   };
 
   return (
-    <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50">
+    <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50 dark:bg-slate-900">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900 mb-2">Ambulance Cases</h1>
-          <p className="text-sm text-slate-600">Emergency medical service case management</p>
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-white mb-2">Ambulance Cases</h1>
+          <p className="text-sm text-slate-600 dark:text-slate-400">Emergency medical service case management</p>
         </div>
         <Link
           to="/ambulance/dispatch"
@@ -108,27 +108,27 @@ export default function AmbulanceCasesListPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <p className="text-sm text-slate-600 mb-1">Active Cases</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">Active Cases</p>
           <p className="text-2xl font-semibold text-blue-600">
             {cases.filter(c => c.status !== 'completed' && c.status !== 'cancelled').length}
           </p>
         </div>
-        <div className="bg-white rounded-xl border border-red-200 p-4">
-          <p className="text-sm text-slate-600 mb-1">Critical</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-red-200 dark:border-red-900/50 p-4">
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">Critical</p>
           <p className="text-2xl font-semibold text-red-600">
             {cases.filter(c => c.priority === 'critical').length}
           </p>
         </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <p className="text-sm text-slate-600 mb-1">Completed Today</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">Completed Today</p>
           <p className="text-2xl font-semibold text-emerald-600">
             {cases.filter(c => c.status === 'completed').length}
           </p>
         </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <p className="text-sm text-slate-600 mb-1">Response Time (Avg)</p>
-          <p className="text-2xl font-semibold text-slate-900">8 min</p>
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+          <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">Response Time (Avg)</p>
+          <p className="text-2xl font-semibold text-slate-900 dark:text-white">8 min</p>
         </div>
       </div>
 
@@ -140,7 +140,7 @@ export default function AmbulanceCasesListPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by case ID, patient, condition..."
-            className="w-full px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green focus:border-transparent"
+            className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-ev-green focus:border-transparent dark:text-slate-200 dark:placeholder-slate-400"
           />
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -150,7 +150,7 @@ export default function AmbulanceCasesListPage() {
               onClick={() => setFilter(status)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === status
                 ? "bg-ev-green text-white"
-                : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-50"
+                : "bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700"
                 }`}
             >
               {status.charAt(0).toUpperCase() + status.slice(1).replace('-', ' ')}
@@ -165,13 +165,13 @@ export default function AmbulanceCasesListPage() {
           <Link
             key={caseItem.id}
             to={`/ambulance/cases/${caseItem.id}`}
-            className="block bg-white rounded-xl border border-slate-200 p-6 hover:shadow-md transition-shadow"
+            className="block bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 hover:shadow-md transition-shadow"
           >
             {/* Header */}
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
-                  <h3 className="text-lg font-semibold text-slate-900">{caseItem.caseId}</h3>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{caseItem.caseId}</h3>
                   <span className={`px-3 py-1 text-xs font-medium rounded-full ${getPriorityColor(caseItem.priority)}`}>
                     {caseItem.priority.toUpperCase()}
                   </span>
@@ -179,26 +179,26 @@ export default function AmbulanceCasesListPage() {
                     {caseItem.status.replace('-', ' ').toUpperCase()}
                   </span>
                 </div>
-                <p className="text-sm text-slate-600">Dispatched: {caseItem.dispatchTime}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Dispatched: {caseItem.dispatchTime}</p>
               </div>
             </div>
 
             {/* Details Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <h4 className="text-xs font-medium text-slate-500 uppercase mb-2">Patient</h4>
-                <p className="font-medium text-slate-900">{caseItem.patient}</p>
-                <p className="text-sm text-slate-600">Age: {caseItem.age}</p>
-                <p className="text-sm text-slate-600">{caseItem.condition}</p>
+                <h4 className="text-xs font-medium text-slate-500 dark:text-slate-500 uppercase mb-2">Patient</h4>
+                <p className="font-medium text-slate-900 dark:text-slate-200">{caseItem.patient}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Age: {caseItem.age}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">{caseItem.condition}</p>
               </div>
               <div>
-                <h4 className="text-xs font-medium text-slate-500 uppercase mb-2">Location</h4>
-                <p className="font-medium text-slate-900">📍 {caseItem.location}</p>
+                <h4 className="text-xs font-medium text-slate-500 dark:text-slate-500 uppercase mb-2">Location</h4>
+                <p className="font-medium text-slate-900 dark:text-slate-200">📍 {caseItem.location}</p>
               </div>
               <div>
-                <h4 className="text-xs font-medium text-slate-500 uppercase mb-2">Response Team</h4>
-                <p className="font-medium text-slate-900">🚑 {caseItem.ambulance}</p>
-                <p className="text-sm text-slate-600">{caseItem.crew}</p>
+                <h4 className="text-xs font-medium text-slate-500 dark:text-slate-500 uppercase mb-2">Response Team</h4>
+                <p className="font-medium text-slate-900 dark:text-slate-200">🚑 {caseItem.ambulance}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">{caseItem.crew}</p>
               </div>
             </div>
           </Link>

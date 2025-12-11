@@ -2,11 +2,21 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Modal from "../../components/ui/Modal";
 
+interface Vehicle {
+  id: number;
+  plate: string;
+  model: string;
+  status: string;
+  driver: string;
+  mileage: number;
+  vehicleType: string;
+}
+
 export default function VehiclesListPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [filter, setFilter] = useState({ status: "all", type: "all" });
-  const [allVehicles, setAllVehicles] = useState([]);
+  const [allVehicles, setAllVehicles] = useState<Vehicle[]>([]);
 
   // Load vehicles from localStorage on mount
   useEffect(() => {

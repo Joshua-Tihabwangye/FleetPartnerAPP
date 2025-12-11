@@ -2,7 +2,12 @@ import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { auth } from "../utils/auth";
 
-export default function ProtectedRoute({ children, requireOnboardingComplete = true }) {
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  requireOnboardingComplete?: boolean;
+}
+
+export default function ProtectedRoute({ children, requireOnboardingComplete = true }: ProtectedRouteProps) {
   const location = useLocation();
   const authState = auth.getAuth();
 

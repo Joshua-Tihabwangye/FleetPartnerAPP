@@ -1,11 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { toastManager } from "../../utils/toastManager";
 
+interface Branch {
+  id: number;
+  name: string;
+  address: string;
+  phone: string;
+  manager: string;
+  email: string;
+  isActive: boolean;
+}
+
 export default function BranchesSettingsPage() {
-  const [branches, setBranches] = useState([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [editingBranch, setEditingBranch] = useState(null);
-  const [formData, setFormData] = useState({
+  const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
+  const [formData, setFormData] = useState<Omit<Branch, "id">>({
     name: "",
     address: "",
     phone: "",
@@ -55,20 +65,20 @@ export default function BranchesSettingsPage() {
     setFormData({ name: "", address: "", phone: "", manager: "", email: "", isActive: true });
   };
 
-  const handleEdit = (branch) => {
+  const handleEdit = (branch: Branch) => {
     setEditingBranch(branch);
     setFormData(branch);
     setShowAddModal(true);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = (id: number) => {
     const updatedBranches = branches.filter(b => b.id !== id);
     setBranches(updatedBranches);
     localStorage.setItem("branches", JSON.stringify(updatedBranches));
     toastManager.show("Branch deleted", "success");
   };
 
-  const handleToggleStatus = (id) => {
+  const handleToggleStatus = (id: number) => {
     const updatedBranches = branches.map(b =>
       b.id === id ? { ...b, isActive: !b.isActive } : b
     );
