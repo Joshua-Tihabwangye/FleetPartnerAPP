@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 export default function DashboardOverviewPage() {
   const navigate = useNavigate();
-  const [dateRange, setDateRange] = useState("today");
+  const [dateRange, setDateRange] = useState<"today" | "week" | "month">("today");
   const [messagesCount, setMessagesCount] = useState(0);
   const [lastMessageSubject, setLastMessageSubject] = useState("No messages");
 
@@ -22,7 +22,7 @@ export default function DashboardOverviewPage() {
   }, []);
 
   // Revenue data based on date range
-  const revenueData = {
+  const revenueData: Record<"today" | "week" | "month", { value: string; change: string }> = {
     today: { value: "UGX 12.4M", change: "+15%" },
     week: { value: "UGX 78.2M", change: "+12%" },
     month: { value: "UGX 324.5M", change: "+18%" }

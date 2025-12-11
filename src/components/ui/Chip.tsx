@@ -1,6 +1,11 @@
 import React from "react";
 
-export default function Chip({ children, className = "" }) {
+interface ChipProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export default function Chip({ children, className = "" }: ChipProps) {
   return (
     <span
       className={

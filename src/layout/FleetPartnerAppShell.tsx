@@ -23,7 +23,7 @@ import {
   Payments as PayoutsIcon,
   GppGood as ComplianceIcon,
   Warning as IncidentsIcon,
-  Emergency as AmbulanceCasesIcon,
+  LocalHospital as AmbulanceCasesIcon,
   SchoolOutlined as TrainingIcon,
   Help as HelpIcon,
   PersonOutline as ProfileIcon,
@@ -201,6 +201,7 @@ export default function FleetPartnerAppShell() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const { toasts, removeToast } = useToast();
 
   // Determine active nav ID strictly
   const activeNavId = Object.entries(NAV_PATHS).find(([_, path]) =>
@@ -297,7 +298,7 @@ export default function FleetPartnerAppShell() {
         </main>
       </div>
 
-      <ToastContainer />
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
     </div>
   );
 }
