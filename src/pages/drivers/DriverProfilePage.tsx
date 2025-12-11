@@ -2,15 +2,29 @@ import React from "react";
 import { Link, useParams } from "react-router-dom";
 import { toastManager } from "../../utils/toastManager";
 
+interface DriverProfile {
+  id: string | number;
+  name: string;
+  email: string;
+  phone: string;
+  status: string;
+  trips: number;
+  rating: number;
+  earnings: string;
+  license: string;
+  expiry: string;
+  address: string;
+}
+
 export default function DriverProfilePage() {
   const { driverId } = useParams();
-  const [driver, setDriver] = React.useState(null);
+  const [driver, setDriver] = React.useState<DriverProfile | null>(null);
   const [isEditing, setIsEditing] = React.useState(false);
-  const [editForm, setEditForm] = React.useState({});
+  const [editForm, setEditForm] = React.useState<Partial<DriverProfile>>({});
 
   React.useEffect(() => {
     // Load from localStorage
-    const storedDrivers = JSON.parse(localStorage.getItem("drivers") || "[]");
+    const storedDrivers: DriverProfile[] = JSON.parse(localStorage.getItem("drivers") || "[]");
     const foundDriver = storedDrivers.find(d => d.id.toString() === driverId);
 
     if (foundDriver) {
@@ -18,8 +32,8 @@ export default function DriverProfilePage() {
       setEditForm(foundDriver);
     } else {
       // Fallback for demo
-      const demoDriver = {
-        id: driverId,
+      const demoDriver: DriverProfile = {
+        id: driverId || "",
         name: "John Doe",
         email: "john.doe@example.com",
         phone: "+256 700 000 001",
