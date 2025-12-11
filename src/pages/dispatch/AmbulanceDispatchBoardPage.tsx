@@ -2,13 +2,22 @@ import React, { useState } from "react";
 import Modal from "../../components/ui/Modal";
 import { toastManager } from "../../utils/toastManager";
 
+interface AmbulanceCase {
+  id: number;
+  caseId: string;
+  priority: string;
+  location: string;
+  status: string;
+  time: string;
+}
+
 export default function AmbulanceDispatchBoardPage() {
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
-  const [selectedCase, setSelectedCase] = useState(null);
+  const [selectedCase, setSelectedCase] = useState<AmbulanceCase | null>(null);
 
-  const cases = [
+  const cases: AmbulanceCase[] = [
     { id: 1, caseId: "AMB-001", priority: "high", location: "Kampala Central", status: "pending", time: "2 min ago" },
     { id: 2, caseId: "AMB-002", priority: "medium", location: "Entebbe", status: "assigned", time: "5 min ago" },
     { id: 3, caseId: "AMB-003", priority: "low", location: "Jinja", status: "in-progress", time: "10 min ago" }
