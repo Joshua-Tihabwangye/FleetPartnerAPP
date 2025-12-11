@@ -108,7 +108,7 @@ export default function DashboardOverviewPage() {
             <div className="text-xs text-slate-500">Net revenue</div>
             <select
               value={dateRange}
-              onChange={(e) => setDateRange(e.target.value)}
+              onChange={(e) => setDateRange(e.target.value as "today" | "week" | "month")}
               className="text-[10px] bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5 text-slate-600 cursor-pointer hover:bg-slate-50"
             >
               <option value="today">Today</option>

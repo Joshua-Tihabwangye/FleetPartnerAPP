@@ -1,6 +1,11 @@
 import React from "react";
 
-export function PrimaryButton({ children, className = "", ...rest }) {
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export function PrimaryButton({ children, className = "", ...rest }: ButtonProps) {
   return (
     <button
       type="button"
@@ -17,7 +22,7 @@ export function PrimaryButton({ children, className = "", ...rest }) {
   );
 }
 
-export function GhostButton({ children, className = "", ...rest }) {
+export function GhostButton({ children, className = "", ...rest }: ButtonProps) {
   return (
     <button
       type="button"
