@@ -11,7 +11,7 @@ export default function RentalBookingDetailPage() {
   // Mock data for demonstration
   const rental = {
     id: rentalId,
-    bookingId: `RNT${rentalId.toString().padStart(5, '0')}`,
+    bookingId: `RNT${(rentalId || "").toString().padStart(5, '0')}`,
     customer: {
       name: "Sarah Williams",
       email: "sarah.w@email.com",

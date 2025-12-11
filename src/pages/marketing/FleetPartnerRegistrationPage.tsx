@@ -11,7 +11,8 @@ export default function FleetPartnerRegistrationPage() {
     email: "",
     phone: "",
     fleetSize: "",
-    services: []
+    fleetSize: "",
+    services: [] as string[]
   });
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -20,7 +21,7 @@ export default function FleetPartnerRegistrationPage() {
     setTimeout(() => navigate("/login"), 1500);
   };
 
-  const handleServiceToggle = (service) => {
+  const handleServiceToggle = (service: string) => {
     setFormData(prev => ({
       ...prev,
       services: prev.services.includes(service)

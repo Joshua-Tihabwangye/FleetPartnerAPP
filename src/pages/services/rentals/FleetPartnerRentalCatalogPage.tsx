@@ -2,9 +2,22 @@ import React, { useState } from "react";
 import Modal from "../../../components/ui/Modal";
 import { toastManager } from "../../../utils/toastManager";
 
+interface Vehicle {
+  id: number;
+  name: string;
+  type: string;
+  plate: string;
+  pricePerDay: string;
+  seats: number;
+  range: string;
+  features: string[];
+  available: boolean;
+  image: string;
+}
+
 export default function FleetPartnerRentalCatalogPage() {
   const [showRentalModal, setShowRentalModal] = useState(false);
-  const [selectedVehicle, setSelectedVehicle] = useState(null);
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [rentalForm, setRentalForm] = useState({
     customerName: "",
     customerEmail: "",
@@ -14,7 +27,7 @@ export default function FleetPartnerRentalCatalogPage() {
     purpose: ""
   });
 
-  const vehicles = [
+  const vehicles: Vehicle[] = [
     {
       id: 1,
       name: "Tesla Model 3",
@@ -65,20 +78,22 @@ export default function FleetPartnerRentalCatalogPage() {
     }
   ];
 
-  const handleRentNow = (vehicle) => {
+  const handleRentNow = (vehicle: Vehicle) => {
     setSelectedVehicle(vehicle);
     setShowRentalModal(true);
   };
 
-  const handleRentalSubmit = (e) => {
+  const handleRentalSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (!selectedVehicle) return;
 
     const newRental = {
       id: Date.now(),
       vehicleId: selectedVehicle.id,
       vehicleName: selectedVehicle.name,
       vehiclePlate: selectedVehicle.plate,
-      ...rentalForm,
+      ...rentalForm, // Use rentalForm here
       status: "active",
       createdAt: new Date().toISOString()
     };
@@ -130,8 +145,8 @@ export default function FleetPartnerRentalCatalogPage() {
                 </div>
                 <span
                   className={`px-2 py-1 rounded-full text-xs font-medium ${vehicle.available
-                      ? "bg-emerald-100 text-emerald-700"
-                      : "bg-red-100 text-red-700"
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-red-100 text-red-700"
                     }`}
                 >
                   {vehicle.available ? "Available" : "Rented"}
@@ -172,8 +187,8 @@ export default function FleetPartnerRentalCatalogPage() {
                 onClick={() => handleRentNow(vehicle)}
                 disabled={!vehicle.available}
                 className={`w-full px-4 py-2 rounded-lg text-sm font-medium transition-colors ${vehicle.available
-                    ? "bg-ev-green text-white hover:bg-ev-green-dark"
-                    : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                  ? "bg-ev-green text-white hover:bg-ev-green-dark"
+                  : "bg-slate-200 text-slate-400 cursor-not-allowed"
                   }`}
               >
                 {vehicle.available ? "Rent Now" : "Not Available"}
