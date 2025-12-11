@@ -2,10 +2,22 @@ import React, { useState } from "react";
 import Modal from "../../components/ui/Modal";
 import { toastManager } from "../../utils/toastManager";
 
+interface Incident {
+  id: number;
+  incidentId: string;
+  type: string;
+  vehicle: string;
+  driver: string;
+  date: string;
+  severity: string;
+  status: string;
+  description?: string;
+}
+
 export default function IncidentsListPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showReportModal, setShowReportModal] = useState(false);
-  const [incidents, setIncidents] = useState([]);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
   const [reportForm, setReportForm] = useState({
     type: "",
     vehicle: "",
@@ -16,10 +28,10 @@ export default function IncidentsListPage() {
 
   // Load incidents on mount
   React.useEffect(() => {
-    const storedIncidents = JSON.parse(localStorage.getItem("incidents") || "[]");
+    const storedIncidents: Incident[] = JSON.parse(localStorage.getItem("incidents") || "[]");
     if (storedIncidents.length === 0) {
       // Initialize with mock data if empty
-      const mockIncidents = [
+      const mockIncidents: Incident[] = [
         { id: 1, incidentId: "INC-001", type: "Accident", vehicle: "UAA 123A", driver: "John Doe", date: "2024-01-15", severity: "minor", status: "resolved" },
         { id: 2, incidentId: "INC-002", type: "Traffic violation", vehicle: "UAA 124B", driver: "Jane Smith", date: "2024-01-14", severity: "low", status: "pending" },
         { id: 3, incidentId: "INC-003", type: "Vehicle breakdown", vehicle: "UAA 125C", driver: "Mike Johnson", date: "2024-01-13", severity: "medium", status: "investigating" }

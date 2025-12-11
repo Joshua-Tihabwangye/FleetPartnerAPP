@@ -141,13 +141,30 @@ export default function RolesAndPermissionsPage() {
     const updatedRoles = roles.map(role => {
       if (role.id === selectedRole.id) {
         const newPermissions = { ...role.permissions };
-        if (typeof newPermissions[category] === "boolean") {
-          (newPermissions as any)[category] = !newPermissions[category];
+
+        if (category === 'dashboard') {
+          // Explicitly handle the boolean case
+          newPermissions.dashboard = !newPermissions.dashboard;
         } else if (permission) {
-          (newPermissions as any)[category] = {
-            ...newPermissions[category],
-            [permission]: !((newPermissions[category] as any)[permission])
-          };
+          // Handle object permissions (all non-dashboard permissions)
+          // We know if category is not dashboard, it's one of the objects
+          const currentSection = newPermissions[category];
+
+          // Type guard to ensure we are working with an object property and not the boolean dashboard
+          if (typeof currentSection !== 'boolean' && currentSection && typeof currentSection === 'object') {
+            // Create a copy of the section to avoid mutating state directly
+            const updatedSection = { ...currentSection } as Record<string, boolean>;
+
+            // Update the specific permission
+            if (permission in updatedSection) {
+              updatedSection[permission] = !updatedSection[permission];
+
+              // Assign back to newPermissions. We cast to any here ONLY for the assignment 
+              // because TS has trouble verifying the intersection type of the key and value 
+              // in this specific union structure, but we've verified the types above.
+              (newPermissions as any)[category] = updatedSection;
+            }
+          }
         }
         return { ...role, permissions: newPermissions };
       }

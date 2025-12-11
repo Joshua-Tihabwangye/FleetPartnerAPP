@@ -3,21 +3,31 @@ import { useParams, Link } from "react-router-dom";
 import Modal from "../../components/ui/Modal";
 import { toastManager } from "../../utils/toastManager";
 
+interface MaintenanceRecord {
+  id: string;
+  vehicleId: string | undefined;
+  type: string;
+  date: string;
+  notes: string;
+  cost: string;
+  status: string;
+}
+
 export default function VehicleMaintenanceHistoryPage() {
   const { vehicleId } = useParams();
   const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [maintenance, setMaintenance] = useState([]);
+  const [maintenance, setMaintenance] = useState<MaintenanceRecord[]>([]);
   const [newRecord, setNewRecord] = useState({ type: "service", date: "", notes: "", cost: "" });
 
   useEffect(() => {
-    const allRecords = JSON.parse(localStorage.getItem("vehicle_maintenance") || "[]");
-    const vehicleRecords = allRecords.filter(r => r.vehicleId === vehicleId);
+    const allRecords: MaintenanceRecord[] = JSON.parse(localStorage.getItem("vehicle_maintenance") || "[]");
+    const vehicleRecords = allRecords.filter((r: MaintenanceRecord) => r.vehicleId === vehicleId);
     setMaintenance(vehicleRecords);
   }, [vehicleId]);
 
   const handleSchedule = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const record = {
+    const record: MaintenanceRecord = {
       id: Date.now().toString(),
       vehicleId,
       status: "scheduled",

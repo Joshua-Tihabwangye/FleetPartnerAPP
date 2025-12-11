@@ -11,6 +11,15 @@ import { Link } from "react-router-dom";
  * @param {string} backLabel - Optional back link label
  * @param {boolean} gradient - Whether to show gradient styling (default: true)
  */
+interface PageHeaderProps {
+    title: string;
+    subtitle?: string;
+    actions?: React.ReactNode;
+    backLink?: string;
+    backLabel?: string;
+    gradient?: boolean;
+}
+
 export default function PageHeader({
     title,
     subtitle,
@@ -18,7 +27,7 @@ export default function PageHeader({
     backLink,
     backLabel = "Back",
     gradient = true
-}) {
+}: PageHeaderProps) {
     return (
         <div className={`mb-6 ${gradient ? "pb-6 border-b border-slate-200" : ""}`}>
             {backLink && (
@@ -64,13 +73,21 @@ export default function PageHeader({
 /**
  * PageHeaderAction - A styled action button for the header
  */
+interface PageHeaderActionProps {
+    to?: string;
+    onClick?: () => void;
+    variant?: "primary" | "secondary" | "outline" | "ghost";
+    children: React.ReactNode;
+    icon?: React.ReactNode;
+}
+
 export function PageHeaderAction({
     to,
     onClick,
     variant = "primary",
     children,
     icon
-}) {
+}: PageHeaderActionProps) {
     const baseStyles = "inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover-lift";
 
     const variantStyles = {

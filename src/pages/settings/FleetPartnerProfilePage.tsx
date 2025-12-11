@@ -15,7 +15,7 @@ export default function FleetPartnerProfilePage() {
   });
 
   React.useEffect(() => {
-    const storedProfile = JSON.parse(localStorage.getItem("fleet_partner_profile"));
+    const storedProfile = JSON.parse(localStorage.getItem("fleet_partner_profile") || "null");
     if (storedProfile) {
       setProfile(storedProfile);
     }

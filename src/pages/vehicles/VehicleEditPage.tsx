@@ -2,6 +2,18 @@ import React, { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { toastManager } from "../../utils/toastManager";
 
+interface Vehicle {
+    id: string | number;
+    plate: string;
+    model: string;
+    year: string;
+    type: string;
+    capacity: string;
+    color: string;
+    vin: string;
+    status: string;
+}
+
 export default function VehicleEditPage() {
     const { vehicleId } = useParams();
     const navigate = useNavigate();
@@ -22,8 +34,8 @@ export default function VehicleEditPage() {
         e.preventDefault();
 
         // Save to localStorage
-        const vehicles = JSON.parse(localStorage.getItem("vehicles") || "[]");
-        const index = vehicles.findIndex(v => v.id === vehicleId);
+        const vehicles: Vehicle[] = JSON.parse(localStorage.getItem("vehicles") || "[]");
+        const index = vehicles.findIndex((v: Vehicle) => String(v.id) === String(vehicleId));
         if (index !== -1) {
             vehicles[index] = { ...vehicles[index], ...formData };
             localStorage.setItem("vehicles", JSON.stringify(vehicles));
