@@ -1,16 +1,27 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 
+interface Rental {
+  id: number;
+  bookingId: string;
+  customerName: string;
+  vehicleName?: string;
+  vehiclePlate: string;
+  status: string;
+  startDate: string;
+  endDate: string;
+}
+
 export default function RentalsListPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [rentals, setRentals] = useState([]);
+  const [rentals, setRentals] = useState<Rental[]>([]);
 
   // Load rentals from localStorage
   React.useEffect(() => {
     const storedRentals = JSON.parse(localStorage.getItem("rentals") || "[]");
     if (storedRentals.length === 0) {
       // Initialize with mock data if empty
-      const mockRentals = [
+      const mockRentals: Rental[] = [
         { id: 1, bookingId: "RNT-001", customerName: "John Customer", vehicleName: "Tesla Model 3", vehiclePlate: "UAA 123A", status: "active", startDate: "2024-01-15", endDate: "2024-01-20" },
         { id: 2, bookingId: "RNT-002", customerName: "Jane Client", vehicleName: "Nissan Leaf", vehiclePlate: "UAA 124B", status: "upcoming", startDate: "2024-01-18", endDate: "2024-01-25" },
         { id: 3, bookingId: "RNT-003", customerName: "Mike User", vehicleName: "BYD E6", vehiclePlate: "UAA 125C", status: "completed", startDate: "2024-01-10", endDate: "2024-01-14" }

@@ -18,7 +18,7 @@ export default function ShuttleRouteCreatePage() {
 
     const daysOptions = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 
-    const handleDayToggle = (day) => {
+    const handleDayToggle = (day: string) => {
         setFormData(prev => ({
             ...prev,
             daysOfWeek: prev.daysOfWeek.includes(day)
@@ -34,14 +34,14 @@ export default function ShuttleRouteCreatePage() {
         }));
     };
 
-    const removeStop = (index) => {
+    const removeStop = (index: number) => {
         setFormData(prev => ({
             ...prev,
             stops: prev.stops.filter((_, i) => i !== index)
         }));
     };
 
-    const updateStop = (index, field, value) => {
+    const updateStop = (index: number, field: string, value: string) => {
         setFormData(prev => ({
             ...prev,
             stops: prev.stops.map((stop, i) =>

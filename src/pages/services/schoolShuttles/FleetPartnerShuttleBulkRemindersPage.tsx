@@ -28,7 +28,7 @@ export default function FleetPartnerShuttleBulkRemindersPage() {
   };
 
   const getMessage = () => {
-    return formData.messageType === "custom" ? formData.customMessage : messageTemplates[formData.messageType];
+    return formData.messageType === "custom" ? formData.customMessage : messageTemplates[formData.messageType as keyof typeof messageTemplates];
   };
 
   return (
