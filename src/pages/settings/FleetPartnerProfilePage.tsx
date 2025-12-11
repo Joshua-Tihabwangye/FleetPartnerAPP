@@ -1,8 +1,20 @@
 import React from "react";
 import { toastManager } from "../../utils/toastManager";
 
+interface FleetProfile {
+  name: string;
+  email: string;
+  phone: string;
+  language: string;
+  notifications: {
+    email: boolean;
+    sms: boolean;
+    portal: boolean;
+  };
+}
+
 export default function FleetPartnerProfilePage() {
-  const [profile, setProfile] = React.useState({
+  const [profile, setProfile] = React.useState<FleetProfile>({
     name: "Fleet Owner",
     email: "owner@examplefleet.com",
     phone: "+256 700 000000",

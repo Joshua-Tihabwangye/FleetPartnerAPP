@@ -2,6 +2,16 @@ import React, { useState } from "react";
 import Modal from "../../components/ui/Modal";
 import { toastManager } from "../../utils/toastManager";
 
+type SupportAction = "documentation" | "email" | "videos";
+
+interface SupportOption {
+  id: number;
+  title: string;
+  description: string;
+  icon: string;
+  action: SupportAction;
+}
+
 export default function HelpAndSupportPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -18,13 +28,13 @@ export default function HelpAndSupportPage() {
     { id: 3, question: "How do I generate earnings reports?", answer: "Visit the Earnings section and select Statements to view detailed reports." }
   ];
 
-  const supportOptions = [
+  const supportOptions: SupportOption[] = [
     { id: 1, title: "Documentation", description: "Browse our comprehensive guides", icon: "📚", action: "documentation" },
     { id: 2, title: "Contact support", description: "Get help from our support team", icon: "💬", action: "email" },
     { id: 3, title: "Video tutorials", description: "Watch step-by-step video guides", icon: "🎥", action: "videos" }
   ];
 
-  const handleSupportCardClick = (action) => {
+  const handleSupportCardClick = (action: SupportAction) => {
     if (action === "email") {
       setShowEmailModal(true);
     } else if (action === "documentation") {

@@ -43,7 +43,7 @@ export default function IncidentsListPage() {
     }
   }, []);
 
-  const handleReportSubmit = (e) => {
+  const handleReportSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const newIncident = {
       id: Date.now(),
@@ -131,7 +131,7 @@ export default function IncidentsListPage() {
             <tbody className="bg-white divide-y divide-slate-200">
               {filteredIncidents.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="px-6 py-8 text-center text-sm text-slate-500">
+                  <td colSpan={7} className="px-6 py-8 text-center text-sm text-slate-500">
                     No incidents found matching your search.
                   </td>
                 </tr>

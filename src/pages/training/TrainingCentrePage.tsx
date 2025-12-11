@@ -1,12 +1,20 @@
 import React from "react";
 import { Link } from "react-router-dom";
 
+
+interface CourseProgress {
+  completed: number;
+  total: number;
+  percentage: number;
+  status: "completed" | "in-progress" | "available";
+}
+
 export default function TrainingCentrePage() {
-  const [courseProgress, setCourseProgress] = React.useState({});
+  const [courseProgress, setCourseProgress] = React.useState<Record<number, CourseProgress>>({});
 
   React.useEffect(() => {
     // Load progress for all courses
-    const progress = {};
+    const progress: Record<number, CourseProgress> = {};
     [1, 2, 3].forEach(courseId => {
       const storedProgress = JSON.parse(localStorage.getItem(`training_progress_${courseId}`) || "[]");
       const totalModules = 5; // Assuming 5 modules per course
@@ -29,7 +37,7 @@ export default function TrainingCentrePage() {
     { id: 3, title: "EV Vehicle Maintenance", description: "Maintenance best practices for electric vehicles", duration: "4 hours" }
   ];
 
-  const getStatusBadge = (courseId) => {
+  const getStatusBadge = (courseId: number) => {
     const progress = courseProgress[courseId];
     if (!progress) return null;
 

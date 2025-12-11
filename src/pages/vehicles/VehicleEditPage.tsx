@@ -14,12 +14,23 @@ interface Vehicle {
     status: string;
 }
 
+interface VehicleEditFormData {
+    plate: string;
+    model: string;
+    year: string;
+    type: string;
+    capacity: string;
+    color: string;
+    vin: string;
+    status: string;
+}
+
 export default function VehicleEditPage() {
     const { vehicleId } = useParams();
     const navigate = useNavigate();
 
     // Mock data - in production, fetch from API
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<VehicleEditFormData>({
         plate: "UAA 123A",
         model: "Tesla Model 3",
         year: "2023",

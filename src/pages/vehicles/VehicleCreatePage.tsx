@@ -2,9 +2,20 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toastManager } from "../../utils/toastManager";
 
+interface VehicleFormData {
+  plateNumber: string;
+  make: string;
+  model: string;
+  year: string;
+  color: string;
+  vehicleType: string;
+  vin: string;
+  registrationExpiry: string;
+}
+
 export default function VehicleCreatePage() {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<VehicleFormData>({
     plateNumber: "",
     make: "",
     model: "",
@@ -20,17 +31,17 @@ export default function VehicleCreatePage() {
 
     // Create new vehicle object
     const newVehicle = {
+      ...formData,
       id: Date.now(),
       plate: formData.plateNumber,
       model: `${formData.make} ${formData.model}`,
       status: "active",
       driver: "Unassigned",
-      mileage: 0,
-      ...formData
+      mileage: 0
     };
 
     // Get existing vehicles from localStorage
-    const existingVehicles = JSON.parse(localStorage.getItem("vehicles") || "[]");
+    const existingVehicles: any[] = JSON.parse(localStorage.getItem("vehicles") || "[]");
 
     // Add new vehicle
     existingVehicles.push(newVehicle);

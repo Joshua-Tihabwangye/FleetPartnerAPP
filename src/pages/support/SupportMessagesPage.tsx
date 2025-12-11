@@ -79,7 +79,7 @@ export default function SupportMessagesPage() {
                         {["all", "sent", "pending", "resolved"].map((status) => (
                             <button
                                 key={status}
-                                onClick={() => setFilter(status)}
+                                onClick={() => setFilter(status as "all" | "sent" | "pending" | "resolved")}
                                 className={`px-3 py-1.5 text-xs font-medium rounded-lg transition ${filter === status
                                     ? "bg-ev-green text-white"
                                     : "border border-slate-300 hover:bg-slate-50"

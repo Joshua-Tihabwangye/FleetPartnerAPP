@@ -6,7 +6,7 @@ export default function TrainingCourseViewerPage() {
     const { courseId } = useParams();
     const navigate = useNavigate();
     const [currentModule, setCurrentModule] = useState(0);
-    const [completedModules, setCompletedModules] = useState([]);
+    const [completedModules, setCompletedModules] = useState<number[]>([]);
 
     React.useEffect(() => {
         const storedProgress = JSON.parse(localStorage.getItem(`training_progress_${courseId}`) || "[]");

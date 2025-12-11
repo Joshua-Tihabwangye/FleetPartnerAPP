@@ -1,13 +1,26 @@
 import React from "react";
 import { Link, useParams } from "react-router-dom";
 
+interface Vehicle {
+  id: string | number;
+  plate: string;
+  model: string;
+  year: string;
+  color: string;
+  vin: string;
+  status: string;
+  mileage: number;
+  driver: string | null;
+  type: string;
+}
+
 export default function VehicleDetailPage() {
   const { vehicleId } = useParams();
-  const [vehicle, setVehicle] = React.useState(null);
+  const [vehicle, setVehicle] = React.useState<Vehicle | null>(null);
 
   React.useEffect(() => {
     // Load from localStorage
-    const storedVehicles = JSON.parse(localStorage.getItem("vehicles") || "[]");
+    const storedVehicles: Vehicle[] = JSON.parse(localStorage.getItem("vehicles") || "[]");
     const foundVehicle = storedVehicles.find(v => v.id.toString() === vehicleId);
 
     if (foundVehicle) {
@@ -15,7 +28,7 @@ export default function VehicleDetailPage() {
     } else {
       // Fallback for demo if not found in local storage (e.g. direct link)
       setVehicle({
-        id: vehicleId,
+        id: vehicleId || '',
         plate: "UAA 123A",
         model: "Tesla Model 3",
         year: "2023",

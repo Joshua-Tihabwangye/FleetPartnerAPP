@@ -3,29 +3,43 @@ import { useParams, Link } from "react-router-dom";
 import Modal from "../../components/ui/Modal";
 import { toastManager } from "../../utils/toastManager";
 
+interface VehicleDocument {
+  id: string;
+  vehicleId: string;
+  name: string;
+  type: string;
+  date: string;
+  uploadDate: string;
+}
+
 export default function VehicleDocumentsPage() {
   const { vehicleId } = useParams();
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [documents, setDocuments] = useState([]);
+  const [documents, setDocuments] = useState<VehicleDocument[]>([]);
   const [newDoc, setNewDoc] = useState({ name: "", type: "insurance", date: "" });
 
   useEffect(() => {
     // Load documents from localStorage
-    const allDocs = JSON.parse(localStorage.getItem("vehicle_documents") || "[]");
+    const allDocs: VehicleDocument[] = JSON.parse(localStorage.getItem("vehicle_documents") || "[]");
     const vehicleDocs = allDocs.filter(d => d.vehicleId === vehicleId);
     setDocuments(vehicleDocs);
   }, [vehicleId]);
 
   const handleUpload = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const doc = {
+    if (!vehicleId) {
+      toastManager.show("Error: No vehicle ID found", "error");
+      return;
+    }
+
+    const doc: VehicleDocument = {
       id: Date.now().toString(),
       vehicleId,
       ...newDoc,
       uploadDate: new Date().toISOString().split('T')[0]
     };
 
-    const allDocs = JSON.parse(localStorage.getItem("vehicle_documents") || "[]");
+    const allDocs: VehicleDocument[] = JSON.parse(localStorage.getItem("vehicle_documents") || "[]");
     const updatedDocs = [...allDocs, doc];
     localStorage.setItem("vehicle_documents", JSON.stringify(updatedDocs));
 
