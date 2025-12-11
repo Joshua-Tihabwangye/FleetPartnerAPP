@@ -2,12 +2,21 @@ import React, { useState } from "react";
 import Modal from "../../components/ui/Modal";
 import { toastManager } from "../../utils/toastManager";
 
+interface Payout {
+  id: string;
+  name: string;
+  amount: string;
+  status: string;
+  date: string;
+  trips: number;
+}
+
 export default function DriverPayoutsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showProcessModal, setShowProcessModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
-  const [selectedPayout, setSelectedPayout] = useState(null);
+  const [selectedPayout, setSelectedPayout] = useState<Payout | null>(null);
 
   // Summary stats
   const summaryStats = [
@@ -18,7 +27,7 @@ export default function DriverPayoutsPage() {
   ];
 
   // Mock payout data
-  const payouts = [
+  const payouts: Payout[] = [
     { id: "DRV-001", name: "John Mugisha", amount: "UGX 425,000", status: "pending", date: "2025-11-30", trips: 38 },
     { id: "DRV-002", name: "Sarah Nakato", amount: "UGX 380,000", status: "completed", date: "2025-11-29", trips: 32 },
     { id: "DRV-003", name: "Peter Okello", amount: "UGX 510,000", status: "pending", date: "2025-11-30", trips: 45 },
@@ -37,7 +46,7 @@ export default function DriverPayoutsPage() {
     return matchesSearch && matchesStatus;
   });
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case "completed": return "bg-green-100 text-green-700";
       case "pending": return "bg-yellow-100 text-yellow-700";

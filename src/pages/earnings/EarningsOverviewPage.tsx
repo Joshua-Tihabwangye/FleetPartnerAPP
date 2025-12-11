@@ -11,7 +11,7 @@ const REVENUE_DATA = {
 };
 
 // Helper to format UGX
-const formatUGX = (amount) => {
+const formatUGX = (amount: number) => {
   if (amount >= 1000000) {
     return `UGX ${(amount / 1000000).toFixed(1)}M`;
   }
@@ -19,7 +19,7 @@ const formatUGX = (amount) => {
 };
 
 // Get date string in YYYY-MM-DD format
-const formatDateForInput = (date) => {
+const formatDateForInput = (date: Date) => {
   return date.toISOString().split('T')[0];
 };
 

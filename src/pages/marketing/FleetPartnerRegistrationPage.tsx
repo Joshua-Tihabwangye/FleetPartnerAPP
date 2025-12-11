@@ -11,7 +11,6 @@ export default function FleetPartnerRegistrationPage() {
     email: "",
     phone: "",
     fleetSize: "",
-    fleetSize: "",
     services: [] as string[]
   });
 
