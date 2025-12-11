@@ -6,6 +6,35 @@ import { ToastContainer } from "../components/ui/Toast";
 import { useToast } from "../hooks/useToast";
 import { auth } from "../utils/auth";
 import { useTheme, ThemeToggle } from "../context/ThemeContext";
+import {
+  Dashboard as DashboardIcon,
+  Map as MapIcon,
+  LocalTaxi as DispatchIcon,
+  Commute as TripsIcon,
+  CarRental as RentalsIcon,
+  MenuBook as CatalogIcon,
+  School as SchoolIcon,
+  Tour as ToursIcon,
+  MedicalServices as AmbulanceIcon,
+  Person as DriversIcon,
+  DirectionsCar as VehiclesIcon,
+  AttachMoney as EarningsIcon,
+  ReceiptLong as StatementsIcon,
+  Payments as PayoutsIcon,
+  GppGood as ComplianceIcon,
+  Warning as IncidentsIcon,
+  Emergency as AmbulanceCasesIcon,
+  SchoolOutlined as TrainingIcon,
+  Help as HelpIcon,
+  PersonOutline as ProfileIcon,
+  Business as FleetIcon,
+  Store as BranchesIcon,
+  AdminPanelSettings as RolesIcon,
+  IntegrationInstructions as IntegrationsIcon,
+  Security as SecurityIcon,
+  VpnKey as TwoFAIcon,
+  Devices as SessionsIcon
+} from "@mui/icons-material";
 
 // Small internal button components
 interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -138,57 +167,137 @@ const NAV_PATHS = NAV_SECTIONS.reduce((acc, section) => {
   return acc;
 }, {} as Record<string, string>);
 
-// ... (skipping to NavButton usage)
+const NAV_ICONS: Record<string, React.ReactNode> = {
+  dashboard: <DashboardIcon fontSize="inherit" />,
+  "live-map": <MapIcon fontSize="inherit" />,
+  dispatch: <DispatchIcon fontSize="inherit" />,
+  trips: <TripsIcon fontSize="inherit" />,
+  rentals: <RentalsIcon fontSize="inherit" />,
+  "rental-catalog": <CatalogIcon fontSize="inherit" />,
+  "school-shuttles": <SchoolIcon fontSize="inherit" />,
+  tours: <ToursIcon fontSize="inherit" />,
+  ambulance: <AmbulanceIcon fontSize="inherit" />,
+  drivers: <DriversIcon fontSize="inherit" />,
+  vehicles: <VehiclesIcon fontSize="inherit" />,
+  "earnings-overview": <EarningsIcon fontSize="inherit" />,
+  "earnings-statements": <StatementsIcon fontSize="inherit" />,
+  "driver-payouts": <PayoutsIcon fontSize="inherit" />,
+  "compliance-dashboard": <ComplianceIcon fontSize="inherit" />,
+  incidents: <IncidentsIcon fontSize="inherit" />,
+  "ambulance-cases": <AmbulanceCasesIcon fontSize="inherit" />,
+  "training-centre": <TrainingIcon fontSize="inherit" />,
+  help: <HelpIcon fontSize="inherit" />,
+  "settings-profile": <ProfileIcon fontSize="inherit" />,
+  "settings-fleet": <FleetIcon fontSize="inherit" />,
+  "settings-branches": <BranchesIcon fontSize="inherit" />,
+  "settings-roles": <RolesIcon fontSize="inherit" />,
+  "settings-integrations": <IntegrationsIcon fontSize="inherit" />,
+  "settings-account-security": <SecurityIcon fontSize="inherit" />,
+  "settings-2fa-setup": <TwoFAIcon fontSize="inherit" />,
+  "settings-sessions": <SessionsIcon fontSize="inherit" />,
+};
 
-{
-  section.items.map((item) => (
-    <li key={item.id}>
-      <NavButton active={item.id === activeNavId}>
-        <span
-          className="flex items-center gap-2.5 flex-1"
-          onClick={() => onNavClick(item.id)}
-        >
-          <span className="w-5 text-[15px] flex-shrink-0">
-            {(NAV_ICONS as any)[item.id] || "•"}
-          </span>
-          <span className="truncate text-[13px]">{item.label}</span>
-        </span>
-        {item.badge && (
-          <Chip className="bg-emerald-900/60 text-emerald-100 border border-emerald-500/60">
-            {item.badge}
-          </Chip>
-        )}
-      </NavButton>
-    </li>
-  ))
-}
-<span
-  className="flex items-center gap-2.5 flex-1"
-  onClick={() => onNavClick(item.id)}
->
-  <span className="w-5 text-[15px] flex-shrink-0">
-    {NAV_ICONS[item.id] || "•"}
-  </span>
-  <span className="truncate text-[13px]">{item.label}</span>
-</span>
-{
-  item.badge && (
-    <Chip className="bg-emerald-900/60 text-emerald-100 border border-emerald-500/60">
-      {item.badge}
-    </Chip>
-  )
-}
-                  </NavButton >
-                </li >
-              ))}
-            </ul >
-          </div >
-        ))}
-      </nav >
-  <div className="border-t border-slate-800/60 px-3 py-3 text-[11px] text-slate-500 flex items-center justify-between">
-    <span>© {new Date().getFullYear()} EVzone</span>
-    <span className="text-slate-400">Fleet Partner</span>
-  </div>
-    </div >
+export default function FleetPartnerAppShell() {
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // Determine active nav ID strictly
+  const activeNavId = Object.entries(NAV_PATHS).find(([_, path]) =>
+    pathname === path || (pathname.startsWith(path + '/') && path !== '/')
+  )?.[0] || '';
+
+  const onNavClick = (id: string) => {
+    const path = NAV_PATHS[id];
+    if (path) navigate(path);
+  };
+
+  return (
+    <div className="flex h-screen bg-slate-50 dark:bg-slate-900 overflow-hidden">
+      {/* Sidebar */}
+      <aside className={`w-64 flex-shrink-0 bg-slate-900 text-white border-r border-slate-800 transition-all duration-300 md:relative fixed inset-y-0 z-50 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+        <div className="h-full flex flex-col">
+          {/* Logo */}
+          <div className="h-16 flex items-center px-4 border-b border-slate-800/60 flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-white font-bold">
+                FP
+              </div>
+              <span className="font-bold text-lg tracking-tight">Fleet Partner</span>
+            </div>
+          </div>
+
+          {/* Nav Items */}
+          <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-6 scrollbar-thin scrollbar-thumb-slate-700">
+            {NAV_SECTIONS.map((section) => (
+              <div key={section.id}>
+                <div className="px-3 mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  {section.label}
+                </div>
+                <ul className="space-y-0.5">
+                  {section.items.map((item) => (
+                    <li key={item.id}>
+                      <NavButton
+                        active={item.id === activeNavId}
+                        onClick={() => onNavClick(item.id)}
+                      >
+                        <span className="flex items-center gap-2.5 flex-1 min-w-0">
+                          <span className={`w-5 flex items-center justify-center text-[18px] flex-shrink-0 transition-colors ${item.id === activeNavId ? 'text-emerald-400' : 'text-slate-400 group-hover:text-slate-300'}`}>
+                            {NAV_ICONS[item.id] || "•"}
+                          </span>
+                          <span className="truncate text-[13px]">{item.label}</span>
+                        </span>
+                        {item.badge && (
+                          <Chip className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] h-5 px-1.5 leading-none flex items-center">
+                            {item.badge}
+                          </Chip>
+                        )}
+                      </NavButton>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </nav>
+
+          {/* Footer */}
+          <div className="p-4 border-t border-slate-800/60 text-[11px] text-slate-500 flex-shrink-0 bg-slate-900">
+            <div className="flex justify-between items-center mb-2">
+              <span>© {new Date().getFullYear()} EVzone</span>
+              <span className="text-slate-600">v0.1.0</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+        {/* Header */}
+        <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 flex-shrink-0 z-10 relative">
+          <div className="flex items-center gap-4">
+            {/* Mobile sidebar toggle could go here */}
+            <h1 className="text-xl font-semibold text-slate-900 hidden sm:block">
+              {Object.values(NAV_PATHS).includes(pathname)
+                ? NAV_SECTIONS.flatMap(s => s.items).find(i => i.path === pathname)?.label
+                : ''}
+            </h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <div className="h-4 w-px bg-slate-300 mx-2"></div>
+            {/* User profile could go here */}
+            <div className="text-sm font-medium text-slate-700">Manager</div>
+          </div>
+        </header>
+
+        {/* Scrollable Content */}
+        <main className="flex-1 overflow-auto bg-slate-50">
+          <Outlet />
+          <div className="h-10"></div> {/* Spacer */}
+        </main>
+      </div>
+
+      <ToastContainer />
+    </div>
   );
 }
