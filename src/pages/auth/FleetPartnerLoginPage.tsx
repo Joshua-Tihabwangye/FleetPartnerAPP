@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { auth } from "../../utils/auth";
 import { useTheme } from "../../context/ThemeContext";
+import { useLanguage, LANGUAGES } from "../../context/LanguageContext";
 
 export default function FleetPartnerLoginPage() {
   const [email, setEmail] = useState("");
@@ -10,6 +11,7 @@ export default function FleetPartnerLoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isDark } = useTheme();
+  const { language, setLanguage, t } = useLanguage();
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -81,14 +83,39 @@ export default function FleetPartnerLoginPage() {
       {/* Right Side - Login Form */}
       <div className={`w-full lg:w-1/2 flex items-center justify-center p-6 ${isDark ? 'bg-slate-900' : 'bg-slate-50'}`}>
         <div className="w-full max-w-md">
-          {/* Back to Home */}
-          <Link
-            to="/"
-            className={`inline-flex items-center gap-1 text-sm mb-6 transition group ${isDark ? 'text-slate-400 hover:text-ev-green' : 'text-slate-600 hover:text-ev-green'}`}
-          >
-            <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
-            Back to Home
-          </Link>
+          {/* Top Row: Back + Language Selector */}
+          <div className="flex items-center justify-between mb-6">
+            <Link
+              to="/"
+              className={`inline-flex items-center gap-1 text-sm transition group ${isDark ? 'text-slate-400 hover:text-ev-green' : 'text-slate-600 hover:text-ev-green'}`}
+            >
+              <span className="group-hover:-translate-x-0.5 transition-transform">←</span>
+              Back to Home
+            </Link>
+            {/* Language Selector */}
+            <div className="relative">
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value as typeof language)}
+                className={`appearance-none pl-8 pr-8 py-1.5 rounded-lg border text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-ev-green ${isDark
+                  ? 'bg-slate-800 border-slate-700 text-white'
+                  : 'bg-white border-slate-300 text-slate-700'
+                  }`}
+              >
+                {LANGUAGES.map((lang) => (
+                  <option key={lang.code} value={lang.code}>
+                    {lang.flag} {lang.nativeName}
+                  </option>
+                ))}
+              </select>
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm pointer-events-none">
+                {LANGUAGES.find(l => l.code === language)?.flag}
+              </span>
+              <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs pointer-events-none ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                ▼
+              </span>
+            </div>
+          </div>
 
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-2 mb-6">
