@@ -45,8 +45,19 @@ const DEFAULT_SESSIONS = [
   }
 ];
 
+interface Session {
+  id: number;
+  device: string;
+  browser: string;
+  location: string;
+  ip: string;
+  lastActive: string;
+  isCurrent: boolean;
+  icon: string;
+}
+
 export default function FleetPartnerSessionsPage() {
-  const [sessions, setSessions] = useState([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [showRevokeAllModal, setShowRevokeAllModal] = useState(false);
 
   useEffect(() => {
@@ -59,7 +70,7 @@ export default function FleetPartnerSessionsPage() {
     }
   }, []);
 
-  const handleRevokeSession = (sessionId) => {
+  const handleRevokeSession = (sessionId: number) => {
     const session = sessions.find(s => s.id === sessionId);
     if (session?.isCurrent) {
       toastManager.show("Cannot revoke current session", "error");
