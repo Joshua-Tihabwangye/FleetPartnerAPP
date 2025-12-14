@@ -96,9 +96,9 @@ const NAV_SECTIONS = [
       { id: "trips", label: "Trips & deliveries", path: "/trips" },
       { id: "rentals", label: "Car rental", path: "/rentals" },
       { id: "rental-catalog", label: "Rental catalog", path: "/rentals/catalog" },
-      { id: "school-shuttles", label: "School shuttles", path: "/school-shuttles/routes" },
+      { id: "school-shuttles", label: "School shuttles", path: "/school-shuttles" },
       { id: "tours", label: "Tours", path: "/tours" },
-      { id: "ambulance", label: "Ambulance/EMS", path: "/ambulance/dispatch" }
+      { id: "ambulance", label: "Ambulance/EMS", path: "/ambulance" }
     ]
   },
   {
