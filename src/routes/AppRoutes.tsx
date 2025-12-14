@@ -52,6 +52,7 @@ import TripDetailPage from "../pages/trips/TripDetailPage";
 // Dispatch & EMS
 import ManualDispatchNewBookingPage from "../pages/dispatch/ManualDispatchNewBookingPage";
 import DispatchListPage from "../pages/dispatch/DispatchListPage";
+import AmbulanceDashboardPage from "../pages/dispatch/AmbulanceDashboardPage";
 import AmbulanceDispatchBoardPage from "../pages/dispatch/AmbulanceDispatchBoardPage";
 import AmbulanceCasesListPage from "../pages/compliance/AmbulanceCasesListPage";
 import AmbulanceCaseDetailPage from "../pages/compliance/AmbulanceCaseDetailPage";
@@ -66,19 +67,24 @@ import ComplianceDashboardPage from "../pages/compliance/ComplianceDashboardPage
 import IncidentsListPage from "../pages/compliance/IncidentsListPage";
 
 // Rentals
+import RentalsDashboardPage from "../pages/services/rentals/RentalsDashboardPage";
 import RentalsListPage from "../pages/services/rentals/RentalsListPage";
 import RentalBookingDetailPage from "../pages/services/rentals/RentalBookingDetailPage";
+import RentalBookingCreatePage from "../pages/services/rentals/RentalBookingCreatePage";
 import RentalPricingSettingsPage from "../pages/services/rentals/RentalPricingSettingsPage";
 import FleetPartnerRentalCatalogPage from "../pages/services/rentals/FleetPartnerRentalCatalogPage";
 
 // Tours
+import ToursDashboardPage from "../pages/services/tours/ToursDashboardPage";
 import ToursListPage from "../pages/services/tours/ToursListPage";
 import TourDetailPage from "../pages/services/tours/TourDetailPage";
+import TourEditPage from "../pages/services/tours/TourEditPage";
 import TourBookingsPage from "../pages/services/tours/TourBookingsPage";
 import TourBookingCreatePage from "../pages/services/tours/TourBookingCreatePage";
 import TourCreatePage from "../pages/services/tours/TourCreatePage";
 
 // School shuttles
+import ShuttleDashboardPage from "../pages/services/schoolShuttles/ShuttleDashboardPage";
 import ShuttleRoutesListPage from "../pages/services/schoolShuttles/ShuttleRoutesListPage";
 import ShuttleRouteDetailPage from "../pages/services/schoolShuttles/ShuttleRouteDetailPage";
 import ShuttleRouteEditPage from "../pages/services/schoolShuttles/ShuttleRouteEditPage";
@@ -191,6 +197,8 @@ export default function AppRoutes() {
             </RoleGuard>
           }
         />
+        <Route path="/ambulance" element={<AmbulanceDashboardPage />} />
+        <Route path="/ambulance/dispatch" element={<AmbulanceDispatchBoardPage />} />
         <Route path="/ambulance/cases" element={<AmbulanceCasesListPage />} />
         <Route path="/ambulance/cases/:caseId" element={<AmbulanceCaseDetailPage />} />
 
@@ -204,19 +212,25 @@ export default function AppRoutes() {
         <Route path="/compliance/incidents" element={<IncidentsListPage />} />
 
         {/* Rentals */}
-        <Route path="/rentals" element={<RentalsListPage />} />
+        <Route path="/rentals" element={<RentalsDashboardPage />} />
+        <Route path="/rentals/bookings" element={<RentalsListPage />} />
+        <Route path="/rentals/bookings/create" element={<RentalBookingCreatePage />} />
         <Route path="/rentals/:rentalId" element={<RentalBookingDetailPage />} />
         <Route path="/settings/rentals" element={<RentalPricingSettingsPage />} />
         <Route path="/rentals/catalog" element={<FleetPartnerRentalCatalogPage />} />
 
         {/* Tours */}
-        <Route path="/tours" element={<ToursListPage />} />
+        <Route path="/tours" element={<ToursDashboardPage />} />
+        <Route path="/tours/list" element={<ToursListPage />} />
+        <Route path="/tours/all" element={<ToursListPage />} />
         <Route path="/tours/create" element={<TourCreatePage />} />
         <Route path="/tours/:tourId" element={<TourDetailPage />} />
+        <Route path="/tours/:tourId/edit" element={<TourEditPage />} />
         <Route path="/tours/bookings" element={<TourBookingsPage />} />
         <Route path="/tours/bookings/create" element={<TourBookingCreatePage />} />
 
         {/* School shuttles */}
+        <Route path="/school-shuttles" element={<ShuttleDashboardPage />} />
         <Route path="/school-shuttles/routes" element={<ShuttleRoutesListPage />} />
         <Route path="/school-shuttles/routes/create" element={<ShuttleRouteCreatePage />} />
         <Route path="/school-shuttles/routes/:routeId" element={<ShuttleRouteDetailPage />} />

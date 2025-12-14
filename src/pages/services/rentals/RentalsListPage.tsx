@@ -52,6 +52,12 @@ export default function RentalsListPage() {
         </div>
         <div className="flex gap-2">
           <Link
+            to="/rentals/bookings/create"
+            className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            + New Booking
+          </Link>
+          <Link
             to="/rentals/catalog"
             className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
           >

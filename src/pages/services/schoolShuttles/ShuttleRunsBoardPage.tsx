@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 
 export default function ShuttleRunsBoardPage() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -137,9 +138,12 @@ export default function ShuttleRunsBoardPage() {
                 <span className="text-xs text-slate-500">Estimated Completion</span>
                 <p className="font-semibold text-slate-900">{run.estimatedCompletion}</p>
               </div>
-              <button className="px-3 py-1.5 rounded-lg bg-ev-green text-white text-xs font-medium hover:bg-ev-green-dark">
+              <Link
+                to={`/school-shuttles/routes/${run.id}/track`}
+                className="px-3 py-1.5 rounded-lg bg-ev-green text-white text-xs font-medium hover:bg-ev-green-dark"
+              >
                 Track Live
-              </button>
+              </Link>
             </div>
           </div>
         ))}
