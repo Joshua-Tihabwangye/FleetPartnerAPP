@@ -102,12 +102,12 @@ export default function ShuttleStudentDetailPage() {
               >
                 View Attendance
               </Link>
-              <button
-                onClick={() => toastManager.show("Feature coming soon!", "info")}
+              <Link
+                to={`/school-shuttles/students/${studentId}/edit`}
                 className="px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark"
               >
                 Edit Student
-              </button>
+              </Link>
             </div>
           </div>
         </div>

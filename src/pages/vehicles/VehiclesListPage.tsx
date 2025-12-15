@@ -56,22 +56,30 @@ export default function VehiclesListPage() {
   return (
     <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50">
       {/* Enhanced Header */}
-      <div className="mb-6 pb-6 border-b border-slate-200">
+      <div className="mb-6 pb-6 border-b border-slate-200 dark:border-slate-700">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-slate-700 to-slate-900 mb-1">
+            <h1 className="text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-slate-700 to-slate-900 dark:from-slate-100 dark:via-slate-300 dark:to-slate-100 mb-1">
               Fleet Vehicles
             </h1>
-            <p className="text-sm text-slate-600">Manage your fleet vehicles and their status</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">Manage your fleet vehicles and their status</p>
           </div>
-          <Link
-            to="/vehicles/create"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-ev-green to-emerald-600 text-white text-sm font-medium shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition"
-          >
-            + Add Vehicle
-          </Link>
+          <div className="flex gap-2">
+            <Link
+              to="/dashboard"
+              className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700"
+            >
+              Dashboard
+            </Link>
+            <Link
+              to="/vehicles/create"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-ev-green to-emerald-600 text-white text-sm font-medium shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition"
+            >
+              + Add Vehicle
+            </Link>
+          </div>
         </div>
-        <div className="mt-4 h-1 w-24 rounded-full bg-gradient-to-r from-ev-green via-emerald-400 to-orange-400 opacity-80" />
+        <div className="mt-4 h-1 w-24 rounded-full bg-gradient-to-r from-slate-400 via-emerald-500 to-slate-500 opacity-80" />
       </div>
 
       {/* Search and Filters */}

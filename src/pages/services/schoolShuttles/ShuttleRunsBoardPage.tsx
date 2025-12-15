@@ -57,8 +57,19 @@ export default function ShuttleRunsBoardPage() {
     <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-slate-900 mb-2">School Shuttle Operations</h1>
-        <p className="text-sm text-slate-600">Monitor and manage shuttle runs in real-time</p>
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <Link
+              to="/school-shuttles"
+              className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 mb-2 inline-block"
+            >
+              ← Back to Dashboard
+            </Link>
+            <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-2">School Shuttle Operations</h1>
+            <p className="text-sm text-slate-600 dark:text-slate-400">Monitor and manage shuttle runs in real-time</p>
+          </div>
+
+        </div>
       </div>
 
       {/* Date Selector */}

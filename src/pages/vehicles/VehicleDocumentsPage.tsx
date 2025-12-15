@@ -141,6 +141,16 @@ export default function VehicleDocumentsPage() {
                 className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green"
               />
             </label>
+            <label className="block">
+              <span className="text-sm font-medium text-slate-700 mb-1 block">Upload File *</span>
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-ev-green file:text-white hover:file:bg-emerald-600"
+                required
+              />
+              <p className="text-xs text-slate-500 mt-1">Accepted: PDF, JPG, PNG, DOC, DOCX</p>
+            </label>
             <div className="flex gap-2 pt-4">
               <button
                 type="button"

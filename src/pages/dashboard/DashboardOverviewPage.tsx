@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { BarChart, PieChart, Sparkline } from "../../components/ui/Charts";
+import PeriodSelector from "../../components/ui/PeriodSelector";
 
 export default function DashboardOverviewPage() {
   const navigate = useNavigate();
@@ -12,12 +13,10 @@ export default function DashboardOverviewPage() {
   useEffect(() => {
     const messages = JSON.parse(localStorage.getItem("support_messages") || "[]");
     setMessagesCount(messages.length);
-    // Set last message subject if messages exist
     if (messages.length > 0) {
       const lastMessage = messages[messages.length - 1];
       setLastMessageSubject(lastMessage.subject || "Invoice query");
     } else {
-      // Default subjects for demo
       setLastMessageSubject("Vehicle onboarding");
     }
   }, []);
@@ -36,17 +35,6 @@ export default function DashboardOverviewPage() {
   ];
 
   // Chart data
-  const tripsTrendData = [120, 145, 132, 168, 195, 210, 185, 220, 245, 230, 260, 280];
-  const tripsTrendLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-  const servicesBreakdown = [
-    { label: "Rides", value: 842, color: "#10b981" },
-    { label: "Delivery", value: 312, color: "#3b82f6" },
-    { label: "Rentals", value: 156, color: "#f59e0b" },
-    { label: "Shuttles", value: 82, color: "#8b5cf6" },
-    { label: "Tours", value: 28, color: "#ec4899" }
-  ];
-
   const weeklyRevenue = [
     { label: "Mon", value: 14500000 },
     { label: "Tue", value: 12800000 },
@@ -64,7 +52,7 @@ export default function DashboardOverviewPage() {
     pendingIncidents: { count: 2, type: "ambulance" }
   };
 
-  // Recent activity - highlighting exceptions
+  // Recent activity
   const recentActivity = [
     { icon: "⚠️", title: "Driver suspended", subtitle: "John M. • Multiple violations", time: "5 min ago", type: "exception" },
     { icon: "📋", title: "Contract expiring", subtitle: "Fleet lease #2341 • Expires Dec 15", time: "1 hour ago", type: "exception" },
@@ -83,29 +71,30 @@ export default function DashboardOverviewPage() {
       <div className="mb-6 pb-6 border-b border-slate-200">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-slate-700 to-slate-900 mb-1">
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-1">
               Dashboard Overview
             </h1>
             <p className="text-sm text-slate-600">
               Real-time fleet operations and performance metrics
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <PeriodSelector value={dateRange as any} onChange={(v) => setDateRange(v as any)} />
+            <div className="h-6 w-px bg-slate-200 mx-2 hidden sm:block"></div>
             <Link
               to="/live-map"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-ev-green transition"
             >
-              🗺️ Live Fleet Map
+              🗺️ Live Map
             </Link>
             <Link
               to="/dispatch/new"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-ev-green to-emerald-600 text-white text-sm font-medium shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-ev-green text-white text-sm font-medium hover:bg-emerald-600 shadow-md shadow-emerald-500/20 transition"
             >
               + New Dispatch
             </Link>
           </div>
         </div>
-        <div className="mt-4 h-1 w-24 rounded-full bg-gradient-to-r from-ev-green via-emerald-400 to-orange-400 opacity-80" />
       </div>
 
       {/* Stats Grid - First Row */}
@@ -115,60 +104,64 @@ export default function DashboardOverviewPage() {
           return (
             <div
               key={idx}
-              className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-shadow"
+              className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-shadow group"
             >
               <div className="flex items-center justify-between mb-2">
-                <div className="text-xs text-slate-500">{stat.label}</div>
-                <div className={`text-xs font-medium px-1.5 py-0.5 rounded ${stat.color === 'emerald' ? 'bg-emerald-100 text-emerald-600' :
-                  stat.color === 'blue' ? 'bg-blue-100 text-blue-600' :
-                    'bg-purple-100 text-purple-600'
+                <div className="text-xs font-medium text-slate-500 uppercase tracking-wider">{stat.label}</div>
+                {/* Card Period Selector */}
+                <select className="text-[10px] border-none bg-slate-50 text-slate-500 rounded p-0.5 cursor-pointer focus:ring-0 outline-none opacity-0 group-hover:opacity-100 transition-opacity">
+                  <option>Today</option>
+                  <option>Week</option>
+                </select>
+              </div>
+              <div className="flex items-end gap-2 mb-2">
+                <div className="text-3xl font-bold text-slate-900">{stat.value}</div>
+                <div className={`text-xs font-medium px-2 py-1 rounded-full ${stat.color === 'emerald' ? 'bg-emerald-50 text-emerald-700' :
+                  stat.color === 'blue' ? 'bg-blue-50 text-blue-700' :
+                    'bg-purple-50 text-purple-700'
                   }`}>
                   {stat.change}
                 </div>
               </div>
-              <div className="text-2xl font-bold text-slate-900 mb-2">{stat.value}</div>
               <Sparkline data={stat.sparkline} color={colors[stat.color]} height={32} />
             </div>
           );
         })}
 
-        {/* Net Revenue with Date Range */}
-        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-4 shadow-lg text-white">
+        {/* Net Revenue with Date Range - Light Solid */}
+        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-1">
-            <div className="text-xs text-emerald-100">Net revenue</div>
-            <select
-              value={dateRange}
-              onChange={(e) => setDateRange(e.target.value as "today" | "week" | "month")}
-              className="text-[10px] bg-white/20 border border-white/30 rounded px-1.5 py-0.5 text-white cursor-pointer hover:bg-white/30"
-            >
-              <option value="today" className="text-slate-800">Today</option>
-              <option value="week" className="text-slate-800">This Week</option>
-              <option value="month" className="text-slate-800">This Month</option>
-            </select>
+            <div className="text-xs font-medium text-slate-500 uppercase tracking-wider">Net revenue</div>
+            <span className="text-[10px] text-slate-400 font-medium px-2 py-0.5 rounded-full bg-slate-100">
+              {dateRange === 'today' ? 'Today' : dateRange === 'week' ? 'This Week' : 'This Month'}
+            </span>
           </div>
-          <div className="flex items-baseline justify-between">
-            <div className="text-2xl font-bold">{revenueData[dateRange].value}</div>
-            <div className="text-xs font-medium bg-white/20 px-1.5 py-0.5 rounded">
+          <div className="flex items-baseline justify-between mb-2">
+            <div className="text-3xl font-bold text-slate-900">{revenueData[dateRange].value}</div>
+            <div className="text-xs font-medium bg-emerald-50 text-emerald-700 px-2 py-1 rounded-full">
               {revenueData[dateRange].change}
             </div>
           </div>
           <div className="mt-2">
-            <Sparkline data={[8, 12, 9, 14, 11, 15, 13, 18]} color="#a7f3d0" height={28} />
+            <Sparkline data={[8, 12, 9, 14, 11, 15, 13, 18]} color="#10b981" height={32} />
           </div>
         </div>
       </div>
 
 
-      {/* Analytics Charts Section - One Bar Chart and One Pie Chart */}
+      {/* Analytics Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Weekly Trip Volume - Bar Chart showing actual trips by day */}
+        {/* Weekly Trip Volume */}
         <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-semibold text-slate-900">Weekly Trip Volume</h3>
+              <h3 className="text-base font-semibold text-slate-900">Weekly Trip Volume</h3>
               <p className="text-xs text-slate-500">Daily trips this week</p>
             </div>
-            <span className="text-lg font-bold text-slate-900">{stats[2].value}</span>
+            <select className="text-xs bg-white border border-slate-200 rounded-md px-2 py-1 outline-none">
+              <option>This Week</option>
+              <option>Last Week</option>
+            </select>
           </div>
           <BarChart
             data={[
@@ -185,14 +178,16 @@ export default function DashboardOverviewPage() {
           />
         </div>
 
-        {/* Fleet Status - Pie Chart showing vehicle status from stats */}
+        {/* Fleet Status */}
         <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-semibold text-slate-900">Fleet Status</h3>
+              <h3 className="text-base font-semibold text-slate-900">Fleet Status</h3>
               <p className="text-xs text-slate-500">Current vehicle distribution</p>
             </div>
-            <span className="text-lg font-bold text-slate-900">{stats[0].value} online</span>
+            <select className="text-xs bg-white border border-slate-200 rounded-md px-2 py-1 outline-none">
+              <option>Live</option>
+            </select>
           </div>
           <div className="flex justify-center">
             <PieChart
@@ -213,101 +208,89 @@ export default function DashboardOverviewPage() {
       {/* NEEDS ATTENTION Section */}
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-4">
-          <span className="text-lg">🚨</span>
-          <h2 className="text-lg font-semibold text-slate-900">Needs Attention</h2>
-          <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-xs font-medium">
-            {alerts.offlineVehicles.count + alerts.highCancellations.count + alerts.pendingIncidents.count} items
+          <h2 className="text-lg font-bold text-slate-900">Needs Attention</h2>
+          <span className="px-2.5 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-100 text-xs font-bold">
+            {alerts.offlineVehicles.count + alerts.highCancellations.count + alerts.pendingIncidents.count}
           </span>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          {/* Live Fleet Map Snapshot */}
+          {/* Live Fleet Map Snapshot - Redesigned */}
           <div
             onClick={() => navigate('/live-map')}
-            className="lg:col-span-1 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-700 p-4 shadow-sm hover:shadow-lg transition-all cursor-pointer group relative overflow-hidden"
+            className="lg:col-span-1 bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all cursor-pointer group relative overflow-hidden"
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-xs text-slate-400">Live Fleet Map</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Live Fleet Map</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 font-medium animate-pulse">
                   LIVE
                 </span>
               </div>
-              {/* Mini Map Preview / Heatmap */}
-              <div className="h-24 bg-slate-700/50 rounded-lg flex items-center justify-center mb-3 relative overflow-hidden">
-                {/* Simulated heatmap dots */}
-                <div className="absolute inset-0">
-                  <div className="absolute top-4 left-6 w-3 h-3 rounded-full bg-emerald-500/60 blur-sm" />
-                  <div className="absolute top-8 left-12 w-4 h-4 rounded-full bg-emerald-400/50 blur-sm" />
-                  <div className="absolute top-6 right-8 w-3 h-3 rounded-full bg-yellow-500/50 blur-sm" />
-                  <div className="absolute bottom-6 left-8 w-2 h-2 rounded-full bg-emerald-500/70 blur-sm" />
-                  <div className="absolute bottom-4 right-6 w-3 h-3 rounded-full bg-emerald-500/50 blur-sm" />
-                  <div className="absolute top-10 left-20 w-2 h-2 rounded-full bg-red-500/50 blur-sm" />
-                </div>
-                <span className="text-3xl z-10">🗺️</span>
+              <div className="h-24 bg-slate-50 rounded-lg flex items-center justify-center mb-3 relative overflow-hidden border border-slate-100">
+                <span className="text-3xl z-10 opacity-50 grayscale group-hover:grayscale-0 transition-all">🗺️</span>
               </div>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-300">128 vehicles active</span>
-                <span className="text-emerald-400 group-hover:translate-x-1 transition-transform">View →</span>
+                <span className="text-slate-600 font-medium">128 vehicles active</span>
+                <span className="text-emerald-600 font-medium group-hover:translate-x-1 transition-transform">View →</span>
               </div>
             </div>
           </div>
 
-          {/* Offline Vehicles Alert */}
-          <div className="bg-gradient-to-br from-emerald-50 to-green-100 rounded-xl border border-emerald-200 p-4 shadow-sm">
+          {/* Offline Vehicles Alert - Redesigned */}
+          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md hover:border-red-100 transition-all">
             <div className="flex items-start gap-3">
-              <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center text-xl">
+              <div className="h-10 w-10 rounded-full bg-red-50 flex items-center justify-center text-xl text-red-500">
                 ⚠️
               </div>
               <div className="flex-1">
-                <div className="text-sm font-medium text-emerald-900 mb-1">Offline Vehicles</div>
-                <div className="text-2xl font-bold text-emerald-700">{alerts.offlineVehicles.count}</div>
-                <div className="text-xs text-emerald-600 mt-1">
-                  Offline for {alerts.offlineVehicles.hours}+ hours
+                <div className="text-sm font-medium text-slate-900 mb-1">Offline Vehicles</div>
+                <div className="text-2xl font-bold text-slate-900">{alerts.offlineVehicles.count}</div>
+                <div className="text-xs text-red-600 mt-1 font-medium">
+                  {alerts.offlineVehicles.hours}+ hours inactive
                 </div>
               </div>
             </div>
-            <Link to="/vehicles?filter=offline" className="mt-3 block text-xs text-emerald-700 hover:text-emerald-900 font-medium">
+            <Link to="/vehicles?filter=offline" className="mt-3 block text-xs text-slate-500 hover:text-slate-900 font-medium text-right">
               View details →
             </Link>
           </div>
 
-          {/* High Cancellations Alert */}
-          <div className="bg-gradient-to-br from-orange-50 to-amber-100 rounded-xl border border-orange-200 p-4 shadow-sm">
+          {/* High Cancellations Alert - Redesigned */}
+          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md hover:border-orange-100 transition-all">
             <div className="flex items-start gap-3">
-              <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center text-xl">
+              <div className="h-10 w-10 rounded-full bg-orange-50 flex items-center justify-center text-xl text-orange-500">
                 🚫
               </div>
               <div className="flex-1">
-                <div className="text-sm font-medium text-orange-900 mb-1">High Cancellations</div>
-                <div className="text-2xl font-bold text-orange-700">{alerts.highCancellations.count} drivers</div>
-                <div className="text-xs text-orange-600 mt-1">
-                  {alerts.highCancellations.drivers.slice(0, 2).join(", ")}...
+                <div className="text-sm font-medium text-slate-900 mb-1">High Cancellations</div>
+                <div className="text-2xl font-bold text-slate-900">{alerts.highCancellations.count} <span className="text-sm font-normal text-slate-500">drivers</span></div>
+                <div className="text-xs text-orange-600 mt-1 font-medium">
+                  Review needed
                 </div>
               </div>
             </div>
-            <Link to="/drivers?filter=high-cancellation" className="mt-3 block text-xs text-orange-700 hover:text-orange-900 font-medium">
+            <Link to="/drivers?filter=high-cancellation" className="mt-3 block text-xs text-slate-500 hover:text-slate-900 font-medium text-right">
               Review drivers →
             </Link>
           </div>
 
-          {/* Pending Incidents Alert */}
-          <div className="bg-gradient-to-br from-slate-50 to-gray-100 rounded-xl border border-slate-200 p-4 shadow-sm">
+          {/* Pending Incidents Alert - Redesigned */}
+          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md hover:border-blue-100 transition-all">
             <div className="flex items-start gap-3">
-              <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center text-xl">
+              <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center text-xl text-blue-500">
                 🚨
               </div>
               <div className="flex-1">
                 <div className="text-sm font-medium text-slate-900 mb-1">Pending Incidents</div>
-                <div className="text-2xl font-bold text-slate-700">{alerts.pendingIncidents.count}</div>
-                <div className="text-xs text-slate-600 mt-1">
-                  Ambulance cases awaiting review
+                <div className="text-2xl font-bold text-slate-900">{alerts.pendingIncidents.count}</div>
+                <div className="text-xs text-blue-600 mt-1 font-medium">
+                  Awaiting review
                 </div>
               </div>
             </div>
-            <Link to="/ambulance/cases?status=pending" className="mt-3 block text-xs text-slate-700 hover:text-slate-900 font-medium">
-              Review cases →
+            <Link to="/ambulance/cases?status=pending" className="mt-3 block text-xs text-slate-500 hover:text-slate-900 font-medium text-right">
+              View cases →
             </Link>
           </div>
         </div>
@@ -315,126 +298,126 @@ export default function DashboardOverviewPage() {
 
       {/* Quick Actions & Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="bg-cream rounded-xl border border-slate-200 p-6 shadow-card hover:shadow-card-hover card-hover-lift">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h2>
+        <div className="bg-bg-slate-50 rounded-xl border border-slate-200 p-6 shadow-sm bg-white">
+          <h2 className="text-lg font-bold text-slate-900 mb-4">Quick Actions</h2>
           <div className="grid grid-cols-3 gap-3">
             <Link
               to="/vehicles/create"
-              className="flex flex-col items-center justify-center p-4 rounded-lg border border-slate-200 bg-white shadow-sm hover:border-ev-green hover:bg-emerald-50 hover:shadow-md transition-all"
+              className="flex flex-col items-center justify-center p-4 rounded-xl border border-slate-200 bg-white shadow-sm hover:border-ev-green hover:shadow-md transition-all group"
             >
-              <span className="text-2xl mb-2">🚙</span>
-              <span className="text-xs font-medium text-slate-700 text-center">Add vehicle</span>
+              <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">🚙</span>
+              <span className="text-xs font-medium text-slate-600 group-hover:text-slate-900 text-center">Add vehicle</span>
             </Link>
             <Link
               to="/drivers/new"
-              className="flex flex-col items-center justify-center p-4 rounded-lg border border-slate-200 bg-white shadow-sm hover:border-ev-green hover:bg-emerald-50 hover:shadow-md transition-all"
+              className="flex flex-col items-center justify-center p-4 rounded-xl border border-slate-200 bg-white shadow-sm hover:border-ev-green hover:shadow-md transition-all group"
             >
-              <span className="text-2xl mb-2">👤</span>
-              <span className="text-xs font-medium text-slate-700 text-center">Add driver</span>
+              <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">👤</span>
+              <span className="text-xs font-medium text-slate-600 group-hover:text-slate-900 text-center">Add driver</span>
             </Link>
             <Link
               to="/dispatch/new"
-              className="flex flex-col items-center justify-center p-4 rounded-lg border border-slate-200 bg-white shadow-sm hover:border-ev-green hover:bg-emerald-50 hover:shadow-md transition-all"
+              className="flex flex-col items-center justify-center p-4 rounded-xl border border-slate-200 bg-white shadow-sm hover:border-ev-green hover:shadow-md transition-all group"
             >
-              <span className="text-2xl mb-2">📲</span>
-              <span className="text-xs font-medium text-slate-700 text-center">New dispatch</span>
+              <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">📲</span>
+              <span className="text-xs font-medium text-slate-600 group-hover:text-slate-900 text-center">New dispatch</span>
             </Link>
             <Link
               to="/live-map"
-              className="flex flex-col items-center justify-center p-4 rounded-lg border border-slate-200 bg-white shadow-sm hover:border-ev-green hover:bg-emerald-50 hover:shadow-md transition-all"
+              className="flex flex-col items-center justify-center p-4 rounded-xl border border-slate-200 bg-white shadow-sm hover:border-ev-green hover:shadow-md transition-all group"
             >
-              <span className="text-2xl mb-2">🗺️</span>
-              <span className="text-xs font-medium text-slate-700 text-center">Live Fleet Map</span>
+              <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">🗺️</span>
+              <span className="text-xs font-medium text-slate-600 group-hover:text-slate-900 text-center">Live Map</span>
             </Link>
             <Link
               to="/earnings/payouts"
-              className="flex flex-col items-center justify-center p-4 rounded-lg border border-slate-200 bg-white shadow-sm hover:border-orange-400 hover:bg-orange-50 hover:shadow-md transition-all"
+              className="flex flex-col items-center justify-center p-4 rounded-xl border border-slate-200 bg-white shadow-sm hover:border-orange-400 hover:shadow-md transition-all group"
             >
-              <span className="text-2xl mb-2">✅</span>
-              <span className="text-xs font-medium text-slate-700 text-center">Approve payouts</span>
+              <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">✅</span>
+              <span className="text-xs font-medium text-slate-600 group-hover:text-slate-900 text-center">Approve payouts</span>
             </Link>
             <Link
               to="/earnings"
-              className="flex flex-col items-center justify-center p-4 rounded-lg border border-slate-200 bg-white shadow-sm hover:border-orange-400 hover:bg-orange-50 hover:shadow-md transition-all"
+              className="flex flex-col items-center justify-center p-4 rounded-xl border border-slate-200 bg-white shadow-sm hover:border-orange-400 hover:shadow-md transition-all group"
             >
-              <span className="text-2xl mb-2">📊</span>
-              <span className="text-xs font-medium text-slate-700 text-center">Earnings report</span>
+              <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">📊</span>
+              <span className="text-xs font-medium text-slate-600 group-hover:text-slate-900 text-center">Earnings report</span>
             </Link>
           </div>
         </div>
 
-        <div className="bg-cream rounded-xl border border-slate-200 p-6 shadow-card hover:shadow-card-hover card-hover-lift">
+        <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-slate-900">Recent Activity</h2>
-            <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-medium">
-              Exceptions
-            </span>
+            <h2 className="text-lg font-bold text-slate-900">Recent Activity</h2>
+            <Link to="/settings/activity-log" className="text-xs font-medium text-ev-green hover:text-emerald-700">View all</Link>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {recentActivity.map((activity, i) => (
-              <div key={i} className="flex items-start gap-3 pb-3 border-b border-slate-100 last:border-0">
-                <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs ${activity.type === 'exception' ? 'bg-amber-100' : 'bg-emerald-100'
+              <div key={i} className="flex items-start gap-4 pb-4 border-b border-slate-50 last:border-0 last:pb-0">
+                <div className={`h-10 w-10 shrink-0 rounded-full flex items-center justify-center text-lg ${activity.type === 'exception' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'
                   }`}>
                   {activity.icon}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-slate-900">{activity.title}</div>
-                  <div className="text-xs text-slate-500">{activity.subtitle}</div>
+                  <div className="flex justify-between items-start mb-0.5">
+                    <div className="text-sm font-semibold text-slate-900">{activity.title}</div>
+                    <div className="text-xs text-slate-400">{activity.time}</div>
+                  </div>
+                  <div className="text-xs text-slate-500 line-clamp-1">{activity.subtitle}</div>
                 </div>
-                <div className="text-xs text-slate-400">{activity.time}</div>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Messages & Training Card - New Section */}
+      {/* Messages & Training Card - Redesigned */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <Link
           to="/support/messages"
-          className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-blue-200 p-4 shadow-sm hover:shadow-md transition-all group"
+          className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md hover:border-blue-200 transition-all group"
         >
           <div className="flex items-start justify-between">
             <div>
-              <div className="text-xs text-blue-600 font-medium mb-1">Support Messages</div>
-              <div className="text-2xl font-bold text-blue-700">{messagesCount}</div>
-              <div className="text-xs text-blue-500 mt-1">
-                Last: {lastMessageSubject}
+              <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">Support Messages</div>
+              <div className="text-3xl font-bold text-slate-900 mb-1">{messagesCount}</div>
+              <div className="text-xs text-blue-600 font-medium">
+                Latest: {lastMessageSubject}
               </div>
             </div>
-            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+            <div className="h-12 w-12 rounded-xl bg-blue-50 flex items-center justify-center text-2xl group-hover:scale-105 transition-transform text-blue-600">
               ✉️
             </div>
           </div>
         </Link>
         <Link
           to="/training"
-          className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl border border-emerald-200 p-4 shadow-sm hover:shadow-md transition-all group"
+          className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all group"
         >
           <div className="flex items-start justify-between">
             <div>
-              <div className="text-xs text-emerald-600 font-medium mb-1">Driver Compliance</div>
-              <div className="text-2xl font-bold text-emerald-700">{driverCompliance.completed}%</div>
-              <div className="text-xs text-emerald-500 mt-1">
-                Drivers completed {driverCompliance.courseName}
+              <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">Driver Compliance</div>
+              <div className="text-3xl font-bold text-slate-900 mb-1">{driverCompliance.completed}%</div>
+              <div className="text-xs text-emerald-600 font-medium">
+                {driverCompliance.courseName}
               </div>
             </div>
-            <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+            <div className="h-12 w-12 rounded-xl bg-emerald-50 flex items-center justify-center text-2xl group-hover:scale-105 transition-transform text-emerald-600">
               🎓
             </div>
           </div>
         </Link>
         <Link
           to="/help"
-          className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-xl border border-violet-200 p-4 shadow-sm hover:shadow-md transition-all group"
+          className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md hover:border-purple-200 transition-all group"
         >
           <div className="flex items-start justify-between">
             <div>
-              <div className="text-xs text-violet-600 font-medium mb-1">Help & Support</div>
-              <div className="text-2xl font-bold text-violet-700">24/7</div>
-              <div className="text-xs text-violet-500 mt-1">Get assistance →</div>
+              <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">Help & Support</div>
+              <div className="text-3xl font-bold text-slate-900 mb-1">24/7</div>
+              <div className="text-xs text-purple-600 font-medium">Get assistance →</div>
             </div>
-            <div className="h-10 w-10 rounded-full bg-violet-100 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+            <div className="h-12 w-12 rounded-xl bg-purple-50 flex items-center justify-center text-2xl group-hover:scale-105 transition-transform text-purple-600">
               ❓
             </div>
           </div>
