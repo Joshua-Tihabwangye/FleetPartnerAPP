@@ -80,6 +80,7 @@ import ToursListPage from "../pages/services/tours/ToursListPage";
 import TourDetailPage from "../pages/services/tours/TourDetailPage";
 import TourEditPage from "../pages/services/tours/TourEditPage";
 import TourBookingsPage from "../pages/services/tours/TourBookingsPage";
+import TourBookingDetailPage from "../pages/services/tours/TourBookingDetailPage";
 import TourBookingCreatePage from "../pages/services/tours/TourBookingCreatePage";
 import TourCreatePage from "../pages/services/tours/TourCreatePage";
 
@@ -93,8 +94,18 @@ import ShuttleTrackLivePage from "../pages/services/schoolShuttles/ShuttleTrackL
 import ShuttleRunsBoardPage from "../pages/services/schoolShuttles/ShuttleRunsBoardPage";
 import ShuttleStudentsListPage from "../pages/services/schoolShuttles/ShuttleStudentsListPage";
 import ShuttleStudentDetailPage from "../pages/services/schoolShuttles/ShuttleStudentDetailPage";
+import ShuttleStudentEditPage from "../pages/services/schoolShuttles/ShuttleStudentEditPage";
 import ShuttleStudentAttendancePage from "../pages/services/schoolShuttles/ShuttleStudentAttendancePage";
 import FleetPartnerShuttleBulkRemindersPage from "../pages/services/schoolShuttles/FleetPartnerShuttleBulkRemindersPage";
+import ShuttleParentFeedbackPage from "../pages/services/schoolShuttles/ShuttleParentFeedbackPage";
+import ShuttleAttendantsPage from "../pages/services/schoolShuttles/ShuttleAttendantsPage";
+import ShuttleStudentRostersPage from "../pages/services/schoolShuttles/ShuttleStudentRostersPage";
+import ShuttleSafetyCompliancePage from "../pages/services/schoolShuttles/ShuttleSafetyCompliancePage";
+import ShuttlePerformanceReportPage from "../pages/services/schoolShuttles/ShuttlePerformanceReportPage";
+import ShuttleTripCalendarPage from "../pages/services/schoolShuttles/ShuttleTripCalendarPage";
+import ShuttleTripCreatePage from "../pages/services/schoolShuttles/ShuttleTripCreatePage";
+import ShuttleTripDetailPage from "../pages/services/schoolShuttles/ShuttleTripDetailPage";
+import ShuttleAttendantCreatePage from "../pages/services/schoolShuttles/ShuttleAttendantCreatePage";
 
 // Settings
 import FleetPartnerSettingsPage from "../pages/settings/FleetPartnerSettingsPage";
@@ -227,6 +238,7 @@ export default function AppRoutes() {
         <Route path="/tours/:tourId" element={<TourDetailPage />} />
         <Route path="/tours/:tourId/edit" element={<TourEditPage />} />
         <Route path="/tours/bookings" element={<TourBookingsPage />} />
+        <Route path="/tours/bookings/:bookingId" element={<TourBookingDetailPage />} />
         <Route path="/tours/bookings/create" element={<TourBookingCreatePage />} />
 
         {/* School shuttles */}
@@ -239,13 +251,26 @@ export default function AppRoutes() {
         <Route path="/school-shuttles/operations" element={<ShuttleRunsBoardPage />} />
         <Route path="/school-shuttles/students" element={<ShuttleStudentsListPage />} />
         <Route path="/school-shuttles/students/:studentId" element={<ShuttleStudentDetailPage />} />
+        <Route path="/school-shuttles/students/:studentId/edit" element={<ShuttleStudentEditPage />} />
         <Route
           path="/school-shuttles/students/:studentId/attendance"
           element={<ShuttleStudentAttendancePage />}
         />
+        <Route path="/school-shuttles/attendants" element={<ShuttleAttendantsPage />} />
+        <Route path="/school-shuttles/attendants/new" element={<ShuttleAttendantCreatePage />} />
+        <Route path="/school-shuttles/rosters" element={<ShuttleStudentRostersPage />} />
+        <Route path="/school-shuttles/safety" element={<ShuttleSafetyCompliancePage />} />
+        <Route path="/school-shuttles/performance" element={<ShuttlePerformanceReportPage />} />
+        <Route path="/school-shuttles/calendar" element={<ShuttleTripCalendarPage />} />
+        <Route path="/school-shuttles/trips/new" element={<ShuttleTripCreatePage />} />
+        <Route path="/school-shuttles/trips/:tripId" element={<ShuttleTripDetailPage />} />
         <Route
           path="/school-shuttles/bulk-reminders"
           element={<FleetPartnerShuttleBulkRemindersPage />}
+        />
+        <Route
+          path="/school-shuttles/parent-feedback"
+          element={<ShuttleParentFeedbackPage />}
         />
 
         {/* Settings */}

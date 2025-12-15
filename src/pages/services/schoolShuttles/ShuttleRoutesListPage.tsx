@@ -15,13 +15,20 @@ export default function ShuttleRoutesListPage() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900 mb-2">School shuttle routes</h1>
-          <p className="text-sm text-slate-600">Manage school shuttle routes and operations</p>
+          <Link
+            to="/school-shuttles"
+            className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 mb-2 inline-block"
+          >
+            ← Back to Dashboard
+          </Link>
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-2">School shuttle routes</h1>
+          <p className="text-sm text-slate-600 dark:text-slate-400">Manage school shuttle routes and operations</p>
         </div>
         <div className="flex gap-2">
+
           <Link
             to="/school-shuttles/operations"
-            className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700"
           >
             Operations
           </Link>

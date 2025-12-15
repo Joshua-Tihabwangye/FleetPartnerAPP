@@ -95,6 +95,12 @@ export default function AmbulanceCasesListPage() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
+          <Link
+            to="/ambulance"
+            className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 mb-2 inline-block"
+          >
+            ← Back to Ambulance Dashboard
+          </Link>
           <h1 className="text-2xl font-semibold text-slate-900 dark:text-white mb-2">Ambulance Cases</h1>
           <p className="text-sm text-slate-600 dark:text-slate-400">Emergency medical service case management</p>
         </div>

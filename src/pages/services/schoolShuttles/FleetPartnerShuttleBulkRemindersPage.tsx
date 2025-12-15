@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { toastManager } from "../../../utils/toastManager";
+import { Link } from "react-router-dom";
 
 export default function FleetPartnerShuttleBulkRemindersPage() {
   const [formData, setFormData] = useState({
@@ -32,32 +33,42 @@ export default function FleetPartnerShuttleBulkRemindersPage() {
   };
 
   return (
-    <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50">
+    <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50 dark:bg-slate-900">
       <div className="w-full">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-slate-900 mb-2">Shuttle Bulk Reminders</h1>
-          <p className="text-sm text-slate-600">Send mass notifications to parents about payments, schedules, and other updates</p>
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <Link
+                to="/school-shuttles"
+                className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 mb-2 inline-block"
+              >
+                ← Back to Dashboard
+              </Link>
+              <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-2">Shuttle Bulk Reminders</h1>
+              <p className="text-sm text-slate-600 dark:text-slate-400">Send mass notifications to parents about payments, schedules, and other updates</p>
+            </div>
+          </div>
         </div>
 
-        {/* Stats */}
+        {/* Stats - LIGHT SOLID COLORS (no gradients) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white rounded-xl border border-slate-200 p-4">
-            <p className="text-sm text-slate-600 mb-1">Total Parents</p>
-            <p className="text-2xl font-semibold text-slate-900">84</p>
+          <div className="bg-emerald-50 rounded-xl border border-emerald-200 p-4">
+            <p className="text-sm text-emerald-700 font-medium mb-1">Total Parents</p>
+            <p className="text-2xl font-semibold text-emerald-800">84</p>
           </div>
-          <div className="bg-white rounded-xl border border-slate-200 p-4">
-            <p className="text-sm text-slate-600 mb-1">Active Routes</p>
-            <p className="text-2xl font-semibold text-slate-900">6</p>
+          <div className="bg-slate-100 rounded-xl border border-slate-300 p-4">
+            <p className="text-sm text-slate-600 font-medium mb-1">Active Routes</p>
+            <p className="text-2xl font-semibold text-slate-800">6</p>
           </div>
-          <div className="bg-white rounded-xl border border-slate-200 p-4">
-            <p className="text-sm text-slate-600 mb-1">Reminders Sent This Month</p>
-            <p className="text-2xl font-semibold text-slate-900">142</p>
+          <div className="bg-orange-50 rounded-xl border border-orange-200 p-4">
+            <p className="text-sm text-orange-700 font-medium mb-1">Reminders Sent This Month</p>
+            <p className="text-2xl font-semibold text-orange-800">142</p>
           </div>
         </div>
 
         {/* Form */}
-        <div className="bg-white rounded-xl border border-slate-200 p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Recipients */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -168,18 +179,18 @@ export default function FleetPartnerShuttleBulkRemindersPage() {
         </div>
 
         {/* Recent Reminders */}
-        <div className="mt-6 bg-white rounded-xl border border-slate-200 p-6">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4">Recent Reminders</h2>
+        <div className="mt-6 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Recent Reminders</h2>
           <div className="space-y-3">
             {[
               { date: "2024-01-15", type: "Payment Reminder", recipients: 84, status: "delivered" },
               { date: "2024-01-10", type: "Schedule Change", recipients: 26, status: "delivered" },
               { date: "2024-01-05", type: "Pickup Reminder", recipients: 84, status: "delivered" }
             ].map((reminder, idx) => (
-              <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
+              <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-700/50">
                 <div className="flex-1">
-                  <p className="font-medium text-slate-900">{reminder.type}</p>
-                  <p className="text-xs text-slate-600">{reminder.date} · {reminder.recipients} recipients</p>
+                  <p className="font-medium text-slate-900 dark:text-slate-100">{reminder.type}</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">{reminder.date} · {reminder.recipients} recipients</p>
                 </div>
                 <span className="px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700">
                   {reminder.status}

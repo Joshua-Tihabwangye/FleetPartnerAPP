@@ -4,38 +4,42 @@ import { BarChart, PieChart, Sparkline, LineChart, ProgressRing } from "../../co
 
 export default function AmbulanceDashboardPage() {
   const [dateRange, setDateRange] = useState<"today" | "week" | "month">("today");
+  const [responseTimePeriod, setResponseTimePeriod] = useState("year");
+  const [weeklyCasesPeriod, setWeeklyCasesPeriod] = useState("week");
+  const [casePriorityPeriod, setCasePriorityPeriod] = useState("all");
+  const [caseStatusPeriod, setCaseStatusPeriod] = useState("all");
 
   // Key Metrics
   const keyMetrics = [
-    { 
-      label: "Active Cases", 
-      value: "6", 
-      change: "+2", 
-      color: "red", 
+    {
+      label: "Active Cases",
+      value: "6",
+      change: "+2",
+      color: "red",
       sparkline: [3, 4, 4, 5, 5, 6, 6],
       icon: "🚑"
     },
-    { 
-      label: "Total Cases", 
-      value: "142", 
-      change: "+18", 
-      color: "blue", 
+    {
+      label: "Total Cases",
+      value: "142",
+      change: "+18",
+      color: "orange",
       sparkline: [120, 125, 130, 135, 138, 140, 142],
       icon: "📋"
     },
-    { 
-      label: "Avg Response Time", 
-      value: "8.5 min", 
-      change: "-1.2 min", 
-      color: "emerald", 
+    {
+      label: "Avg Response Time",
+      value: "8.5 min",
+      change: "-1.2 min",
+      color: "emerald",
       sparkline: [10.2, 9.8, 9.5, 9.2, 8.9, 8.7, 8.5],
       icon: "⏱️"
     },
-    { 
-      label: "Success Rate", 
-      value: "94%", 
-      change: "+2%", 
-      color: "purple", 
+    {
+      label: "Success Rate",
+      value: "94%",
+      change: "+2%",
+      color: "emerald",
       sparkline: [90, 91, 92, 92, 93, 93, 94],
       icon: "✅"
     }
@@ -51,15 +55,15 @@ export default function AmbulanceDashboardPage() {
   // Case priority breakdown
   const casePriority = [
     { label: "High", value: 28, color: "#ef4444" },
-    { label: "Medium", value: 65, color: "#f59e0b" },
+    { label: "Medium", value: 65, color: "#f97316" },
     { label: "Low", value: 49, color: "#10b981" }
   ];
 
   // Case status breakdown
   const caseStatus = [
     { label: "Completed", value: 118, color: "#10b981" },
-    { label: "In Progress", value: 6, color: "#3b82f6" },
-    { label: "Pending", value: 12, color: "#f59e0b" },
+    { label: "In Progress", value: 6, color: "#f97316" },
+    { label: "Pending", value: 12, color: "#fb923c" },
     { label: "Cancelled", value: 6, color: "#ef4444" }
   ];
 
@@ -85,20 +89,20 @@ export default function AmbulanceDashboardPage() {
     { id: "AMB-003", priority: "low", location: "Jinja", status: "in-progress", time: "10 min ago" }
   ];
 
-  // Performance metrics
+  // Performance metrics - Light Solid Colors (no Average dropdown)
   const performanceMetrics = [
-    { label: "Response Time", value: 92, color: "#10b981", bg: "from-emerald-500 to-teal-600" },
-    { label: "Case Resolution", value: 88, color: "#3b82f6", bg: "from-blue-500 to-cyan-600" },
-    { label: "Patient Satisfaction", value: 91, color: "#f59e0b", bg: "from-orange-500 to-amber-600" },
-    { label: "Equipment Readiness", value: 96, color: "#8b5cf6", bg: "from-purple-500 to-indigo-600" }
+    { label: "Response Time", value: 92, color: "#10b981", borderColor: "border-emerald-200", bgColor: "bg-emerald-50", textColor: "text-emerald-700" },
+    { label: "Case Resolution", value: 88, color: "#3b82f6", borderColor: "border-blue-200", bgColor: "bg-blue-50", textColor: "text-blue-700" },
+    { label: "Patient Satisfaction", value: 91, color: "#f97316", borderColor: "border-orange-200", bgColor: "bg-orange-50", textColor: "text-orange-700" },
+    { label: "Equipment Readiness", value: 96, color: "#8b5cf6", borderColor: "border-purple-200", bgColor: "bg-purple-50", textColor: "text-purple-700" }
   ];
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "high": return "bg-red-100 text-red-700 border-red-200";
-      case "medium": return "bg-orange-100 text-orange-700 border-orange-200";
-      case "low": return "bg-yellow-100 text-yellow-700 border-yellow-200";
-      default: return "bg-slate-100 text-slate-600 border-slate-200";
+      case "high": return "bg-red-50 text-red-700 border-red-200";
+      case "medium": return "bg-orange-50 text-orange-700 border-orange-200";
+      case "low": return "bg-emerald-50 text-emerald-700 border-emerald-200";
+      default: return "bg-slate-50 text-slate-600 border-slate-200";
     }
   };
 
@@ -108,7 +112,12 @@ export default function AmbulanceDashboardPage() {
       <div className="mb-6 pb-6 border-b border-slate-200">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-600 via-pink-600 to-rose-600 mb-1">
+            <div className="flex items-center gap-2 mb-1">
+              <Link to="/dashboard" className="text-slate-400 hover:text-slate-600 transition text-sm">
+                ← Back to Dashboard
+              </Link>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-1">
               Ambulance & EMS Dashboard
             </h1>
             <p className="text-sm text-slate-600">
@@ -124,96 +133,90 @@ export default function AmbulanceDashboardPage() {
             </Link>
             <Link
               to="/ambulance/cases"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-ev-green to-emerald-600 text-white text-sm font-medium shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-500 text-white text-sm font-medium shadow-lg shadow-orange-500/20 hover:bg-orange-600 transition"
             >
               📋 View Cases
             </Link>
           </div>
         </div>
-        <div className="mt-4 h-1 w-24 rounded-full bg-gradient-to-r from-red-500 via-pink-500 to-rose-500 opacity-80" />
+        <div className="mt-4 h-1 w-24 rounded-full bg-gradient-to-r from-red-500 via-orange-500 to-emerald-500 opacity-80" />
       </div>
 
       {/* Key Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {keyMetrics.map((metric, idx) => {
-          const colors: Record<string, string> = {
-            red: "#ef4444",
-            blue: "#3b82f6",
-            emerald: "#10b981",
-            purple: "#8b5cf6"
-          };
+          let borderColor = "border-slate-200";
+          let sparkColor = "#64748b";
+          let changeBg = "bg-slate-100 text-slate-600";
+
+          if (metric.color === 'red') {
+            borderColor = "border-red-200";
+            sparkColor = "#ef4444";
+            changeBg = "bg-red-100 text-red-600";
+          } else if (metric.color === 'orange') {
+            borderColor = "border-orange-200";
+            sparkColor = "#f97316";
+            changeBg = "bg-orange-100 text-orange-600";
+          } else if (metric.color === 'emerald') {
+            borderColor = "border-emerald-200";
+            sparkColor = "#10b981";
+            changeBg = "bg-emerald-100 text-emerald-600";
+          }
+
           return (
             <div
               key={idx}
-              className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-shadow"
+              className={`bg-white rounded-xl border ${borderColor} p-4 shadow-sm hover:shadow-md transition-all`}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <span className="text-xl">{metric.icon}</span>
-                  <div className="text-xs text-slate-500">{metric.label}</div>
+                  <div className="text-xs text-slate-500 font-medium uppercase tracking-wider">{metric.label}</div>
                 </div>
-                <div
-                  className={`text-xs font-medium px-1.5 py-0.5 rounded ${
-                    metric.color === "red"
-                      ? "bg-red-100 text-red-600"
-                      : metric.color === "blue"
-                      ? "bg-blue-100 text-blue-600"
-                      : metric.color === "emerald"
-                      ? "bg-emerald-100 text-emerald-600"
-                      : "bg-purple-100 text-purple-600"
-                  }`}
-                >
+                <select className="text-xs border border-slate-200 bg-slate-50 text-slate-600 rounded-lg px-2 py-1 cursor-pointer focus:ring-ev-green focus:border-ev-green outline-none">
+                  <option value="today">Today</option>
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
+                  <option value="year">This Year</option>
+                  <option value="all">All Time</option>
+                </select>
+              </div>
+              <div className="flex items-end justify-between mb-2">
+                <div className="text-2xl font-bold text-slate-900">{metric.value}</div>
+                <div className={`text-xs font-medium px-1.5 py-0.5 rounded ${changeBg}`}>
                   {metric.change}
                 </div>
               </div>
-              <div className="text-2xl font-bold text-slate-900 mb-2">{metric.value}</div>
-              <Sparkline data={metric.sparkline} color={colors[metric.color]} height={32} />
+              <Sparkline data={metric.sparkline} color={sparkColor} height={32} />
             </div>
           );
         })}
       </div>
 
-      {/* Revenue Card */}
-      <div className="mb-6">
-        <div className="bg-gradient-to-br from-red-500 to-pink-600 rounded-xl p-6 shadow-lg text-white">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <div className="text-sm text-red-100 mb-1">Total Revenue</div>
-              <div className="text-3xl font-bold">{revenueData[dateRange].value}</div>
-            </div>
-            <select
-              value={dateRange}
-              onChange={(e) => setDateRange(e.target.value as "today" | "week" | "month")}
-              className="text-xs bg-white/20 border border-white/30 rounded-lg px-3 py-1.5 text-white cursor-pointer hover:bg-white/30"
-            >
-              <option value="today" className="text-slate-800">Today</option>
-              <option value="week" className="text-slate-800">This Week</option>
-              <option value="month" className="text-slate-800">This Month</option>
-            </select>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-red-100">↑ {revenueData[dateRange].change}</span>
-            <span className="text-xs text-red-200">vs last period</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Performance Metrics */}
+      {/* Performance Metrics - NO Average dropdown, just title */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {performanceMetrics.map((stat, idx) => (
           <div
             key={idx}
-            className={`bg-gradient-to-br ${stat.bg} rounded-xl p-4 shadow-lg text-white`}
+            className={`${stat.bgColor} rounded-xl border ${stat.borderColor} p-4 shadow-sm hover:shadow-md transition-all`}
           >
-            <div className="text-xs text-white/80 mb-2">{stat.label}</div>
-            <div className="flex items-center justify-between">
-              <div className="text-2xl font-bold">{stat.value}%</div>
+            <div className="flex items-center justify-between mb-2">
+              <div className={`text-xs ${stat.textColor} font-medium uppercase tracking-wider`}>{stat.label}</div>
+              <select className="text-[10px] border border-slate-200 bg-white text-slate-500 rounded px-1 py-0.5 cursor-pointer outline-none">
+                <option value="current">Current</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+                <option value="year">This Year</option>
+              </select>
+            </div>
+            <div className="flex items-center justify-between mt-2">
+              <div className={`text-2xl font-bold ${stat.textColor}`}>{stat.value}%</div>
               <ProgressRing
                 percent={stat.value}
                 size={50}
-                strokeWidth={6}
-                color="rgba(255,255,255,0.9)"
-                bgColor="rgba(255,255,255,0.2)"
+                strokeWidth={4}
+                color={stat.color}
+                bgColor="#e2e8f0"
                 textColor="transparent"
               />
             </div>
@@ -225,7 +228,20 @@ export default function AmbulanceDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Response Time Trend */}
         <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">Average Response Time (Minutes)</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-slate-900">Average Response Time (Minutes)</h3>
+            <select
+              value={responseTimePeriod}
+              onChange={(e) => setResponseTimePeriod(e.target.value)}
+              className="text-xs border border-slate-200 bg-slate-50 text-slate-600 rounded-lg px-2 py-1 cursor-pointer focus:ring-ev-green focus:border-ev-green outline-none"
+            >
+              <option value="today">Today</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+              <option value="year">This Year</option>
+              <option value="all">All Time</option>
+            </select>
+          </div>
           <LineChart
             data={responseTimeData}
             labels={responseTimeLabels}
@@ -241,7 +257,20 @@ export default function AmbulanceDashboardPage() {
 
         {/* Weekly Cases */}
         <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">Weekly Cases</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-slate-900">Weekly Cases</h3>
+            <select
+              value={weeklyCasesPeriod}
+              onChange={(e) => setWeeklyCasesPeriod(e.target.value)}
+              className="text-xs border border-slate-200 bg-slate-50 text-slate-600 rounded-lg px-2 py-1 cursor-pointer focus:ring-ev-green focus:border-ev-green outline-none"
+            >
+              <option value="today">Today</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+              <option value="year">This Year</option>
+              <option value="all">All Time</option>
+            </select>
+          </div>
           <BarChart data={weeklyCases} height={150} showValues={true} />
           <div className="mt-4 flex items-center justify-between text-sm">
             <span className="text-slate-600">Total: 140 cases</span>
@@ -254,13 +283,39 @@ export default function AmbulanceDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Case Priority */}
         <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">Case Priority</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-slate-900">Case Priority</h3>
+            <select
+              value={casePriorityPeriod}
+              onChange={(e) => setCasePriorityPeriod(e.target.value)}
+              className="text-xs border border-slate-200 bg-slate-50 text-slate-600 rounded-lg px-2 py-1 cursor-pointer focus:ring-ev-green focus:border-ev-green outline-none"
+            >
+              <option value="today">Today</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+              <option value="year">This Year</option>
+              <option value="all">All Time</option>
+            </select>
+          </div>
           <PieChart data={casePriority} size={180} donut={true} showLabels={true} />
         </div>
 
         {/* Case Status */}
         <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">Case Status</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-slate-900">Case Status</h3>
+            <select
+              value={caseStatusPeriod}
+              onChange={(e) => setCaseStatusPeriod(e.target.value)}
+              className="text-xs border border-slate-200 bg-slate-50 text-slate-600 rounded-lg px-2 py-1 cursor-pointer focus:ring-ev-green focus:border-ev-green outline-none"
+            >
+              <option value="today">Today</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+              <option value="year">This Year</option>
+              <option value="all">All Time</option>
+            </select>
+          </div>
           <PieChart data={caseStatus} size={180} donut={true} showLabels={true} />
         </div>
 
@@ -270,7 +325,7 @@ export default function AmbulanceDashboardPage() {
             <h3 className="text-lg font-semibold text-slate-900">Active Cases</h3>
             <Link
               to="/ambulance/dispatch"
-              className="text-sm text-ev-green hover:text-ev-green-dark font-medium"
+              className="text-sm text-ev-green hover:text-emerald-700 font-medium"
             >
               View all →
             </Link>
@@ -280,7 +335,7 @@ export default function AmbulanceDashboardPage() {
               <Link
                 key={caseItem.id}
                 to={`/ambulance/cases/${caseItem.id}`}
-                className={`block p-3 rounded-lg border ${getPriorityColor(caseItem.priority)}`}
+                className={`block p-3 rounded-lg border ${getPriorityColor(caseItem.priority)} transition hover:shadow-sm`}
               >
                 <div className="flex items-center justify-between mb-1">
                   <p className="font-semibold text-slate-900">{caseItem.id}</p>
@@ -333,4 +388,3 @@ export default function AmbulanceDashboardPage() {
     </div>
   );
 }
-

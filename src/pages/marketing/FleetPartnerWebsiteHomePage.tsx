@@ -33,11 +33,11 @@ export default function FleetPartnerWebsiteHomePage() {
         ? "sticky top-0 z-50 bg-slate-900/80 backdrop-blur-xl border-b border-slate-800"
         : "sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-slate-200 shadow-sm"
       }>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-3">
-          <div className="flex items-center justify-between">
+        <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-3">
+          <div className="flex items-center justify-between gap-4">
             {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-xl bg-ev-green flex items-center justify-center text-sm font-black text-white">
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="h-9 w-9 rounded-xl bg-ev-green flex items-center justify-center text-sm font-black text-white shadow-lg shadow-emerald-500/20">
                 EV
               </div>
               <div className="hidden sm:block">
@@ -47,7 +47,7 @@ export default function FleetPartnerWebsiteHomePage() {
             </div>
 
             {/* Nav Links */}
-            <nav className={`hidden md:flex items-center gap-6 text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+            <nav className={`hidden lg:flex items-center gap-8 text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
               <a href="#who" className={isDark ? "hover:text-white transition" : "hover:text-slate-900 transition"}>Who it is for</a>
               <a href="#why" className={isDark ? "hover:text-white transition" : "hover:text-slate-900 transition"}>Why Fleet Partner</a>
               <a href="#how" className={isDark ? "hover:text-white transition" : "hover:text-slate-900 transition"}>How it works</a>
@@ -56,15 +56,15 @@ export default function FleetPartnerWebsiteHomePage() {
             </nav>
 
             {/* Actions */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4 shrink-0">
               {/* Language Selector */}
-              <div className="relative">
+              <div className="relative hidden sm:block">
                 <select
                   value={language}
                   onChange={(e) => setLanguage(e.target.value as typeof language)}
-                  className={`appearance-none pl-8 pr-6 py-1.5 rounded-lg border text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-ev-green ${isDark
-                    ? 'bg-slate-800 border-slate-700 text-white'
-                    : 'bg-white border-slate-300 text-slate-700'
+                  className={`appearance-none pl-8 pr-8 py-2 rounded-xl border text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-ev-green transition-all ${isDark
+                    ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700'
+                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                     }`}
                 >
                   {LANGUAGES.map((lang) => (
@@ -76,11 +76,13 @@ export default function FleetPartnerWebsiteHomePage() {
                 <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm pointer-events-none">
                   {LANGUAGES.find(l => l.code === language)?.flag}
                 </span>
-                <span className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs pointer-events-none ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                <span className={`absolute right-2.5 top-1/2 -translate-y-1/2 text-xs pointer-events-none ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                   ▼
                 </span>
               </div>
-              <ThemeToggle />
+              <div className="hidden sm:block">
+                <ThemeToggle />
+              </div>
               <Link
                 to="/login"
                 className={`px-4 py-2 text-sm font-medium transition ${isDark ? 'text-white hover:text-ev-green' : 'text-slate-700 hover:text-ev-green'}`}
@@ -89,9 +91,9 @@ export default function FleetPartnerWebsiteHomePage() {
               </Link>
               <Link
                 to="/fleet-partner/register"
-                className="px-4 py-2 rounded-lg bg-gradient-to-r from-ev-green to-orange-500 text-white text-sm font-semibold hover:opacity-90 hover:scale-105 transition-all shadow-lg shadow-emerald-500/20"
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-ev-green to-emerald-600 text-white text-sm font-bold hover:shadow-lg hover:shadow-emerald-500/30 hover:-translate-y-0.5 transition-all duration-300"
               >
-                Become a Fleet Partner
+                Become a Partner
               </Link>
             </div>
           </div>
@@ -99,48 +101,51 @@ export default function FleetPartnerWebsiteHomePage() {
       </header>
 
       {/* Hero Section */}
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden w-full">
         {/* Animated background elements - only in dark mode */}
         {isDark && (
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute top-20 left-10 w-72 h-72 bg-ev-green/20 rounded-full blur-3xl animate-pulse" />
-            <div className="absolute bottom-20 right-10 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute top-20 left-10 w-96 h-96 bg-ev-green/10 rounded-full blur-[100px] animate-pulse" />
+            <div className="absolute bottom-20 right-10 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: "1s" }} />
           </div>
         )}
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-16 sm:py-24">
-          <div className="text-center mb-12">
-            <div className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm mb-6 ${isDark
-              ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-              : "border border-ev-green/30 bg-ev-green/10 text-ev-green"
+        <div className="relative w-full px-4 sm:px-6 lg:px-12 xl:px-16 py-20 sm:py-28">
+          <div className="text-center mb-16 max-w-5xl mx-auto">
+            <div className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm mb-8 border backdrop-blur-md ${isDark
+              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300 shadow-emerald-500/10 shadow-lg"
+              : "border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm"
               }`}>
-              <span className="h-2 w-2 rounded-full bg-ev-green animate-pulse" />
-              <span>EV-first platform for fleet operators</span>
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span className="font-medium">The EV-first platform for modern fleets</span>
             </div>
-            <h1 className={`text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              One Control Room for{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-ev-green to-orange-500">All Your Fleet Operations</span>
+            <h1 className={`text-5xl sm:text-6xl lg:text-7xl font-extrabold mb-8 leading-tight tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              One Control Room for <br className="hidden sm:block" />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-ev-green via-emerald-400 to-teal-500">All Your Operations</span>
             </h1>
-            <p className={`text-lg sm:text-xl max-w-3xl mx-auto mb-8 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+            <p className={`text-xl sm:text-2xl max-w-3xl mx-auto mb-10 leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
               Give your dispatchers, fleet managers and finance teams a single workspace to run every
-              vehicle, driver and trip — EV-first, but ready for mixed fleets where you need it.
+              vehicle, driver and trip — EV-first, but ready for mixed fleets.
             </p>
-            <div className="flex flex-wrap justify-center gap-4">
+            <div className="flex flex-wrap justify-center gap-5">
               <Link
                 to="/fleet-partner/register"
-                className="inline-flex items-center px-6 py-3 rounded-xl bg-gradient-to-r from-ev-green to-orange-500 text-white font-semibold hover:opacity-90 transition shadow-lg shadow-emerald-500/25 hover-lift"
+                className="inline-flex items-center px-8 py-4 rounded-2xl bg-gradient-to-r from-ev-green to-emerald-600 text-white font-bold text-lg hover:shadow-xl hover:shadow-emerald-500/30 hover:-translate-y-1 transition-all duration-300"
               >
-                Become a Fleet Partner
-                <span className="ml-2">→</span>
+                Start Free Trial
+                <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
               </Link>
               <Link
                 to="/login"
-                className={`inline-flex items-center px-6 py-3 rounded-xl border font-semibold transition backdrop-blur ${isDark
-                  ? "border-slate-600 bg-slate-800/50 text-white hover:bg-slate-700/50 hover:border-ev-green"
-                  : "border-slate-300 bg-white text-slate-700 hover:border-ev-green hover:text-ev-green"
+                className={`inline-flex items-center px-8 py-4 rounded-2xl border-2 font-bold text-lg transition-all duration-300 backdrop-blur-sm ${isDark
+                  ? "border-slate-700 bg-slate-800/50 text-white hover:bg-slate-700/80 hover:border-slate-600 hover:-translate-y-1"
+                  : "border-slate-200 bg-white/80 text-slate-700 hover:bg-white hover:border-slate-300 hover:shadow-lg hover:-translate-y-1"
                   }`}
               >
-                Sign in to Dashboard
+                View Demo
               </Link>
             </div>
           </div>

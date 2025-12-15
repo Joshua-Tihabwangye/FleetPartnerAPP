@@ -7,35 +7,35 @@ export default function RentalsDashboardPage() {
 
   // Key Metrics
   const keyMetrics = [
-    { 
-      label: "Active Rentals", 
-      value: "12", 
-      change: "+3", 
-      color: "emerald", 
+    {
+      label: "Active Rentals",
+      value: "12",
+      change: "+3",
+      color: "emerald",
       sparkline: [8, 9, 10, 11, 12, 12, 12],
       icon: "🚗"
     },
-    { 
-      label: "Total Bookings", 
-      value: "142", 
-      change: "+18", 
-      color: "blue", 
+    {
+      label: "Total Bookings",
+      value: "142",
+      change: "+18",
+      color: "orange",
       sparkline: [120, 125, 130, 135, 138, 140, 142],
       icon: "📋"
     },
-    { 
-      label: "Revenue", 
-      value: "UGX 24.5M", 
-      change: "+15%", 
-      color: "purple", 
+    {
+      label: "Revenue",
+      value: "UGX 24.5M",
+      change: "+15%",
+      color: "emerald",
       sparkline: [18, 19, 20, 21, 22, 23, 24],
       icon: "💰"
     },
-    { 
-      label: "Utilization Rate", 
-      value: "78%", 
-      change: "+5%", 
-      color: "orange", 
+    {
+      label: "Utilization Rate",
+      value: "78%",
+      change: "+5%",
+      color: "orange",
       sparkline: [70, 72, 74, 75, 76, 77, 78],
       icon: "📊"
     }
@@ -51,16 +51,16 @@ export default function RentalsDashboardPage() {
   // Vehicle utilization
   const vehicleUtilization = [
     { label: "Premium", value: 85, color: "#10b981" },
-    { label: "Standard", value: 78, color: "#3b82f6" },
-    { label: "Economy", value: 72, color: "#f59e0b" },
-    { label: "Luxury", value: 65, color: "#8b5cf6" }
+    { label: "Standard", value: 78, color: "#f97316" }, // Orange
+    { label: "Economy", value: 72, color: "#34d399" }, // Light Green
+    { label: "Luxury", value: 65, color: "#fb923c" } // Light Orange
   ];
 
   // Booking status breakdown
   const bookingStatus = [
     { label: "Active", value: 12, color: "#10b981" },
-    { label: "Upcoming", value: 8, color: "#3b82f6" },
-    { label: "Completed", value: 118, color: "#6b7280" },
+    { label: "Upcoming", value: 8, color: "#f97316" },
+    { label: "Completed", value: 118, color: "#6b7280" }, // Grey is fine or Slate
     { label: "Cancelled", value: 4, color: "#ef4444" }
   ];
 
@@ -100,7 +100,12 @@ export default function RentalsDashboardPage() {
       <div className="mb-6 pb-6 border-b border-slate-200">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 mb-1">
+            <div className="flex items-center gap-2 mb-1">
+              <Link to="/dashboard" className="text-slate-400 hover:text-slate-600 transition">
+                ← Back to Dashboard
+              </Link>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-1">
               Car Rentals Dashboard
             </h1>
             <p className="text-sm text-slate-600">
@@ -116,76 +121,72 @@ export default function RentalsDashboardPage() {
             </Link>
             <Link
               to="/rentals/catalog"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-ev-green to-emerald-600 text-white text-sm font-medium shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-ev-green text-white text-sm font-medium shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition"
             >
               🚗 Browse Catalog
             </Link>
           </div>
         </div>
-        <div className="mt-4 h-1 w-24 rounded-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 opacity-80" />
+        <div className="mt-4 h-1 w-24 rounded-full bg-gradient-to-r from-slate-400 via-emerald-500 to-slate-500 opacity-80" />
       </div>
 
       {/* Key Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {keyMetrics.map((metric, idx) => {
-          const colors: Record<string, string> = {
-            emerald: "#10b981",
-            blue: "#3b82f6",
-            purple: "#8b5cf6",
-            orange: "#f59e0b"
-          };
+          const isEmerald = metric.color === "emerald";
+          const borderColor = isEmerald ? "border-emerald-200" : "border-orange-200";
+          const sparkColor = isEmerald ? "#10b981" : "#f97316";
+          const changeBg = isEmerald ? "bg-emerald-100 text-emerald-600" : "bg-orange-100 text-orange-600";
+
           return (
             <div
               key={idx}
-              className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-shadow"
+              className={`bg-white rounded-xl border ${borderColor} p-4 shadow-sm hover:shadow-md transition-all`}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <span className="text-xl">{metric.icon}</span>
-                  <div className="text-xs text-slate-500">{metric.label}</div>
+                  <div className="text-xs text-slate-500 font-medium uppercase tracking-wider">{metric.label}</div>
                 </div>
-                <div
-                  className={`text-xs font-medium px-1.5 py-0.5 rounded ${
-                    metric.color === "emerald"
-                      ? "bg-emerald-100 text-emerald-600"
-                      : metric.color === "blue"
-                      ? "bg-blue-100 text-blue-600"
-                      : metric.color === "purple"
-                      ? "bg-purple-100 text-purple-600"
-                      : "bg-orange-100 text-orange-600"
-                  }`}
-                >
+                <select className="text-[10px] border-none bg-slate-50 text-slate-500 rounded p-0.5 cursor-pointer focus:ring-0 outline-none">
+                  <option>Today</option>
+                  <option>Week</option>
+                  <option>Month</option>
+                </select>
+              </div>
+              <div className="flex items-end justify-between mb-2">
+                <div className="text-2xl font-bold text-slate-900">{metric.value}</div>
+                <div className={`text-xs font-medium px-1.5 py-0.5 rounded ${changeBg}`}>
                   {metric.change}
                 </div>
               </div>
-              <div className="text-2xl font-bold text-slate-900 mb-2">{metric.value}</div>
-              <Sparkline data={metric.sparkline} color={colors[metric.color]} height={32} />
+              <Sparkline data={metric.sparkline} color={sparkColor} height={32} />
             </div>
           );
         })}
       </div>
 
-      {/* Revenue Card */}
+      {/* Revenue Card - Redesigned to Light Solid */}
       <div className="mb-6">
-        <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-6 shadow-lg text-white">
+        <div className="bg-white rounded-xl border border-emerald-200 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <div className="text-sm text-indigo-100 mb-1">Total Revenue</div>
-              <div className="text-3xl font-bold">{revenueData[dateRange].value}</div>
+              <div className="text-sm text-slate-500 font-semibold uppercase tracking-wider mb-1">Total Revenue</div>
+              <div className="text-3xl font-bold text-slate-900">{revenueData[dateRange].value}</div>
             </div>
             <select
               value={dateRange}
               onChange={(e) => setDateRange(e.target.value as "today" | "week" | "month")}
-              className="text-xs bg-white/20 border border-white/30 rounded-lg px-3 py-1.5 text-white cursor-pointer hover:bg-white/30"
+              className="text-xs bg-slate-100 border border-slate-200 rounded-lg px-3 py-1.5 text-slate-700 cursor-pointer hover:bg-slate-200 outline-none"
             >
-              <option value="today" className="text-slate-800">Today</option>
-              <option value="week" className="text-slate-800">This Week</option>
-              <option value="month" className="text-slate-800">This Month</option>
+              <option value="today">Today</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
             </select>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-indigo-100">↑ {revenueData[dateRange].change}</span>
-            <span className="text-xs text-indigo-200">vs last period</span>
+            <span className="text-sm text-emerald-600 font-bold">↑ {revenueData[dateRange].change}</span>
+            <span className="text-xs text-slate-500">vs last period</span>
           </div>
         </div>
       </div>
@@ -194,23 +195,33 @@ export default function RentalsDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Revenue Trend */}
         <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">Revenue Trend (Million UGX)</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-slate-900">Revenue Trend (Million UGX)</h3>
+            <select className="text-xs bg-white border border-slate-200 rounded-md px-2 py-1 outline-none">
+              <option>This Year</option>
+            </select>
+          </div>
           <LineChart
             data={revenueTrendData}
             labels={revenueTrendLabels}
             height={150}
-            color="#8b5cf6"
+            color="#10b981"
             showArea={true}
           />
           <div className="mt-4 flex items-center justify-between text-sm">
             <span className="text-slate-600">Average: UGX 2.6M</span>
-            <span className="text-purple-600 font-medium">↑ +12% this month</span>
+            <span className="text-emerald-600 font-medium">↑ +12% this month</span>
           </div>
         </div>
 
         {/* Weekly Bookings */}
         <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">Weekly Bookings</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-slate-900">Weekly Bookings</h3>
+            <select className="text-xs bg-white border border-slate-200 rounded-md px-2 py-1 outline-none">
+              <option>This Week</option>
+            </select>
+          </div>
           <BarChart data={weeklyBookings} height={150} showValues={true} />
           <div className="mt-4 flex items-center justify-between text-sm">
             <span className="text-slate-600">Total: 140 bookings</span>
@@ -223,13 +234,23 @@ export default function RentalsDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Booking Status */}
         <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">Booking Status</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-slate-900">Booking Status</h3>
+            <select className="text-xs bg-white border border-slate-200 rounded-md px-2 py-1 outline-none">
+              <option>All Time</option>
+            </select>
+          </div>
           <PieChart data={bookingStatus} size={180} donut={true} showLabels={true} />
         </div>
 
         {/* Vehicle Utilization */}
         <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">Vehicle Utilization by Category</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-slate-900">Vehicle Utilization by Category</h3>
+            <select className="text-xs bg-white border border-slate-200 rounded-md px-2 py-1 outline-none">
+              <option>Current</option>
+            </select>
+          </div>
           <div className="space-y-4">
             {vehicleUtilization.map((item, idx) => (
               <div key={idx}>
@@ -256,7 +277,7 @@ export default function RentalsDashboardPage() {
           <h3 className="text-lg font-semibold text-slate-900 mb-4">Popular Vehicles</h3>
           <div className="space-y-3">
             {popularVehicles.map((vehicle, idx) => (
-              <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
+              <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100 hover:border-emerald-200 transition">
                 <div className="flex-1">
                   <p className="font-medium text-slate-900">{vehicle.name}</p>
                   <p className="text-xs text-slate-600">{vehicle.bookings} bookings</p>
@@ -275,7 +296,7 @@ export default function RentalsDashboardPage() {
             <h3 className="text-lg font-semibold text-slate-900">Recent Bookings</h3>
             <Link
               to="/rentals/bookings"
-              className="text-sm text-ev-green hover:text-ev-green-dark font-medium"
+              className="text-sm text-ev-green hover:text-emerald-700 font-medium"
             >
               View all →
             </Link>
@@ -293,13 +314,12 @@ export default function RentalsDashboardPage() {
                     <p className="text-xs text-slate-600">{booking.customer} • {booking.vehicle}</p>
                   </div>
                   <span
-                    className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      booking.status === "active"
+                    className={`px-2 py-1 text-xs font-medium rounded-full ${booking.status === "active"
                         ? "bg-emerald-100 text-emerald-700"
                         : booking.status === "upcoming"
-                        ? "bg-blue-100 text-blue-700"
-                        : "bg-slate-100 text-slate-700"
-                    }`}
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-slate-100 text-slate-700"
+                      }`}
                   >
                     {booking.status}
                   </span>
@@ -323,14 +343,14 @@ export default function RentalsDashboardPage() {
           </Link>
           <Link
             to="/rentals/catalog"
-            className="p-4 rounded-lg border border-slate-200 hover:border-blue-500 hover:bg-blue-50 transition-colors text-center"
+            className="p-4 rounded-lg border border-slate-200 hover:border-orange-500 hover:bg-orange-50 transition-colors text-center"
           >
             <div className="text-2xl mb-2">🚗</div>
             <div className="text-sm font-medium text-slate-900">Browse Catalog</div>
           </Link>
           <Link
             to="/settings/rentals"
-            className="p-4 rounded-lg border border-slate-200 hover:border-purple-500 hover:bg-purple-50 transition-colors text-center"
+            className="p-4 rounded-lg border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50 transition-colors text-center"
           >
             <div className="text-2xl mb-2">⚙️</div>
             <div className="text-sm font-medium text-slate-900">Pricing Settings</div>
@@ -347,4 +367,3 @@ export default function RentalsDashboardPage() {
     </div>
   );
 }
-

@@ -95,8 +95,7 @@ const NAV_SECTIONS = [
       { id: "dispatch", label: "Manual dispatch", path: "/dispatch/new" },
       { id: "trips", label: "Trips & deliveries", path: "/trips" },
       { id: "rentals", label: "Car rental", path: "/rentals" },
-      { id: "rental-catalog", label: "Rental catalog", path: "/rentals/catalog" },
-      { id: "school-shuttles", label: "School shuttles", path: "/school-shuttles" },
+      { id: "school-shuttles", label: "School Shuttles", path: "/school-shuttles" },
       { id: "tours", label: "Tours", path: "/tours" },
       { id: "ambulance", label: "Ambulance/EMS", path: "/ambulance" }
     ]

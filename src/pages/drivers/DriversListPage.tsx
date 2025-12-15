@@ -53,19 +53,22 @@ export default function DriversListPage() {
   };
 
   return (
-    <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50">
+    <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50 dark:bg-slate-900">
       {/* Enhanced Header */}
-      <div className="mb-6 pb-6 border-b border-slate-200">
+      <div className="mb-6 pb-6 border-b border-slate-200 dark:border-slate-700">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-slate-700 to-slate-900 mb-1">
+            <Link to="/dashboard" className="text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition mb-2 inline-block">
+              ← Back to Dashboard
+            </Link>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-1">
               Fleet Drivers
             </h1>
-            <p className="text-sm text-slate-600">Manage your fleet drivers and their profiles</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">Manage your fleet drivers and their profiles</p>
           </div>
           <Link
             to="/drivers/new"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-ev-green to-emerald-600 text-white text-sm font-medium shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-ev-green text-white text-sm font-medium shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition"
           >
             + Add Driver
           </Link>

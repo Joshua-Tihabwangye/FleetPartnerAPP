@@ -26,6 +26,12 @@ export default function TourBookingCreatePage() {
             <div className="w-full">
                 {/* Header */}
                 <div className="mb-6">
+                    <Link
+                        to="/tours"
+                        className="text-sm text-slate-600 hover:text-slate-900 mb-2 inline-block"
+                    >
+                        ← Back to Tours Dashboard
+                    </Link>
                     <h1 className="text-2xl font-semibold text-slate-900 mb-2">Create Tour Booking</h1>
                     <p className="text-sm text-slate-600">Book a new tour package for your customer</p>
                 </div>

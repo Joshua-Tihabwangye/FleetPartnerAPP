@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import Modal from "../../../components/ui/Modal";
 import { toastManager } from "../../../utils/toastManager";
 
@@ -120,6 +121,12 @@ export default function FleetPartnerRentalCatalogPage() {
     <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50">
       {/* Header */}
       <div className="mb-6">
+        <Link
+          to="/rentals"
+          className="text-sm text-slate-600 hover:text-slate-900 mb-2 inline-block"
+        >
+          ← Back to Rentals Dashboard
+        </Link>
         <h1 className="text-2xl font-semibold text-slate-900 mb-2">Rental Catalog</h1>
         <p className="text-sm text-slate-600">Browse and rent vehicles from our fleet</p>
       </div>
