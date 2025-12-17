@@ -92,7 +92,12 @@ export default function VehicleDocumentsPage() {
                     <td className="px-6 py-4 text-sm text-slate-600 capitalize">{doc.type}</td>
                     <td className="px-6 py-4 text-sm text-slate-600">{doc.date}</td>
                     <td className="px-6 py-4 text-sm">
-                      <button className="text-ev-green hover:text-ev-green-dark font-medium">Download</button>
+                      <button
+                        onClick={() => toastManager.show(`Downloading ${doc.name}...`, "success")}
+                        className="text-ev-green hover:text-ev-green-dark font-medium"
+                      >
+                        Download
+                      </button>
                     </td>
                   </tr>
                 ))}

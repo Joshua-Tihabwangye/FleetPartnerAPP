@@ -550,6 +550,16 @@ export default function ShuttleDashboardPage() {
             <div className="text-sm font-medium text-slate-900 dark:text-white">Performance</div>
           </Link>
           <Link
+            to="/school-shuttles/payments"
+            className={`p-4 rounded-lg border transition-colors text-center ${isCurrentPage("/school-shuttles/payments")
+              ? "border-ev-green ring-2 ring-ev-green bg-emerald-50 dark:bg-emerald-900/20"
+              : "border-slate-200 dark:border-slate-600 hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+              }`}
+          >
+            <div className="text-2xl mb-2">💰</div>
+            <div className="text-sm font-medium text-slate-900 dark:text-white">Payments</div>
+          </Link>
+          <Link
             to="/school-shuttles/bulk-reminders"
             className={`p-4 rounded-lg border transition-colors text-center ${isCurrentPage("/school-shuttles/bulk-reminders")
               ? "border-ev-green ring-2 ring-ev-green bg-orange-50 dark:bg-orange-900/20"
