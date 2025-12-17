@@ -16,6 +16,7 @@ interface MaintenanceRecord {
 export default function VehicleMaintenanceHistoryPage() {
   const { vehicleId } = useParams();
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<MaintenanceRecord | null>(null);
   const [maintenance, setMaintenance] = useState<MaintenanceRecord[]>([]);
   const [newRecord, setNewRecord] = useState({ type: "service", date: "", notes: "", cost: "" });
 
@@ -27,21 +28,40 @@ export default function VehicleMaintenanceHistoryPage() {
 
   const handleSchedule = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const record: MaintenanceRecord = {
-      id: Date.now().toString(),
-      vehicleId,
-      status: "scheduled",
-      ...newRecord
-    };
 
-    const allRecords = JSON.parse(localStorage.getItem("vehicle_maintenance") || "[]");
-    const updatedRecords = [...allRecords, record];
-    localStorage.setItem("vehicle_maintenance", JSON.stringify(updatedRecords));
+    if (editingRecord) {
+      const updatedRecord: MaintenanceRecord = {
+        ...editingRecord,
+        ...newRecord
+      };
 
-    setMaintenance([...maintenance, record]);
+      const allRecords = JSON.parse(localStorage.getItem("vehicle_maintenance") || "[]");
+      const updatedRecords = allRecords.map((r: MaintenanceRecord) =>
+        r.id === editingRecord.id ? updatedRecord : r
+      );
+      localStorage.setItem("vehicle_maintenance", JSON.stringify(updatedRecords));
+
+      setMaintenance(maintenance.map(r => r.id === editingRecord.id ? updatedRecord : r));
+      setEditingRecord(null);
+      toastManager.show("Maintenance record updated successfully!", "success");
+    } else {
+      const record: MaintenanceRecord = {
+        id: Date.now().toString(),
+        vehicleId,
+        status: "scheduled",
+        ...newRecord
+      };
+
+      const allRecords = JSON.parse(localStorage.getItem("vehicle_maintenance") || "[]");
+      const updatedRecords = [...allRecords, record];
+      localStorage.setItem("vehicle_maintenance", JSON.stringify(updatedRecords));
+
+      setMaintenance([...maintenance, record]);
+      toastManager.show("Maintenance scheduled successfully!", "success");
+    }
+
     setShowScheduleModal(false);
     setNewRecord({ type: "service", date: "", notes: "", cost: "" });
-    toastManager.show("Maintenance scheduled successfully!", "success");
   };
 
   return (
@@ -86,6 +106,23 @@ export default function VehicleMaintenanceHistoryPage() {
                 <div className="text-right">
                   <div className="text-sm font-medium text-slate-900">{record.date}</div>
                   {record.cost && <div className="text-sm text-slate-500">UGX {parseInt(record.cost).toLocaleString()}</div>}
+                  {record.status === 'scheduled' && (
+                    <button
+                      onClick={() => {
+                        setEditingRecord(record);
+                        setNewRecord({
+                          type: record.type,
+                          date: record.date,
+                          notes: record.notes,
+                          cost: record.cost
+                        });
+                        setShowScheduleModal(true);
+                      }}
+                      className="mt-2 text-xs font-medium text-ev-green hover:text-ev-green-dark underline"
+                    >
+                      Edit
+                    </button>
+                  )}
                 </div>
               </div>
             ))
@@ -94,8 +131,12 @@ export default function VehicleMaintenanceHistoryPage() {
 
         <Modal
           isOpen={showScheduleModal}
-          onClose={() => setShowScheduleModal(false)}
-          title="Schedule Maintenance"
+          onClose={() => {
+            setShowScheduleModal(false);
+            setEditingRecord(null);
+            setNewRecord({ type: "service", date: "", notes: "", cost: "" });
+          }}
+          title={editingRecord ? "Edit Maintenance Schedule" : "Schedule Maintenance"}
           size="md"
         >
           <form onSubmit={handleSchedule} className="space-y-4">
@@ -145,7 +186,11 @@ export default function VehicleMaintenanceHistoryPage() {
             <div className="flex gap-2 pt-4">
               <button
                 type="button"
-                onClick={() => setShowScheduleModal(false)}
+                onClick={() => {
+                  setShowScheduleModal(false);
+                  setEditingRecord(null);
+                  setNewRecord({ type: "service", date: "", notes: "", cost: "" });
+                }}
                 className="flex-1 px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
               >
                 Cancel
@@ -154,7 +199,7 @@ export default function VehicleMaintenanceHistoryPage() {
                 type="submit"
                 className="flex-1 px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark"
               >
-                Schedule
+                {editingRecord ? "Update Schedule" : "Schedule"}
               </button>
             </div>
           </form>

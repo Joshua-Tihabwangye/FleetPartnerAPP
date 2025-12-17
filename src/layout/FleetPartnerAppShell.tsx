@@ -112,18 +112,14 @@ const NAV_SECTIONS = [
     id: "money",
     label: "Money",
     items: [
-      { id: "earnings-overview", label: "Earnings (overview)", path: "/earnings" },
-      { id: "earnings-statements", label: "Statements", path: "/earnings/statements" },
-      { id: "driver-payouts", label: "Driver payouts", path: "/earnings/payouts" }
+      { id: "earnings-overview", label: "Earnings (overview)", path: "/earnings" }
     ]
   },
   {
     id: "safety",
     label: "Safety & compliance",
     items: [
-      { id: "compliance-dashboard", label: "Compliance dashboard", path: "/compliance" },
-      { id: "incidents", label: "Incidents", path: "/compliance/incidents" },
-      { id: "ambulance-cases", label: "Ambulance cases", path: "/ambulance/cases" }
+      { id: "compliance-dashboard", label: "Compliance dashboard", path: "/compliance" }
     ]
   },
   {
@@ -182,11 +178,7 @@ const NAV_ICONS: Record<string, React.ReactNode> = {
   drivers: <DriversIcon fontSize="inherit" />,
   vehicles: <VehiclesIcon fontSize="inherit" />,
   "earnings-overview": <EarningsIcon fontSize="inherit" />,
-  "earnings-statements": <StatementsIcon fontSize="inherit" />,
-  "driver-payouts": <PayoutsIcon fontSize="inherit" />,
   "compliance-dashboard": <ComplianceIcon fontSize="inherit" />,
-  incidents: <IncidentsIcon fontSize="inherit" />,
-  "ambulance-cases": <AmbulanceCasesIcon fontSize="inherit" />,
   "training-centre": <TrainingIcon fontSize="inherit" />,
   help: <HelpIcon fontSize="inherit" />,
   "settings-profile": <ProfileIcon fontSize="inherit" />,
@@ -205,10 +197,16 @@ export default function FleetPartnerAppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { toasts, removeToast } = useToast();
 
-  // Determine active nav ID strictly
-  const activeNavId = Object.entries(NAV_PATHS).find(([_, path]) =>
-    pathname === path || (pathname.startsWith(path + '/') && path !== '/')
-  )?.[0] || '';
+  // Determine active nav ID strictly - check more specific paths first
+  const activeNavId = Object.entries(NAV_PATHS)
+    .sort(([_, a], [__, b]) => b.length - a.length) // Sort by path length (longer paths first)
+    .find(([_, path]) => {
+      // Exact match
+      if (pathname === path) return true;
+      // Sub-path match (but ensure we don't match partial names like /setting-up vs /settings)
+      if (pathname.startsWith(path + '/')) return true;
+      return false;
+    })?.[0] || '';
 
   const onNavClick = (id: string) => {
     const path = NAV_PATHS[id];

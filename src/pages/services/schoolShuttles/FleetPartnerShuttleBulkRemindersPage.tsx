@@ -17,8 +17,28 @@ export default function FleetPartnerShuttleBulkRemindersPage() {
     custom: ""
   };
 
+  const [sentReminders, setSentReminders] = useState([
+    { date: "2024-01-15", type: "Payment Reminder", recipients: 84, status: "delivered" },
+    { date: "2024-01-10", type: "Schedule Change", recipients: 26, status: "delivered" },
+    { date: "2024-01-05", type: "Pickup Reminder", recipients: 84, status: "delivered" }
+  ]);
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    // Create new reminder object
+    const newReminder = {
+      date: new Date().toISOString().split('T')[0],
+      type: formData.messageType === 'custom' ? 'Custom Message' :
+        formData.messageType === 'payment' ? 'Payment Reminder' :
+          formData.messageType === 'pickup' ? 'Pickup Reminder' : 'Schedule Change',
+      recipients: formData.recipients === "all-parents" ? 84 : formData.recipients === "route-specific" ? 26 : 18,
+      status: "delivered"
+    };
+
+    // Add to list (at start)
+    setSentReminders([newReminder, ...sentReminders]);
+
     toastManager.show("Reminders sent successfully!", "success");
     setFormData({
       recipients: "all-parents",
@@ -63,7 +83,7 @@ export default function FleetPartnerShuttleBulkRemindersPage() {
           </div>
           <div className="bg-orange-50 rounded-xl border border-orange-200 p-4">
             <p className="text-sm text-orange-700 font-medium mb-1">Reminders Sent This Month</p>
-            <p className="text-2xl font-semibold text-orange-800">142</p>
+            <p className="text-2xl font-semibold text-orange-800">{142 + sentReminders.length - 3}</p>
           </div>
         </div>
 
@@ -172,7 +192,7 @@ export default function FleetPartnerShuttleBulkRemindersPage() {
                 type="submit"
                 className="px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark"
               >
-                Send Reminders
+                {formData.messageType === "custom" ? "Send Reminder" : "Create Reminder"}
               </button>
             </div>
           </form>
@@ -182,11 +202,7 @@ export default function FleetPartnerShuttleBulkRemindersPage() {
         <div className="mt-6 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Recent Reminders</h2>
           <div className="space-y-3">
-            {[
-              { date: "2024-01-15", type: "Payment Reminder", recipients: 84, status: "delivered" },
-              { date: "2024-01-10", type: "Schedule Change", recipients: 26, status: "delivered" },
-              { date: "2024-01-05", type: "Pickup Reminder", recipients: 84, status: "delivered" }
-            ].map((reminder, idx) => (
+            {sentReminders.map((reminder, idx) => (
               <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-700/50">
                 <div className="flex-1">
                   <p className="font-medium text-slate-900 dark:text-slate-100">{reminder.type}</p>

@@ -106,6 +106,7 @@ import ShuttleTripCalendarPage from "../pages/services/schoolShuttles/ShuttleTri
 import ShuttleTripCreatePage from "../pages/services/schoolShuttles/ShuttleTripCreatePage";
 import ShuttleTripDetailPage from "../pages/services/schoolShuttles/ShuttleTripDetailPage";
 import ShuttleAttendantCreatePage from "../pages/services/schoolShuttles/ShuttleAttendantCreatePage";
+import ShuttlePaymentsPage from "../pages/services/schoolShuttles/ShuttlePaymentsPage";
 
 // Settings
 import FleetPartnerSettingsPage from "../pages/settings/FleetPartnerSettingsPage";
@@ -272,6 +273,7 @@ export default function AppRoutes() {
           path="/school-shuttles/parent-feedback"
           element={<ShuttleParentFeedbackPage />}
         />
+        <Route path="/school-shuttles/payments" element={<ShuttlePaymentsPage />} />
 
         {/* Settings */}
         <Route path="/settings/fleet-partner" element={<FleetPartnerSettingsPage />} />
