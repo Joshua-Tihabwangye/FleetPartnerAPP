@@ -13,6 +13,7 @@ interface Student {
   address: string;
   status: string;
   attendanceRate: number;
+  paymentDestination?: "school" | "fleet-owner";
 }
 
 export default function ShuttleStudentsListPage() {
@@ -25,7 +26,8 @@ export default function ShuttleStudentsListPage() {
     route: "",
     parent: "",
     parentPhone: "",
-    address: ""
+    address: "",
+    paymentDestination: "fleet-owner" as "school" | "fleet-owner"
   });
 
   // Load students from localStorage on mount
@@ -43,7 +45,8 @@ export default function ShuttleStudentsListPage() {
           parentPhone: "+256 700 111 222",
           address: "Kololo, Kampala",
           status: "active",
-          attendanceRate: 95
+          attendanceRate: 95,
+          paymentDestination: "school"
         },
         {
           id: 2,
@@ -54,7 +57,8 @@ export default function ShuttleStudentsListPage() {
           parentPhone: "+256 700 222 333",
           address: "Nakasero, Kampala",
           status: "active",
-          attendanceRate: 92
+          attendanceRate: 92,
+          paymentDestination: "fleet-owner"
         },
         {
           id: 3,
@@ -65,7 +69,8 @@ export default function ShuttleStudentsListPage() {
           parentPhone: "+256 700 333 444",
           address: "Bugolobi, Kampala",
           status: "active",
-          attendanceRate: 98
+          attendanceRate: 98,
+          paymentDestination: "fleet-owner"
         }
       ];
       localStorage.setItem("shuttleStudents", JSON.stringify(mockStudents));
@@ -213,7 +218,7 @@ export default function ShuttleStudentsListPage() {
         isOpen={showAddStudentModal}
         onClose={() => {
           setShowAddStudentModal(false);
-          setStudentForm({ name: "", grade: "", route: "", parent: "", parentPhone: "", address: "" });
+          setStudentForm({ name: "", grade: "", route: "", parent: "", parentPhone: "", address: "", paymentDestination: "fleet-owner" });
         }}
         title="Add New Student"
         size="md"
@@ -234,7 +239,7 @@ export default function ShuttleStudentsListPage() {
 
             toastManager.show("Student added successfully!", "success");
             setShowAddStudentModal(false);
-            setStudentForm({ name: "", grade: "", route: "", parent: "", parentPhone: "", address: "" });
+            setStudentForm({ name: "", grade: "", route: "", parent: "", parentPhone: "", address: "", paymentDestination: "fleet-owner" });
           }}
           className="space-y-4"
         >
@@ -318,12 +323,25 @@ export default function ShuttleStudentsListPage() {
               />
             </label>
           </div>
+          <label className="block">
+            <span className="text-sm font-medium text-slate-700 mb-1 block">Payment Destination *</span>
+            <select
+              value={studentForm.paymentDestination}
+              onChange={(e) => setStudentForm({ ...studentForm, paymentDestination: e.target.value as "school" | "fleet-owner" })}
+              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green"
+              required
+            >
+              <option value="fleet-owner">Fleet Owner (Direct Payment)</option>
+              <option value="school">School (Payment via School)</option>
+            </select>
+            <p className="text-xs text-slate-500 mt-1">Select where parents should make payments</p>
+          </label>
           <div className="flex gap-2 pt-4">
             <button
               type="button"
               onClick={() => {
                 setShowAddStudentModal(false);
-                setStudentForm({ name: "", grade: "", route: "", parent: "", parentPhone: "", address: "" });
+                setStudentForm({ name: "", grade: "", route: "", parent: "", parentPhone: "", address: "", paymentDestination: "fleet-owner" });
               }}
               className="flex-1 px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
             >

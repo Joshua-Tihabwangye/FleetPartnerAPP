@@ -12,6 +12,7 @@ interface Student {
   address: string;
   status: string;
   attendanceRate: number;
+  paymentDestination?: "school" | "fleet-owner";
 }
 
 export default function ShuttleStudentEditPage() {
@@ -27,7 +28,8 @@ export default function ShuttleStudentEditPage() {
     parentPhone: "",
     address: "",
     status: "active",
-    attendanceRate: 100
+    attendanceRate: 100,
+    paymentDestination: "fleet-owner"
   });
 
   useEffect(() => {
@@ -48,7 +50,8 @@ export default function ShuttleStudentEditPage() {
         parentPhone: "+256 700 111 222",
         address: "Kololo, Kampala",
         status: "active",
-        attendanceRate: 95
+        attendanceRate: 95,
+        paymentDestination: "fleet-owner"
       });
     }
     setLoading(false);
@@ -170,6 +173,19 @@ export default function ShuttleStudentEditPage() {
                   <option value="inactive">Inactive</option>
                   <option value="pending">Pending</option>
                 </select>
+              </label>
+              <label className="block">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">Payment Destination *</span>
+                <select
+                  value={formData.paymentDestination || "fleet-owner"}
+                  onChange={(e) => setFormData({ ...formData, paymentDestination: e.target.value as "school" | "fleet-owner" })}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-ev-green"
+                  required
+                >
+                  <option value="fleet-owner">Fleet Owner (Direct Payment)</option>
+                  <option value="school">School (Payment via School)</option>
+                </select>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Select where parents should make payments</p>
               </label>
             </div>
 

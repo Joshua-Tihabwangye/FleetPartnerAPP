@@ -14,6 +14,7 @@ interface Student {
   attendanceRate: number;
   pickupLocation: string;
   pickupTime: string;
+  paymentDestination?: "school" | "fleet-owner";
 }
 
 export default function ShuttleStudentDetailPage() {
@@ -131,6 +132,20 @@ export default function ShuttleStudentDetailPage() {
                   <span className="px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700">
                     {student.status}
                   </span>
+                </p>
+              </div>
+              <div>
+                <span className="text-sm text-slate-500">Payment Destination</span>
+                <p>
+                  {student.paymentDestination === "school" ? (
+                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">
+                      💰 Paid to School
+                    </span>
+                  ) : (
+                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700">
+                      💵 Paid to Fleet Owner
+                    </span>
+                  )}
                 </p>
               </div>
               <div>
