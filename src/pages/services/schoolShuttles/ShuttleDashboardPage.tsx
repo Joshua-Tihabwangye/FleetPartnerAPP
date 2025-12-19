@@ -11,6 +11,10 @@ export default function ShuttleDashboardPage() {
   const [studentsPeriod, setStudentsPeriod] = useState("today");
   const [vehiclesPeriod, setVehiclesPeriod] = useState("today");
   const [attendancePeriod, setAttendancePeriod] = useState("today");
+  const [paymentsToSchoolPeriod, setPaymentsToSchoolPeriod] = useState("this-month");
+  const [paymentsToFleetPeriod, setPaymentsToFleetPeriod] = useState("this-month");
+  const [totalRevenuePeriod, setTotalRevenuePeriod] = useState("this-month");
+  const [pendingFromSchoolPeriod, setPendingFromSchoolPeriod] = useState("this-month");
 
   useEffect(() => {
     // Simulate active runs count
@@ -288,6 +292,117 @@ export default function ShuttleDashboardPage() {
             </div>
           );
         })}
+      </div>
+
+      {/* Payment Analytics - NEW */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {/* Payments to School */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-blue-200 dark:border-blue-700 p-4 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🏫</span>
+              <div className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">Payments to School</div>
+            </div>
+            <select
+              value={paymentsToSchoolPeriod}
+              onChange={(e) => setPaymentsToSchoolPeriod(e.target.value)}
+              className="text-xs border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg px-2 py-1 cursor-pointer focus:ring-ev-green focus:border-ev-green outline-none"
+            >
+              <option value="today">Today</option>
+              <option value="this-week">This Week</option>
+              <option value="this-month">This Month</option>
+              <option value="this-year">This Year</option>
+            </select>
+          </div>
+          <div className="flex items-end justify-between mb-2">
+            <div className="text-2xl font-bold text-blue-700 dark:text-blue-400">UGX 2,100,000</div>
+            <div className="text-xs font-medium px-2 py-1 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+              +8%
+            </div>
+          </div>
+          <Sparkline data={[1800000, 1900000, 2000000, 1950000, 2100000, 2050000, 2100000]} color="#3b82f6" height={32} />
+        </div>
+
+        {/* Payments to Fleet Owner */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-emerald-200 dark:border-emerald-700 p-4 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">💵</span>
+              <div className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">Direct Payments</div>
+            </div>
+            <select
+              value={paymentsToFleetPeriod}
+              onChange={(e) => setPaymentsToFleetPeriod(e.target.value)}
+              className="text-xs border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg px-2 py-1 cursor-pointer focus:ring-ev-green focus:border-ev-green outline-none"
+            >
+              <option value="today">Today</option>
+              <option value="this-week">This Week</option>
+              <option value="this-month">This Month</option>
+              <option value="this-year">This Year</option>
+            </select>
+          </div>
+          <div className="flex items-end justify-between mb-2">
+            <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">UGX 1,800,000</div>
+            <div className="text-xs font-medium px-2 py-1 rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+              +12%
+            </div>
+          </div>
+          <Sparkline data={[1500000, 1600000, 1700000, 1650000, 1800000, 1750000, 1800000]} color="#10b981" height={32} />
+        </div>
+
+        {/* Total Revenue */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-purple-200 dark:border-purple-700 p-4 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">💰</span>
+              <div className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">Total Revenue</div>
+            </div>
+            <select
+              value={totalRevenuePeriod}
+              onChange={(e) => setTotalRevenuePeriod(e.target.value)}
+              className="text-xs border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg px-2 py-1 cursor-pointer focus:ring-ev-green focus:border-ev-green outline-none"
+            >
+              <option value="today">Today</option>
+              <option value="this-week">This Week</option>
+              <option value="this-month">This Month</option>
+              <option value="this-year">This Year</option>
+            </select>
+          </div>
+          <div className="flex items-end justify-between mb-2">
+            <div className="text-2xl font-bold text-purple-700 dark:text-purple-400">UGX 3,900,000</div>
+            <div className="text-xs font-medium px-2 py-1 rounded-full bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400">
+              +10%
+            </div>
+          </div>
+          <Sparkline data={[3300000, 3500000, 3600000, 3700000, 3800000, 3850000, 3900000]} color="#8b5cf6" height={32} />
+        </div>
+
+        {/* Pending from School */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-orange-200 dark:border-orange-700 p-4 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">⏳</span>
+              <div className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">Pending from School</div>
+            </div>
+            <select
+              value={pendingFromSchoolPeriod}
+              onChange={(e) => setPendingFromSchoolPeriod(e.target.value)}
+              className="text-xs border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg px-2 py-1 cursor-pointer focus:ring-ev-green focus:border-ev-green outline-none"
+            >
+              <option value="today">Today</option>
+              <option value="this-week">This Week</option>
+              <option value="this-month">This Month</option>
+              <option value="this-year">This Year</option>
+            </select>
+          </div>
+          <div className="flex items-end justify-between mb-2">
+            <div className="text-2xl font-bold text-orange-700 dark:text-orange-400">UGX 450,000</div>
+            <div className="text-xs font-medium px-2 py-1 rounded-full bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400">
+              2 invoices
+            </div>
+          </div>
+          <Sparkline data={[500000, 480000, 460000, 470000, 450000, 455000, 450000]} color="#f97316" height={32} />
+        </div>
       </div>
 
       {/* Performance Metrics - LIGHT SOLID COLORS (no gradients) */}
@@ -568,6 +683,16 @@ export default function ShuttleDashboardPage() {
           >
             <div className="text-2xl mb-2">📧</div>
             <div className="text-sm font-medium text-slate-900 dark:text-white">Reminders</div>
+          </Link>
+          <Link
+            to="/school-shuttles/payments"
+            className={`p-4 rounded-lg border transition-colors text-center ${isCurrentPage("/school-shuttles/payments")
+              ? "border-ev-green ring-2 ring-ev-green bg-emerald-50 dark:bg-emerald-900/20"
+              : "border-slate-200 dark:border-slate-600 hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+              }`}
+          >
+            <div className="text-2xl mb-2">💳</div>
+            <div className="text-sm font-medium text-slate-900 dark:text-white">Payments</div>
           </Link>
         </div>
       </div>
