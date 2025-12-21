@@ -1,12 +1,22 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { toastManager } from "../../utils/toastManager";
 
 export default function EarningsStatementsPage() {
+  const navigate = useNavigate();
   const statements = [
     { id: 1, period: "January 2024", revenue: 12500000, payouts: 7800000, net: 4700000, status: "paid" },
     { id: 2, period: "December 2023", revenue: 11800000, payouts: 7200000, net: 4600000, status: "paid" },
     { id: 3, period: "November 2023", revenue: 11200000, payouts: 6800000, net: 4400000, status: "paid" }
   ];
+
+  const handleDownloadPDF = (statementId: number) => {
+    toastManager.show("Generating PDF...", "info");
+    // In real app, this would trigger PDF generation
+    setTimeout(() => {
+      toastManager.show("PDF downloaded successfully!", "success");
+    }, 1000);
+  };
 
   return (
     <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50">
@@ -46,10 +56,16 @@ export default function EarningsStatementsPage() {
                 </span>
               </div>
               <div className="flex gap-2">
-                <button className="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">
+                <button
+                  onClick={() => navigate(`/earnings/statements/${statement.id}`)}
+                  className="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
                   View details
                 </button>
-                <button className="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">
+                <button
+                  onClick={() => handleDownloadPDF(statement.id)}
+                  className="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
                   Download PDF
                 </button>
               </div>
