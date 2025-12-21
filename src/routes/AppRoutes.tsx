@@ -60,6 +60,7 @@ import AmbulanceCaseDetailPage from "../pages/compliance/AmbulanceCaseDetailPage
 // Earnings
 import EarningsOverviewPage from "../pages/earnings/EarningsOverviewPage";
 import EarningsStatementsPage from "../pages/earnings/EarningsStatementsPage";
+import EarningsStatementDetailPage from "../pages/earnings/EarningsStatementDetailPage";
 import DriverPayoutsPage from "../pages/earnings/DriverPayoutsPage";
 
 // Compliance
@@ -111,6 +112,7 @@ import ShuttlePaymentsPage from "../pages/services/schoolShuttles/ShuttlePayment
 // Settings
 import FleetPartnerSettingsPage from "../pages/settings/FleetPartnerSettingsPage";
 import BranchesSettingsPage from "../pages/settings/BranchesSettingsPage";
+import BranchDetailPage from "../pages/settings/BranchDetailPage";
 import AccountSecurityPage from "../pages/settings/AccountSecurityPage";
 import RolesAndPermissionsPage from "../pages/settings/RolesAndPermissionsPage";
 import IntegrationsSettingsPage from "../pages/settings/IntegrationsSettingsPage";
@@ -217,6 +219,7 @@ export default function AppRoutes() {
         {/* Earnings */}
         <Route path="/earnings" element={<EarningsOverviewPage />} />
         <Route path="/earnings/statements" element={<EarningsStatementsPage />} />
+        <Route path="/earnings/statements/:statementId" element={<EarningsStatementDetailPage />} />
         <Route path="/earnings/payouts" element={<DriverPayoutsPage />} />
 
         {/* Compliance */}
@@ -278,6 +281,7 @@ export default function AppRoutes() {
         {/* Settings */}
         <Route path="/settings/fleet-partner" element={<FleetPartnerSettingsPage />} />
         <Route path="/settings/branches" element={<BranchesSettingsPage />} />
+        <Route path="/settings/branches/:branchId" element={<BranchDetailPage />} />
         <Route path="/settings/account-security" element={<AccountSecurityPage />} />
         <Route
           path="/settings/roles"

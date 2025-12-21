@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { toastManager } from "../../utils/toastManager";
 
 interface Branch {
@@ -12,6 +13,7 @@ interface Branch {
 }
 
 export default function BranchesSettingsPage() {
+  const navigate = useNavigate();
   const [branches, setBranches] = useState<Branch[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
@@ -175,7 +177,10 @@ export default function BranchesSettingsPage() {
                   />
                   <span className="text-xs text-slate-600">Active</span>
                 </label>
-                <button className="text-xs text-ev-green hover:text-ev-green-dark font-medium">
+                <button
+                  onClick={() => navigate(`/settings/branches/${branch.id}`)}
+                  className="text-xs text-ev-green hover:text-ev-green-dark font-medium"
+                >
                   View Details →
                 </button>
               </div>

@@ -195,6 +195,7 @@ export default function FleetPartnerAppShell() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { toasts, removeToast } = useToast();
 
   // Determine active nav ID strictly - check more specific paths first
@@ -230,36 +231,43 @@ export default function FleetPartnerAppShell() {
       )}
 
       {/* Sidebar */}
-      <aside className={`${sidebarOpen ? 'w-64 translate-x-0' : 'w-16 -translate-x-full md:translate-x-0'
-        } flex-shrink-0 bg-slate-900 text-white border-r border-slate-800 transition-all duration-300 md:relative fixed inset-y-0 left-0 z-50`}>
+      <aside className={`${sidebarOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full md:translate-x-0 md:w-16'
+        } flex-shrink-0 bg-slate-900 text-white border-r border-slate-800 transition-all duration-300 md:relative fixed inset-y-0 left-0 z-50 overflow-hidden`}>
         <div className="h-full flex flex-col">
           {/* Logo & Toggle */}
-          <div className="h-16 flex items-center justify-between px-3 border-b border-slate-800/60 flex-shrink-0">
-            <div className={`flex items-center gap-2 ${!sidebarOpen && 'justify-center w-full'}`}>
+          <div className={`h-16 flex items-center justify-between px-3 border-b border-slate-800/60 flex-shrink-0 ${!sidebarOpen && 'md:px-2'}`}>
+            <div className={`flex items-center gap-2 ${!sidebarOpen ? 'justify-center w-full md:w-auto' : ''}`}>
               <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-white font-bold flex-shrink-0">
                 FP
               </div>
-              {sidebarOpen && <span className="font-bold text-lg tracking-tight">Fleet Partner</span>}
+              {sidebarOpen && <span className="font-bold text-lg tracking-tight whitespace-nowrap">Fleet Partner</span>}
             </div>
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className={`p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors ${!sidebarOpen && 'absolute -right-3 top-4 bg-slate-900 border border-slate-700'}`}
-              title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
-            >
-              {sidebarOpen ? (
+            {sidebarOpen && (
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors hidden md:block"
+                title="Collapse sidebar"
+              >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
                 </svg>
-              ) : (
+              </button>
+            )}
+            {!sidebarOpen && (
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors hidden md:block"
+                title="Expand sidebar"
+              >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
                 </svg>
-              )}
-            </button>
+              </button>
+            )}
           </div>
 
           {/* Nav Items */}
-          <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-6 scrollbar-thin scrollbar-thumb-slate-700">
+          <nav className={`flex-1 overflow-y-auto py-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-700 ${sidebarOpen ? 'px-2' : 'px-1'}`}>
             {NAV_SECTIONS.map((section) => (
               <div key={section.id}>
                 {sidebarOpen && (
@@ -296,49 +304,95 @@ export default function FleetPartnerAppShell() {
           </nav>
 
           {/* Footer */}
-          <div className={`p-4 border-t border-slate-800/60 text-[11px] text-slate-500 flex-shrink-0 bg-slate-900 ${!sidebarOpen && 'text-center'}`}>
-            {sidebarOpen ? (
-              <div className="flex justify-between items-center mb-2">
+          {sidebarOpen && (
+            <div className="p-4 border-t border-slate-800/60 text-[11px] text-slate-500 flex-shrink-0 bg-slate-900">
+              <div className="flex justify-between items-center">
                 <span>© {new Date().getFullYear()} EVzone</span>
                 <span className="text-slate-600">v0.1.0</span>
               </div>
-            ) : (
-              <div className="text-xs">©</div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </aside>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         {/* Header */}
-        <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 flex-shrink-0 z-10 relative">
+        <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 flex-shrink-0 z-10 relative">
           <div className="flex items-center gap-4">
             {/* Mobile sidebar toggle */}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="md:hidden p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition"
-              title="Toggle menu"
+              className="md:hidden p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+              title="Toggle sidebar"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <h1 className="text-xl font-semibold text-slate-900 hidden sm:block">
+            <h1 className="text-xl font-semibold text-slate-900 dark:text-white hidden sm:block">
               {Object.values(NAV_PATHS).includes(pathname)
                 ? NAV_SECTIONS.flatMap(s => s.items).find(i => i.path === pathname)?.label
                 : ''}
             </h1>
           </div>
-          <div className="flex items-center gap-3">
+          
+          {/* Desktop Header Items */}
+          <div className="hidden md:flex items-center gap-3">
             <GlobalSearch />
             <NotificationCenter />
-            <div className="h-4 w-px bg-slate-300 mx-1"></div>
+            <div className="h-4 w-px bg-slate-300 dark:bg-slate-600 mx-1"></div>
             <ThemeToggle />
-            <div className="h-4 w-px bg-slate-300 mx-1"></div>
+            <div className="h-4 w-px bg-slate-300 dark:bg-slate-600 mx-1"></div>
             <UserProfileMenu userName="Fleet Manager" userEmail="manager@evzone.com" />
           </div>
+
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+            title="Toggle menu"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {mobileMenuOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
         </header>
+
+        {/* Mobile Menu Overlay */}
+        {mobileMenuOpen && (
+          <>
+            <div
+              className="fixed inset-0 bg-black/50 z-40 md:hidden"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <div className="fixed top-16 right-0 w-80 max-w-[85vw] bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 shadow-xl z-50 md:hidden h-[calc(100vh-4rem)] overflow-y-auto">
+              <div className="p-4 space-y-4">
+                <div className="pb-4 border-b border-slate-200 dark:border-slate-700">
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">Menu</h3>
+                  <GlobalSearch />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between py-2">
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Notifications</span>
+                    <NotificationCenter />
+                  </div>
+                  <div className="flex items-center justify-between py-2 border-t border-slate-200 dark:border-slate-700 pt-3">
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Theme</span>
+                    <ThemeToggle />
+                  </div>
+                  <div className="border-t border-slate-200 dark:border-slate-700 pt-3">
+                    <UserProfileMenu userName="Fleet Manager" userEmail="manager@evzone.com" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Scrollable Content */}
         <main className="flex-1 overflow-auto bg-slate-50">

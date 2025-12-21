@@ -221,7 +221,7 @@ export default function ShuttleStudentsListPage() {
           setStudentForm({ name: "", grade: "", route: "", parent: "", parentPhone: "", address: "", paymentDestination: "fleet-owner" });
         }}
         title="Add New Student"
-        size="md"
+        size="square"
       >
         <form
           onSubmit={(e) => {
@@ -241,7 +241,7 @@ export default function ShuttleStudentsListPage() {
             setShowAddStudentModal(false);
             setStudentForm({ name: "", grade: "", route: "", parent: "", parentPhone: "", address: "", paymentDestination: "fleet-owner" });
           }}
-          className="space-y-4"
+          className="space-y-3 flex-1 flex flex-col"
         >
           <div className="grid grid-cols-2 gap-4">
             <label className="block">
@@ -336,7 +336,7 @@ export default function ShuttleStudentsListPage() {
             </select>
             <p className="text-xs text-slate-500 mt-1">Select where parents should make payments</p>
           </label>
-          <div className="flex gap-2 pt-4">
+          <div className="flex gap-2 pt-2 mt-auto">
             <button
               type="button"
               onClick={() => {

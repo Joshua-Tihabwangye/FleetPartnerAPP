@@ -118,6 +118,8 @@ export default function RolesAndPermissionsPage() {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newRoleName, setNewRoleName] = useState("");
+  const [newRoleDescription, setNewRoleDescription] = useState("");
+  const [editingRole, setEditingRole] = useState<{ name: string; description: string } | null>(null);
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("roles") || "null");
@@ -135,8 +137,17 @@ export default function RolesAndPermissionsPage() {
     }
   }, [roles, selectedRole]);
 
+  useEffect(() => {
+    if (selectedRole) {
+      setEditingRole({
+        name: selectedRole.name,
+        description: selectedRole.description
+      });
+    }
+  }, [selectedRole]);
+
   const handlePermissionToggle = (category: keyof typeof PERMISSION_LABELS, permission: string | null) => {
-    if (!selectedRole || selectedRole.isSystem) return;
+    if (!selectedRole) return;
 
     const updatedRoles = roles.map(role => {
       if (role.id === selectedRole.id) {
@@ -184,8 +195,8 @@ export default function RolesAndPermissionsPage() {
 
     const newRole = {
       id: Date.now(),
-      name: newRoleName,
-      description: "Custom role",
+      name: newRoleName.trim(),
+      description: newRoleDescription.trim() || "Custom role",
       color: "cyan",
       isSystem: false,
       permissions: {
@@ -205,12 +216,15 @@ export default function RolesAndPermissionsPage() {
     setSelectedRole(newRole);
     setShowAddModal(false);
     setNewRoleName("");
-    toastManager.show("Role created successfully", "success");
+    setNewRoleDescription("");
+    toastManager.show(`Role "${newRole.name}" created successfully`, "success");
   };
 
   const handleDeleteRole = (roleId: number) => {
     const role = roles.find(r => r.id === roleId);
-    if (role?.isSystem) {
+    if (!role) return;
+    
+    if (role.isSystem) {
       toastManager.show("Cannot delete system roles", "error");
       return;
     }
@@ -221,7 +235,7 @@ export default function RolesAndPermissionsPage() {
     if (selectedRole?.id === roleId) {
       setSelectedRole(updatedRoles[0] || null);
     }
-    toastManager.show("Role deleted", "success");
+    toastManager.show(`Role "${role.name}" deleted successfully`, "success");
   };
 
   const getColorClasses = (color: string) => {
@@ -268,27 +282,32 @@ export default function RolesAndPermissionsPage() {
                       : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                       }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${getColorClasses(role.color)}`}>
-                          {role.name}
-                        </span>
-                        {role.isSystem && (
-                          <span className="text-[10px] text-slate-400">System</span>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${getColorClasses(role.color)}`}>
+                            {role.name}
+                          </span>
+                          {role.isSystem && (
+                            <span className="text-[10px] text-slate-400">System</span>
+                          )}
+                        </div>
+                        {!role.isSystem && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm(`Are you sure you want to delete the "${role.name}" role?`)) {
+                                handleDeleteRole(role.id);
+                              }
+                            }}
+                            className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                            title="Delete role"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
                         )}
                       </div>
-                      {!role.isSystem && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteRole(role.id);
-                          }}
-                          className="text-slate-400 hover:text-red-500 text-xs"
-                        >
-                          🗑️
-                        </button>
-                      )}
-                    </div>
                     <p className="text-[11px] text-slate-500 mt-1">{role.description}</p>
                   </button>
                 ))}
@@ -301,15 +320,58 @@ export default function RolesAndPermissionsPage() {
             {selectedRole && (
               <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h2 className="text-lg font-semibold text-slate-900">{selectedRole.name}</h2>
-                    <p className="text-sm text-slate-500">{selectedRole.description}</p>
+                  <div className="flex-1">
+                    {editingRole && !selectedRole.isSystem ? (
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          value={editingRole.name}
+                          onChange={(e) => setEditingRole({ ...editingRole, name: e.target.value })}
+                          className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-lg font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-ev-green"
+                          placeholder="Role name"
+                        />
+                        <input
+                          type="text"
+                          value={editingRole.description}
+                          onChange={(e) => setEditingRole({ ...editingRole, description: e.target.value })}
+                          className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm text-slate-500 focus:outline-none focus:ring-2 focus:ring-ev-green"
+                          placeholder="Role description"
+                        />
+                      </div>
+                    ) : (
+                      <div>
+                        <h2 className="text-lg font-semibold text-slate-900">{selectedRole.name}</h2>
+                        <p className="text-sm text-slate-500">{selectedRole.description}</p>
+                      </div>
+                    )}
                   </div>
-                  {selectedRole.isSystem && (
-                    <span className="px-2 py-1 rounded bg-amber-100 text-amber-700 text-xs font-medium">
-                      🔒 System Role - Read Only
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2 ml-4">
+                    {selectedRole.isSystem && (
+                      <span className="px-2 py-1 rounded bg-amber-100 text-amber-700 text-xs font-medium">
+                        🔒 System Role
+                      </span>
+                    )}
+                    {!selectedRole.isSystem && (
+                      <button
+                        onClick={() => {
+                          if (editingRole) {
+                            const updatedRoles = roles.map(r => 
+                              r.id === selectedRole.id 
+                                ? { ...r, name: editingRole.name, description: editingRole.description }
+                                : r
+                            );
+                            setRoles(updatedRoles);
+                            setSelectedRole(updatedRoles.find(r => r.id === selectedRole.id) || null);
+                            localStorage.setItem("roles", JSON.stringify(updatedRoles));
+                            toastManager.show("Role updated successfully", "success");
+                          }
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-blue-500 text-white text-xs font-medium hover:bg-blue-600 transition"
+                      >
+                        Save Name
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-4">
@@ -328,11 +390,9 @@ export default function RolesAndPermissionsPage() {
                                 type="checkbox"
                                 checked={perm as boolean}
                                 onChange={() => handlePermissionToggle(key, null)}
-                                disabled={selectedRole.isSystem}
                                 className="sr-only peer"
                               />
-                              <div className={`w-9 h-5 rounded-full peer peer-checked:bg-ev-green ${selectedRole.isSystem ? "bg-slate-200" : "bg-slate-300"
-                                } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all`}></div>
+                              <div className="w-9 h-5 rounded-full peer peer-checked:bg-ev-green bg-slate-300 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
                             </label>
                           )}
                         </div>
@@ -342,14 +402,13 @@ export default function RolesAndPermissionsPage() {
                               <label
                                 key={subKey}
                                 className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs cursor-pointer transition ${value ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400" : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
-                                  } ${selectedRole.isSystem ? "opacity-60 cursor-not-allowed" : "hover:opacity-80"}`}
+                                  } hover:opacity-80`}
                               >
                                 <input
                                   type="checkbox"
                                   checked={value}
                                   onChange={() => handlePermissionToggle(key, subKey)}
-                                  disabled={selectedRole.isSystem}
-                                  className="w-3 h-3 rounded"
+                                  className="w-3 h-3 rounded text-ev-green focus:ring-ev-green"
                                 />
                                 {subKey.charAt(0).toUpperCase() + subKey.slice(1)}
                               </label>
@@ -361,16 +420,17 @@ export default function RolesAndPermissionsPage() {
                   })}
                 </div>
 
-                {!selectedRole.isSystem && (
-                  <div className="mt-6 flex justify-end">
-                    <button
-                      onClick={() => toastManager.show("Permissions saved!", "success")}
-                      className="px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark"
-                    >
-                      Save Changes
-                    </button>
-                  </div>
-                )}
+                <div className="mt-6 flex justify-end">
+                  <button
+                    onClick={() => {
+                      localStorage.setItem("roles", JSON.stringify(roles));
+                      toastManager.show("Permissions saved!", "success");
+                    }}
+                    className="px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark"
+                  >
+                    Save Changes
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -379,23 +439,61 @@ export default function RolesAndPermissionsPage() {
         {/* Add Role Modal */}
         {showAddModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl">
-              <h2 className="text-lg font-semibold text-slate-900 mb-4">Add Custom Role</h2>
-              <label className="block">
-                <span className="text-xs font-medium text-slate-700">Role Name</span>
-                <input
-                  type="text"
-                  value={newRoleName}
-                  onChange={(e) => setNewRoleName(e.target.value)}
-                  className="w-full mt-1 px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-ev-green focus:outline-none"
-                  placeholder="e.g., Supervisor"
-                  autoFocus
-                />
-              </label>
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 w-full max-w-sm shadow-xl">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Add Custom Role</h2>
+                <button
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setNewRoleName("");
+                    setNewRoleDescription("");
+                  }}
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="space-y-4">
+                <label className="block">
+                  <span className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1 block">Role Name *</span>
+                  <input
+                    type="text"
+                    value={newRoleName}
+                    onChange={(e) => setNewRoleName(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-ev-green focus:outline-none"
+                    placeholder="e.g., Supervisor"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleAddRole();
+                      }
+                    }}
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1 block">Description</span>
+                  <input
+                    type="text"
+                    value={newRoleDescription}
+                    onChange={(e) => setNewRoleDescription(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-ev-green focus:outline-none"
+                    placeholder="e.g., Manages daily operations"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleAddRole();
+                      }
+                    }}
+                  />
+                </label>
+              </div>
               <div className="flex gap-3 mt-6">
                 <button
-                  onClick={() => setShowAddModal(false)}
-                  className="flex-1 px-4 py-2 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setNewRoleName("");
+                    setNewRoleDescription("");
+                  }}
+                  className="flex-1 px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
                 >
                   Cancel
                 </button>
