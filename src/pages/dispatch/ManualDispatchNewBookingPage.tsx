@@ -116,9 +116,6 @@ export default function ManualDispatchNewBookingPage() {
       status: formData.pickupTime === "now" ? "in-progress" : "scheduled",
       createdAt: new Date().toISOString(),
       scheduledFor: formData.pickupTime === "scheduled" ? formData.scheduledDateTime : null,
-      serviceType: formData.serviceType,
-      customerName: formData.customerName,
-      customerPhone: formData.customerPhone,
       ...formData
     };
 
@@ -157,8 +154,8 @@ export default function ManualDispatchNewBookingPage() {
                   type="button"
                   onClick={() => setFormData({ ...formData, pickupTime: "now" })}
                   className={`flex-1 px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${formData.pickupTime === "now"
-                      ? "border-ev-green bg-emerald-50 text-ev-green"
-                      : "border-slate-200 text-slate-600 hover:border-slate-300"
+                    ? "border-ev-green bg-emerald-50 text-ev-green"
+                    : "border-slate-200 text-slate-600 hover:border-slate-300"
                     }`}
                 >
                   <div className="flex items-center justify-center gap-2">
@@ -171,8 +168,8 @@ export default function ManualDispatchNewBookingPage() {
                   type="button"
                   onClick={() => setFormData({ ...formData, pickupTime: "scheduled" })}
                   className={`flex-1 px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${formData.pickupTime === "scheduled"
-                      ? "border-ev-green bg-emerald-50 text-ev-green"
-                      : "border-slate-200 text-slate-600 hover:border-slate-300"
+                    ? "border-ev-green bg-emerald-50 text-ev-green"
+                    : "border-slate-200 text-slate-600 hover:border-slate-300"
                     }`}
                 >
                   <div className="flex items-center justify-center gap-2">
@@ -211,8 +208,8 @@ export default function ManualDispatchNewBookingPage() {
                     type="button"
                     onClick={() => setFormData({ ...formData, serviceType: type.id })}
                     className={`px-3 py-2.5 rounded-lg border-2 text-xs font-medium transition-all ${formData.serviceType === type.id
-                        ? "border-ev-green bg-emerald-50 text-ev-green"
-                        : "border-slate-200 text-slate-600 hover:border-slate-300"
+                      ? "border-ev-green bg-emerald-50 text-ev-green"
+                      : "border-slate-200 text-slate-600 hover:border-slate-300"
                       }`}
                   >
                     <div className="text-lg mb-1">{type.icon}</div>
