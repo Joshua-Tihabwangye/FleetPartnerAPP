@@ -18,7 +18,7 @@ root.render(
             <NotificationsProvider>
                 <ThemeProvider>
                     <MuiThemeProvider theme={muiTheme}>
-                        <BrowserRouter>
+                        <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
                             <AppRoutes />
                         </BrowserRouter>
                     </MuiThemeProvider>

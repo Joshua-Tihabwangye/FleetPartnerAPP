@@ -42,7 +42,26 @@ export default function FleetPartnerWebsiteHomePage() {
               </div>
               <div className="hidden sm:block">
                 <span className={isDark ? "text-white font-semibold" : "text-slate-900 font-semibold"}>EVzone Fleet Partner</span>
-                <p className="text-xs text-slate-500">Rides · Delivery · Rentals · Shuttles · Tours · EMS</p>
+                <div className="flex items-center gap-1 text-xs">
+                  {[
+                    { label: "Rides", id: "rides" },
+                    { label: "Delivery", id: "delivery" },
+                    { label: "Rentals", id: "rentals" },
+                    { label: "Shuttles", id: "shuttles" },
+                    { label: "Tours", id: "tours" },
+                    { label: "EMS", id: "ems" }
+                  ].map((service, idx) => (
+                    <React.Fragment key={service.id}>
+                      <a
+                        href="#features"
+                        className={`${isDark ? 'text-slate-400 hover:text-ev-green' : 'text-slate-500 hover:text-ev-green'} transition-colors cursor-pointer`}
+                      >
+                        {service.label}
+                      </a>
+                      {idx < 5 && <span className="text-slate-400">·</span>}
+                    </React.Fragment>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -69,7 +88,7 @@ export default function FleetPartnerWebsiteHomePage() {
                 >
                   {LANGUAGES.map((lang) => (
                     <option key={lang.code} value={lang.code}>
-                      {lang.flag} {lang.nativeName}
+                      {lang.nativeName}
                     </option>
                   ))}
                 </select>

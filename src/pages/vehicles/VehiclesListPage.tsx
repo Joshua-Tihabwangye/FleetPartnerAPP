@@ -6,29 +6,67 @@ export interface Vehicle {
   id: number;
   plate: string;
   model: string;
-  status: string;
+  status: "available" | "offline" | "maintenance" | "out-of-service";
+  opsStatus: "ready" | "busy" | "unavailable";
   driver: string;
   mileage: number;
   vehicleType: string;
+  // EV-first fields
+  soc: number;
+  estimatedRange: number;
+  lastSeen: string;
+  zone: string;
+  condition: "excellent" | "good" | "fair" | "poor";
+  // Compliance
+  compliance: {
+    insurance: { status: "ok" | "expiring" | "expired"; expiry: string };
+    inspection: { status: "ok" | "expiring" | "expired"; expiry: string };
+  };
 }
 
 export default function VehiclesListPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [filter, setFilter] = useState({ status: "all", type: "all" });
-  const [allVehicles, setAllVehicles] = useState<Vehicle[]>([] as Vehicle[]);
+  const [allVehicles, setAllVehicles] = useState<Vehicle[]>([]);
+  const [activeKpi, setActiveKpi] = useState<string | null>(null);
 
   // Load vehicles from localStorage on mount
   useEffect(() => {
-    const mockVehicles = [
-      { id: 1, plate: "UAA 123A", model: "Tesla Model 3", status: "active", driver: "John Doe", mileage: 12500, vehicleType: "sedan" },
-      { id: 2, plate: "UAA 124B", model: "Nissan Leaf", status: "maintenance", driver: "Jane Smith", mileage: 8900, vehicleType: "sedan" },
-      { id: 3, plate: "UAA 125C", model: "BYD E6", status: "active", driver: "Mike Johnson", mileage: 15200, vehicleType: "suv" }
+    const mockVehicles: Vehicle[] = [
+      { id: 1, plate: "UAA 123A", model: "Tesla Model 3", status: "available", opsStatus: "ready", driver: "John Doe", mileage: 12500, vehicleType: "sedan", soc: 85, estimatedRange: 280, lastSeen: "20s ago", zone: "Kampala Central", condition: "excellent", compliance: { insurance: { status: "ok", expiry: "2025-06-15" }, inspection: { status: "ok", expiry: "2025-03-20" } } },
+      { id: 2, plate: "UAA 124B", model: "Nissan Leaf", status: "offline", opsStatus: "unavailable", driver: "Jane Smith", mileage: 8900, vehicleType: "sedan", soc: 45, estimatedRange: 140, lastSeen: "4h ago", zone: "Ntinda", condition: "good", compliance: { insurance: { status: "ok", expiry: "2025-08-10" }, inspection: { status: "expiring", expiry: "2025-01-25" } } },
+      { id: 3, plate: "UAA 125C", model: "BYD E6", status: "available", opsStatus: "busy", driver: "Mike Johnson", mileage: 15200, vehicleType: "suv", soc: 12, estimatedRange: 35, lastSeen: "2m ago", zone: "Kololo", condition: "good", compliance: { insurance: { status: "expiring", expiry: "2025-01-30" }, inspection: { status: "ok", expiry: "2025-04-15" } } },
+      { id: 4, plate: "UAA 126D", model: "Tesla Model Y", status: "maintenance", opsStatus: "unavailable", driver: "Sarah Wilson", mileage: 22100, vehicleType: "suv", soc: 0, estimatedRange: 0, lastSeen: "2d ago", zone: "Service Center", condition: "fair", compliance: { insurance: { status: "ok", expiry: "2025-09-01" }, inspection: { status: "ok", expiry: "2025-05-10" } } },
+      { id: 5, plate: "UAA 127E", model: "Hyundai Ioniq", status: "available", opsStatus: "ready", driver: "David Brown", mileage: 9800, vehicleType: "sedan", soc: 92, estimatedRange: 310, lastSeen: "1m ago", zone: "Nakasero", condition: "excellent", compliance: { insurance: { status: "ok", expiry: "2025-07-20" }, inspection: { status: "ok", expiry: "2025-06-01" } } },
+      { id: 6, plate: "UAA 128F", model: "Kia EV6", status: "out-of-service", opsStatus: "unavailable", driver: "-", mileage: 31500, vehicleType: "suv", soc: 0, estimatedRange: 0, lastSeen: "1w ago", zone: "Unknown", condition: "poor", compliance: { insurance: { status: "expired", expiry: "2024-12-01" }, inspection: { status: "expired", expiry: "2024-11-15" } } },
+      { id: 7, plate: "UAA 129G", model: "Tesla Model 3", status: "available", opsStatus: "ready", driver: "Peter Okello", mileage: 5600, vehicleType: "sedan", soc: 78, estimatedRange: 250, lastSeen: "30s ago", zone: "Bugolobi", condition: "excellent", compliance: { insurance: { status: "ok", expiry: "2025-10-01" }, inspection: { status: "ok", expiry: "2025-08-15" } } },
+      { id: 8, plate: "UAA 130H", model: "BYD Han", status: "offline", opsStatus: "unavailable", driver: "Grace Nakato", mileage: 18200, vehicleType: "sedan", soc: 8, estimatedRange: 25, lastSeen: "6h ago", zone: "Muyenga", condition: "good", compliance: { insurance: { status: "ok", expiry: "2025-05-20" }, inspection: { status: "expiring", expiry: "2025-01-28" } } },
     ];
 
-    const storedVehicles = JSON.parse(localStorage.getItem("vehicles") || "[]");
+    const storedVehicles = (JSON.parse(localStorage.getItem("vehicles") || "[]") as any[]).map(v => ({
+      ...v,
+      compliance: v.compliance || { insurance: { status: "ok" }, inspection: { status: "ok" } },
+      soc: v.soc ?? 50,
+      condition: v.condition || "good",
+      opsStatus: v.opsStatus || (v.status === "available" ? "ready" : "unavailable"),
+      lastSeen: v.lastSeen || "recently",
+      zone: v.zone || "Unknown",
+      estimatedRange: v.estimatedRange ?? 200,
+    }));
     setAllVehicles([...mockVehicles, ...storedVehicles]);
   }, []);
+
+  // KPI calculations
+  const kpis = [
+    { id: "available", label: "Available", value: allVehicles.filter(v => v.status === "available").length, color: "bg-emerald-100 text-emerald-700" },
+    { id: "offline", label: "Offline", value: allVehicles.filter(v => v.status === "offline").length, color: "bg-slate-100 text-slate-700" },
+    { id: "attention", label: "Needs attention", value: allVehicles.filter(v => v.condition === "fair" || v.condition === "poor").length, color: "bg-amber-100 text-amber-700" },
+    { id: "lowbattery", label: "Low battery", value: allVehicles.filter(v => v.soc < 20 && v.soc > 0).length, color: "bg-red-100 text-red-700" },
+    { id: "maintenance", label: "Maintenance", value: allVehicles.filter(v => v.status === "maintenance").length, color: "bg-blue-100 text-blue-700" },
+    { id: "out-of-service", label: "Out of service", value: allVehicles.filter(v => v.status === "out-of-service").length, color: "bg-purple-100 text-purple-700" },
+    { id: "docsmissing", label: "Docs issue", value: allVehicles.filter(v => v.compliance && (v.compliance.insurance?.status !== "ok" || v.compliance.inspection?.status !== "ok")).length, color: "bg-orange-100 text-orange-700" },
+  ];
 
   // Filter vehicles
   const vehicles = allVehicles.filter(vehicle => {
@@ -36,13 +74,27 @@ export default function VehiclesListPage() {
       vehicle.model.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = filter.status === "all" || vehicle.status === filter.status;
     const matchesType = filter.type === "all" || vehicle.vehicleType === filter.type;
-    return matchesSearch && matchesStatus && matchesType;
+
+    let matchesKpi = true;
+    if (activeKpi) {
+      switch (activeKpi) {
+        case "available": matchesKpi = vehicle.status === "available"; break;
+        case "offline": matchesKpi = vehicle.status === "offline"; break;
+        case "attention": matchesKpi = vehicle.condition === "fair" || vehicle.condition === "poor"; break;
+        case "lowbattery": matchesKpi = vehicle.soc < 20 && vehicle.soc > 0; break;
+        case "maintenance": matchesKpi = vehicle.status === "maintenance"; break;
+        case "out-of-service": matchesKpi = vehicle.status === "out-of-service"; break;
+        case "docsmissing": matchesKpi = vehicle.compliance ? (vehicle.compliance.insurance?.status !== "ok" || vehicle.compliance.inspection?.status !== "ok") : false; break;
+      }
+    }
+
+    return matchesSearch && matchesStatus && matchesType && matchesKpi;
   });
 
   const handleExport = () => {
     const csvContent = [
-      ["Plate", "Model", "Status", "Driver", "Mileage"],
-      ...vehicles.map(v => [v.plate, v.model, v.status, v.driver, v.mileage])
+      ["Plate", "Model", "Status", "Driver", "SoC", "Zone", "Mileage", "Condition"],
+      ...vehicles.map(v => [v.plate, v.model, v.status, v.driver, v.soc, v.zone, v.mileage, v.condition])
     ].map(row => row.join(",")).join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv" });
@@ -51,6 +103,32 @@ export default function VehiclesListPage() {
     a.href = url;
     a.download = `vehicles_export_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
+  };
+
+  const statusStyles: Record<string, { bg: string; text: string }> = {
+    available: { bg: "bg-emerald-100", text: "text-emerald-700" },
+    offline: { bg: "bg-slate-100", text: "text-slate-600" },
+    maintenance: { bg: "bg-blue-100", text: "text-blue-700" },
+    "out-of-service": { bg: "bg-red-100", text: "text-red-700" },
+  };
+
+  const opsStyles: Record<string, { bg: string; text: string }> = {
+    ready: { bg: "bg-emerald-50", text: "text-emerald-600" },
+    busy: { bg: "bg-blue-50", text: "text-blue-600" },
+    unavailable: { bg: "bg-slate-50", text: "text-slate-500" },
+  };
+
+  const complianceStyles: Record<string, string> = {
+    ok: "text-emerald-600",
+    expiring: "text-amber-600",
+    expired: "text-red-600",
+  };
+
+  const conditionStyles: Record<string, string> = {
+    excellent: "text-emerald-600",
+    good: "text-blue-600",
+    fair: "text-amber-600",
+    poor: "text-red-600",
   };
 
   return (
@@ -79,7 +157,31 @@ export default function VehiclesListPage() {
             </Link>
           </div>
         </div>
-        <div className="mt-4 h-1 w-24 rounded-full bg-gradient-to-r from-slate-400 via-emerald-500 to-slate-500 opacity-80" />
+      </div>
+
+      {/* KPI Strip */}
+      <div className="mb-6 flex flex-wrap gap-2">
+        {kpis.map((kpi) => (
+          <button
+            key={kpi.id}
+            onClick={() => setActiveKpi(activeKpi === kpi.id ? null : kpi.id)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${activeKpi === kpi.id
+              ? "ring-2 ring-ev-green ring-offset-1"
+              : ""
+              } ${kpi.color}`}
+          >
+            <span className="font-bold">{kpi.value}</span>
+            <span className="ml-1">{kpi.label}</span>
+          </button>
+        ))}
+        {activeKpi && (
+          <button
+            onClick={() => setActiveKpi(null)}
+            className="px-2 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+          >
+            ✕
+          </button>
+        )}
       </div>
 
       {/* Search and Filters */}
@@ -110,54 +212,124 @@ export default function VehiclesListPage() {
       </div>
 
       {/* Vehicles Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {vehicles.map((vehicle) => (
-          <Link
+          <div
             key={vehicle.id}
-            to={`/vehicles/${vehicle.id}`}
-            className="bg-white rounded-xl border border-slate-200 p-6 hover:border-ev-green hover:shadow-md transition-all"
+            className="bg-white rounded-xl border border-slate-200 p-5 hover:border-ev-green hover:shadow-lg transition-all"
           >
-            <div className="flex items-start justify-between mb-4">
+            {/* Header: Plate + Status */}
+            <div className="flex items-start justify-between mb-3">
               <div>
-                <div className="text-lg font-semibold text-slate-900 mb-1">{vehicle.plate}</div>
+                <div className="text-lg font-bold text-slate-900 mb-0.5">{vehicle.plate}</div>
                 <div className="text-sm text-slate-600">{vehicle.model}</div>
               </div>
-              <span
-                className={`px-2 py-1 text-xs font-medium rounded-full ${vehicle.status === "active"
-                  ? "bg-emerald-100 text-emerald-700"
-                  : "bg-orange-100 text-orange-700"
-                  }`}
-              >
-                {vehicle.status}
-              </span>
+              <div className="flex flex-col items-end gap-1">
+                <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${(statusStyles[vehicle.status] || statusStyles['offline']).bg} ${(statusStyles[vehicle.status] || statusStyles['offline']).text}`}>
+                  {vehicle.status}
+                </span>
+                <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${(opsStyles[vehicle.opsStatus] || opsStyles['unavailable']).bg} ${(opsStyles[vehicle.opsStatus] || opsStyles['unavailable']).text}`}>
+                  Ops: {vehicle.opsStatus}
+                </span>
+              </div>
             </div>
-            <div className="space-y-2 text-sm">
+
+            {/* EV Info Row */}
+            <div className="grid grid-cols-3 gap-3 mb-3 p-3 bg-slate-50 rounded-lg">
+              <div className="text-center">
+                <div className={`text-lg font-bold ${vehicle.soc < 20 ? 'text-red-500' : vehicle.soc < 50 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                  🔋 {vehicle.soc}%
+                </div>
+                <div className="text-[10px] text-slate-500">SoC</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-slate-700">{vehicle.estimatedRange}</div>
+                <div className="text-[10px] text-slate-500">km range</div>
+              </div>
+              <div className="text-center">
+                <div className={`text-sm font-semibold ${conditionStyles[vehicle.condition]}`}>{vehicle.condition}</div>
+                <div className="text-[10px] text-slate-500">condition</div>
+              </div>
+            </div>
+
+            {/* Battery bar */}
+            <div className="w-full h-1.5 rounded-full bg-slate-200 mb-3 overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${vehicle.soc < 20 ? 'bg-red-500' : vehicle.soc < 50 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                style={{ width: `${vehicle.soc}%` }}
+              />
+            </div>
+
+            {/* Details Grid */}
+            <div className="space-y-2 text-sm mb-3">
               <div className="flex items-center justify-between">
-                <span className="text-slate-500">Driver</span>
+                <span className="text-slate-500">👤 Driver</span>
                 <span className="font-medium text-slate-900">{vehicle.driver}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-slate-500">Mileage</span>
+                <span className="text-slate-500">📍 Zone</span>
+                <span className="font-medium text-slate-900">{vehicle.zone}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500">🕐 Last seen</span>
+                <span className="font-medium text-slate-900">{vehicle.lastSeen}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500">📏 Mileage</span>
                 <span className="font-medium text-slate-900">{vehicle.mileage.toLocaleString()} km</span>
               </div>
             </div>
-            <div className="mt-4 pt-4 border-t border-slate-100 flex gap-2">
+
+            {/* Compliance */}
+            {vehicle.compliance && (
+              <div className="p-2.5 bg-slate-50 rounded-lg mb-3">
+                <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Compliance</div>
+                <div className="flex gap-4 text-xs">
+                  <div className="flex items-center gap-1">
+                    <span className={complianceStyles[vehicle.compliance.insurance?.status || "ok"]}>
+                      {vehicle.compliance.insurance?.status === "ok" ? "✓" : vehicle.compliance.insurance?.status === "expiring" ? "⚠" : "✕"}
+                    </span>
+                    <span className={`${complianceStyles[vehicle.compliance.insurance?.status || "ok"]} font-medium`}>
+                      Insurance {vehicle.compliance.insurance?.status === "ok" ? "OK" : vehicle.compliance.insurance?.status === "expiring" ? "Expiring" : "Expired"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className={complianceStyles[vehicle.compliance.inspection?.status || "ok"]}>
+                      {vehicle.compliance.inspection?.status === "ok" ? "✓" : vehicle.compliance.inspection?.status === "expiring" ? "⚠" : "✕"}
+                    </span>
+                    <span className={`${complianceStyles[vehicle.compliance.inspection?.status || "ok"]} font-medium`}>
+                      Inspection {vehicle.compliance.inspection?.status === "ok" ? "OK" : vehicle.compliance.inspection?.status === "expiring" ? "Expiring" : "Expired"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex gap-2 pt-3 border-t border-slate-100">
               <Link
-                to={`/vehicles/${vehicle.id}/maintenance`}
-                className="flex-1 text-center px-3 py-1.5 rounded-lg bg-slate-50 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                to={`/vehicles/${vehicle.id}`}
+                className="flex-1 text-center px-3 py-2 rounded-lg bg-ev-green text-white text-xs font-medium hover:bg-ev-green-dark transition-colors"
                 onClick={(e) => e.stopPropagation()}
               >
-                Maintenance
+                View
+              </Link>
+              <Link
+                to={`/vehicles/${vehicle.id}/maintenance`}
+                className="flex-1 text-center px-3 py-2 rounded-lg bg-slate-100 text-xs font-medium text-slate-700 hover:bg-slate-200 flex items-center justify-center gap-1"
+                onClick={(e) => e.stopPropagation()}
+              >
+                🔧 Maintenance
               </Link>
               <Link
                 to={`/vehicles/${vehicle.id}/documents`}
-                className="flex-1 text-center px-3 py-1.5 rounded-lg bg-slate-50 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                className="flex-1 text-center px-3 py-2 rounded-lg bg-slate-100 text-xs font-medium text-slate-700 hover:bg-slate-200 flex items-center justify-center gap-1"
                 onClick={(e) => e.stopPropagation()}
               >
-                Documents
+                📄 Documents
               </Link>
             </div>
-          </Link>
+          </div>
         ))}
       </div>
 
@@ -177,9 +349,10 @@ export default function VehiclesListPage() {
               className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green"
             >
               <option value="all">All statuses</option>
-              <option value="active">Active</option>
+              <option value="available">Available</option>
+              <option value="offline">Offline</option>
               <option value="maintenance">Maintenance</option>
-              <option value="inactive">Inactive</option>
+              <option value="out-of-service">Out of service</option>
             </select>
           </label>
           <label className="block">
