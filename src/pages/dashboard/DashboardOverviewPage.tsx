@@ -5,7 +5,7 @@ import PeriodSelector from "../../components/ui/PeriodSelector";
 
 export default function DashboardOverviewPage() {
   const navigate = useNavigate();
-  const [dateRange, setDateRange] = useState<"today" | "week" | "month">("today");
+  const [dateRange, setDateRange] = useState<"today" | "week" | "month" | "year">("today");
   const [messagesCount, setMessagesCount] = useState(0);
   const [lastMessageSubject, setLastMessageSubject] = useState("No messages");
 
@@ -22,10 +22,11 @@ export default function DashboardOverviewPage() {
   }, []);
 
   // Revenue data based on date range
-  const revenueData: Record<"today" | "week" | "month", { value: string; change: string }> = {
+  const revenueData: Record<"today" | "week" | "month" | "year", { value: string; change: string }> = {
     today: { value: "UGX 12.4M", change: "+15%" },
     week: { value: "UGX 78.2M", change: "+12%" },
-    month: { value: "UGX 324.5M", change: "+18%" }
+    month: { value: "UGX 324.5M", change: "+18%" },
+    year: { value: "UGX 3.8B", change: "+24%" }
   };
 
   const stats = [
@@ -133,7 +134,7 @@ export default function DashboardOverviewPage() {
           <div className="flex items-center justify-between mb-1">
             <div className="text-xs font-medium text-slate-500 uppercase tracking-wider">Net revenue</div>
             <span className="text-[10px] text-slate-400 font-medium px-2 py-0.5 rounded-full bg-slate-100">
-              {dateRange === 'today' ? 'Today' : dateRange === 'week' ? 'This Week' : 'This Month'}
+              {dateRange === 'today' ? 'Today' : dateRange === 'week' ? 'This Week' : dateRange === 'month' ? 'This Month' : 'This Year'}
             </span>
           </div>
           <div className="flex items-baseline justify-between mb-2">

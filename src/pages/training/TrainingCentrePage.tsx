@@ -74,9 +74,9 @@ export default function TrainingCentrePage() {
         {courses.map((course) => (
           <div
             key={course.id}
-            className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-md transition-shadow"
+            className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-md transition-shadow h-full flex flex-col"
           >
-            <div className="mb-4">
+            <div className="mb-4 flex-1">
               <div className="flex items-start justify-between mb-2">
                 <div className="text-3xl">🎓</div>
                 {getStatusBadge(course.id)}
@@ -99,7 +99,7 @@ export default function TrainingCentrePage() {
             </div>
             <Link
               to={`/training/course/${course.id}`}
-              className="block w-full px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium text-center hover:bg-ev-green-dark"
+              className="block w-full px-4 py-2 mt-auto rounded-lg bg-emerald-500 text-white text-sm font-medium text-center hover:bg-emerald-600 transition-colors"
             >
               {courseProgress[course.id]?.status === "completed" ? "Review Course" : courseProgress[course.id]?.status === "in-progress" ? "Continue Course" : "Start Course"}
             </Link>

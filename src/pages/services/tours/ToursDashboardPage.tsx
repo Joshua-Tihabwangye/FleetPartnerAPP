@@ -125,7 +125,7 @@ export default function ToursDashboardPage() {
               Monitor and manage tour packages and charter services
             </p>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap">
             <Link
               to="/tours/list"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-ev-green transition"
@@ -184,12 +184,12 @@ export default function ToursDashboardPage() {
                 <div className="text-2xl font-bold text-slate-900 dark:text-white">{metric.value}</div>
                 <div
                   className={`text-xs font-medium px-2 py-1 rounded-full ${metric.color === "emerald"
-                      ? "bg-emerald-100 text-emerald-600"
-                      : metric.color === "blue"
-                        ? "bg-blue-100 text-blue-600"
-                        : metric.color === "purple"
-                          ? "bg-purple-100 text-purple-600"
-                          : "bg-orange-100 text-orange-600"
+                    ? "bg-emerald-100 text-emerald-600"
+                    : metric.color === "blue"
+                      ? "bg-blue-100 text-blue-600"
+                      : metric.color === "purple"
+                        ? "bg-purple-100 text-purple-600"
+                        : "bg-orange-100 text-orange-600"
                     }`}
                 >
                   {metric.change}
@@ -210,7 +210,7 @@ export default function ToursDashboardPage() {
             <select
               value={chartPeriod}
               onChange={(e) => setChartPeriod(e.target.value as any)}
-              className="text-xs border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg px-2 py-1 cursor-pointer focus:ring-ev-green focus:border-ev-green outline-none"
+              className="text-xs border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg px-2 py-1 cursor-pointer focus:ring-ev-green focus:border-ev-green outline-none ml-4"
             >
               <option value="2025">2025</option>
               <option value="2026">2026</option>
@@ -228,7 +228,7 @@ export default function ToursDashboardPage() {
             color="#f59e0b"
             showArea={true}
           />
-          <div className="mt-4 flex items-center justify-between text-sm">
+          <div className="mt-12 flex items-center justify-between text-sm">
             <span className="text-slate-600 dark:text-slate-400">Average: UGX 1.7M</span>
             <span className="text-orange-600 font-medium">↑ +15% this month</span>
           </div>
@@ -342,10 +342,10 @@ export default function ToursDashboardPage() {
                   </div>
                   <span
                     className={`px-2 py-1 text-xs font-medium rounded-full ${booking.status === "confirmed"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : booking.status === "pending"
-                          ? "bg-yellow-100 text-yellow-700"
-                          : "bg-blue-100 text-blue-700"
+                      ? "bg-emerald-100 text-emerald-700"
+                      : booking.status === "pending"
+                        ? "bg-yellow-100 text-yellow-700"
+                        : "bg-blue-100 text-blue-700"
                       }`}
                   >
                     {booking.status.replace("-", " ")}
@@ -364,8 +364,8 @@ export default function ToursDashboardPage() {
           <Link
             to="/tours"
             className={`p-4 rounded-lg border transition-colors text-center ${isCurrentPage("/tours") && !isCurrentPage("/tours/bookings") && !isCurrentPage("/tours/create")
-                ? "border-ev-green ring-2 ring-ev-green bg-emerald-50 dark:bg-emerald-900/20"
-                : "border-slate-200 dark:border-slate-600 hover:border-ev-green hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+              ? "border-ev-green ring-2 ring-ev-green bg-emerald-50 dark:bg-emerald-900/20"
+              : "border-slate-200 dark:border-slate-600 hover:border-ev-green hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
               }`}
           >
             <div className="text-2xl mb-2">🌍</div>
@@ -374,8 +374,8 @@ export default function ToursDashboardPage() {
           <Link
             to="/tours/bookings"
             className={`p-4 rounded-lg border transition-colors text-center ${isCurrentPage("/tours/bookings") && !isCurrentPage("/tours/bookings/create")
-                ? "border-ev-green ring-2 ring-ev-green bg-blue-50 dark:bg-blue-900/20"
-                : "border-slate-200 dark:border-slate-600 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+              ? "border-ev-green ring-2 ring-ev-green bg-blue-50 dark:bg-blue-900/20"
+              : "border-slate-200 dark:border-slate-600 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
               }`}
           >
             <div className="text-2xl mb-2">📋</div>
@@ -384,8 +384,8 @@ export default function ToursDashboardPage() {
           <Link
             to="/tours/create"
             className={`p-4 rounded-lg border transition-colors text-center ${isCurrentPage("/tours/create")
-                ? "border-ev-green ring-2 ring-ev-green bg-orange-50 dark:bg-orange-900/20"
-                : "border-slate-200 dark:border-slate-600 hover:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20"
+              ? "border-ev-green ring-2 ring-ev-green bg-orange-50 dark:bg-orange-900/20"
+              : "border-slate-200 dark:border-slate-600 hover:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20"
               }`}
           >
             <div className="text-2xl mb-2">➕</div>
@@ -394,8 +394,8 @@ export default function ToursDashboardPage() {
           <Link
             to="/tours/bookings/create"
             className={`p-4 rounded-lg border transition-colors text-center ${isCurrentPage("/tours/bookings/create")
-                ? "border-ev-green ring-2 ring-ev-green bg-purple-50 dark:bg-purple-900/20"
-                : "border-slate-200 dark:border-slate-600 hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+              ? "border-ev-green ring-2 ring-ev-green bg-purple-50 dark:bg-purple-900/20"
+              : "border-slate-200 dark:border-slate-600 hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20"
               }`}
           >
             <div className="text-2xl mb-2">📝</div>

@@ -1,19 +1,21 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { auth } from "../../utils/auth";
 import { ThemeToggle, useTheme } from "../../context/ThemeContext";
 import { useLanguage, LANGUAGES } from "../../context/LanguageContext";
 
 export default function FleetPartnerWebsiteHomePage() {
   const { isDark } = useTheme();
   const { language, setLanguage } = useLanguage();
+  const navigate = useNavigate();
 
   const features = [
-    { icon: "🚗", title: "Rides & Delivery", desc: "Electric rides and package delivery across the city" },
-    { icon: "🚘", title: "Car Rentals", desc: "Premium EV fleet for short and long-term rentals" },
-    { icon: "🚌", title: "School Shuttles", desc: "Safe, reliable student transportation" },
-    { icon: "🌍", title: "Tours", desc: "Guided tours with sustainable transportation" },
-    { icon: "🚑", title: "Ambulance/EMS", desc: "Emergency medical services with rapid response" },
-    { icon: "📊", title: "Analytics", desc: "Real-time fleet performance insights" }
+    { icon: "🚗", title: "Rides & Delivery", desc: "Electric rides and package delivery across the city", link: "/trips" },
+    { icon: "🚘", title: "Car Rentals", desc: "Premium EV fleet for short and long-term rentals", link: "/rentals" },
+    { icon: "🚌", title: "School Shuttles", desc: "Safe, reliable student transportation", link: "/school-shuttles" },
+    { icon: "🌍", title: "Tours", desc: "Guided tours with sustainable transportation", link: "/tours" },
+    { icon: "🚑", title: "Ambulance/EMS", desc: "Emergency medical services with rapid response", link: "/ambulance" },
+    { icon: "📊", title: "Analytics", desc: "Real-time fleet performance insights", link: "/dashboard" }
   ];
 
   const stats = [
@@ -42,26 +44,6 @@ export default function FleetPartnerWebsiteHomePage() {
               </div>
               <div className="hidden sm:block">
                 <span className={isDark ? "text-white font-semibold" : "text-slate-900 font-semibold"}>EVzone Fleet Partner</span>
-                <div className="flex items-center gap-1 text-xs">
-                  {[
-                    { label: "Rides", id: "rides" },
-                    { label: "Delivery", id: "delivery" },
-                    { label: "Rentals", id: "rentals" },
-                    { label: "Shuttles", id: "shuttles" },
-                    { label: "Tours", id: "tours" },
-                    { label: "EMS", id: "ems" }
-                  ].map((service, idx) => (
-                    <React.Fragment key={service.id}>
-                      <a
-                        href="#features"
-                        className={`${isDark ? 'text-slate-400 hover:text-ev-green' : 'text-slate-500 hover:text-ev-green'} transition-colors cursor-pointer`}
-                      >
-                        {service.label}
-                      </a>
-                      {idx < 5 && <span className="text-slate-400">·</span>}
-                    </React.Fragment>
-                  ))}
-                </div>
               </div>
             </div>
 
@@ -175,7 +157,7 @@ export default function FleetPartnerWebsiteHomePage() {
             : "bg-slate-100 border-slate-200"
             }`}>
             <div className="flex items-center justify-between mb-4">
-              <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>Fleet snapshot (sample)</span>
+              <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>Fleet information</span>
               <span className="flex items-center gap-2 text-xs text-emerald-500">
                 <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                 Updated 15 sec ago
@@ -210,11 +192,21 @@ export default function FleetPartnerWebsiteHomePage() {
               From ride-hailing to ambulance dispatch, manage all your fleet operations from one powerful platform.
             </p>
           </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature, idx) => (
               <div
                 key={idx}
-                className={`rounded-xl border p-6 transition-all duration-300 hover-lift group cursor-pointer ${isDark
+                onClick={() => {
+                  // Check auth before navigation
+                  if (auth.isAuthenticated()) {
+                    navigate(feature.link);
+                  } else {
+                    // Redirect to login if not authenticated
+                    navigate("/login");
+                  }
+                }}
+                className={`rounded-xl border p-6 transition-all duration-300 hover-lift group cursor-pointer block ${isDark
                   ? "bg-slate-800/50 border-slate-700/50 hover:border-emerald-500/50 hover:bg-slate-800"
                   : "bg-white border-slate-200 hover:border-ev-green hover:shadow-lg"
                   }`}

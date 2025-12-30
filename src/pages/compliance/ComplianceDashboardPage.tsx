@@ -129,9 +129,8 @@ export default function ComplianceDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
         <div className="bg-white border border-emerald-100 rounded-xl p-5 shadow-sm hover:shadow-md transition-all">
           <div className="flex justify-between items-start mb-4">
-            <div>
+            <div className="min-h-[48px]">
               <h3 className="text-sm font-semibold text-slate-900">Document Compliance</h3>
-              <p className="text-xs text-slate-400">Fleet documentation status</p>
             </div>
             <select className="text-[10px] border border-slate-100 rounded px-1 py-0.5 text-slate-400 bg-white outline-none">
               <option>Current</option>
@@ -148,9 +147,8 @@ export default function ComplianceDashboardPage() {
 
         <div className="bg-white border border-orange-100 rounded-xl p-5 shadow-sm hover:shadow-md transition-all">
           <div className="flex justify-between items-start mb-4">
-            <div>
+            <div className="min-h-[48px]">
               <h3 className="text-sm font-semibold text-slate-900">Driver Training</h3>
-              <p className="text-xs text-slate-400">Certification status</p>
             </div>
             <select className="text-[10px] border border-slate-100 rounded px-1 py-0.5 text-slate-400 bg-white outline-none">
               <option>Current</option>
@@ -167,9 +165,8 @@ export default function ComplianceDashboardPage() {
 
         <div className="bg-white border border-emerald-100 rounded-xl p-5 shadow-sm hover:shadow-md transition-all">
           <div className="flex justify-between items-start mb-4">
-            <div>
+            <div className="min-h-[48px]">
               <h3 className="text-sm font-semibold text-slate-900">Vehicle Inspections</h3>
-              <p className="text-xs text-slate-400">Up-to-date inspections</p>
             </div>
             <select className="text-[10px] border border-slate-100 rounded px-1 py-0.5 text-slate-400 bg-white outline-none">
               <option>Current</option>
@@ -186,9 +183,8 @@ export default function ComplianceDashboardPage() {
 
         <div className="bg-white border border-orange-100 rounded-xl p-5 shadow-sm hover:shadow-md transition-all">
           <div className="flex justify-between items-start mb-4">
-            <div>
+            <div className="min-h-[48px]">
               <h3 className="text-sm font-semibold text-slate-900">Insurance Status</h3>
-              <p className="text-xs text-slate-400">Active policies</p>
             </div>
             <select className="text-[10px] border border-slate-100 rounded px-1 py-0.5 text-slate-400 bg-white outline-none">
               <option>Current</option>
@@ -208,7 +204,7 @@ export default function ComplianceDashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Link
           to="/compliance/incidents"
-          className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:shadow-md hover:border-orange-300 transition-all group"
+          className="bg-orange-50 rounded-xl border border-orange-200 p-6 shadow-sm hover:shadow-md hover:border-orange-300 transition-all group"
         >
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-lg font-semibold text-slate-900 group-hover:text-orange-600 transition">Incidents</h2>
@@ -218,7 +214,7 @@ export default function ComplianceDashboardPage() {
         </Link>
         <Link
           to="/ambulance/cases"
-          className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all group"
+          className="bg-emerald-50 rounded-xl border border-emerald-200 p-6 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all group"
         >
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-lg font-semibold text-slate-900 group-hover:text-emerald-600 transition">Ambulance Cases</h2>

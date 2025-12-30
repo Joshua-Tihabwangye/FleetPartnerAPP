@@ -198,7 +198,13 @@ export default function EarningsOverviewPage() {
               <h3 className="text-sm font-semibold text-slate-900">Revenue Trend</h3>
               <p className="text-xs text-slate-500">Monthly revenue (UGX Millions)</p>
             </div>
-            <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-700 text-xs font-medium">+18% YoY</span>
+            <div className="flex items-center gap-2">
+              <select className="text-xs border border-slate-200 rounded-lg px-2 py-1 text-slate-600 outline-none">
+                <option>This Year</option>
+                <option>Last Year</option>
+              </select>
+              <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-700 text-xs font-medium">+18% YoY</span>
+            </div>
           </div>
           <LineChart data={monthlyRevenue} labels={monthlyLabels} height={180} color="#10b981" showArea={true} />
         </div>
