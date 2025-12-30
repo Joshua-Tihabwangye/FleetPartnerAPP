@@ -189,7 +189,7 @@ export default function ShuttleDashboardPage() {
               Monitor and manage school shuttle operations in real-time
             </p>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap">
             <Link
               to="/school-shuttles/operations"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-ev-green transition"
@@ -413,7 +413,7 @@ export default function ShuttleDashboardPage() {
             className={`${stat.bgClass} rounded-xl border ${stat.borderClass} p-4 shadow-sm hover:shadow-md transition-shadow`}
           >
             <div className="flex items-center justify-between mb-2">
-              <div className={`text-xs ${stat.textClass} font-medium uppercase tracking-wider`}>{stat.label}</div>
+              <div className={`text-xs ${stat.textClass} font-medium uppercase tracking-wider min-h-[32px] flex items-center`}>{stat.label}</div>
               <select className="text-[10px] border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-400 rounded px-1 py-0.5 cursor-pointer outline-none">
                 <option>Current</option>
                 <option>This Week</option>
@@ -453,7 +453,7 @@ export default function ShuttleDashboardPage() {
             color="#10b981"
             showArea={true}
           />
-          <div className="mt-4 flex items-center justify-between text-sm">
+          <div className="mt-12 flex items-center justify-between text-sm">
             <span className="text-slate-600 dark:text-slate-400">Average: 92%</span>
             <span className="text-emerald-600 font-medium">↑ +4% this month</span>
           </div>

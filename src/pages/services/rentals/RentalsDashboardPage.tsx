@@ -208,7 +208,7 @@ export default function RentalsDashboardPage() {
             color="#10b981"
             showArea={true}
           />
-          <div className="mt-4 flex items-center justify-between text-sm">
+          <div className="mt-12 flex items-center justify-between text-sm">
             <span className="text-slate-600">Average: UGX 2.6M</span>
             <span className="text-emerald-600 font-medium">↑ +12% this month</span>
           </div>
@@ -315,10 +315,10 @@ export default function RentalsDashboardPage() {
                   </div>
                   <span
                     className={`px-2 py-1 text-xs font-medium rounded-full ${booking.status === "active"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : booking.status === "upcoming"
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-slate-100 text-slate-700"
+                      ? "bg-emerald-100 text-emerald-700"
+                      : booking.status === "upcoming"
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-slate-100 text-slate-700"
                       }`}
                   >
                     {booking.status}

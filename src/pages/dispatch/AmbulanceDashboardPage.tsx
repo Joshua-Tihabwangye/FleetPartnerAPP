@@ -124,7 +124,7 @@ export default function AmbulanceDashboardPage() {
               Monitor emergency medical services and response operations
             </p>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap">
             <Link
               to="/ambulance/dispatch"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 hover:border-ev-green transition"
@@ -201,7 +201,7 @@ export default function AmbulanceDashboardPage() {
             className={`${stat.bgColor} rounded-xl border ${stat.borderColor} p-4 shadow-sm hover:shadow-md transition-all`}
           >
             <div className="flex items-center justify-between mb-2">
-              <div className={`text-xs ${stat.textColor} font-medium uppercase tracking-wider`}>{stat.label}</div>
+              <div className={`text-xs ${stat.textColor} font-medium uppercase tracking-wider min-h-[32px] flex items-center`}>{stat.label}</div>
               <select className="text-[10px] border border-slate-200 bg-white text-slate-500 rounded px-1 py-0.5 cursor-pointer outline-none">
                 <option value="current">Current</option>
                 <option value="week">This Week</option>
@@ -249,7 +249,7 @@ export default function AmbulanceDashboardPage() {
             color="#ef4444"
             showArea={true}
           />
-          <div className="mt-4 flex items-center justify-between text-sm">
+          <div className="mt-12 flex items-center justify-between text-sm">
             <span className="text-slate-600">Average: 9.1 min</span>
             <span className="text-emerald-600 font-medium">↓ -1.2 min this month</span>
           </div>
