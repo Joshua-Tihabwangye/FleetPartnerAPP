@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
+import { HashRouter } from "react-router-dom";
 import { ThemeProvider as MuiThemeProvider } from "@mui/material";
 import { ThemeProvider } from "./context/ThemeContext";
 import { LanguageProvider } from "./context/LanguageContext";
@@ -18,9 +18,9 @@ root.render(
             <NotificationsProvider>
                 <ThemeProvider>
                     <MuiThemeProvider theme={muiTheme}>
-                        <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+                        <HashRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
                             <AppRoutes />
-                        </BrowserRouter>
+                        </HashRouter>
                     </MuiThemeProvider>
                 </ThemeProvider>
             </NotificationsProvider>
