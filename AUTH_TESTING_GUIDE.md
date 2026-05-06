@@ -8,32 +8,32 @@ The app now uses **localStorage-based authentication** for frontend testing. You
 
 1. **Go to login page**: `/login`
 2. **Enter any email and password** (e.g., `test@example.com` / `password123`)
-3. **Click "Continue"** - you'll be redirected to `/dashboard`
+3. **Click "Sign in"** - you'll be redirected to `/dashboard`
 4. **You're now logged in!** You can navigate to any page.
 
 ## Files That Handle Authentication
 
-### 1. **`src/utils/auth.js`** - Auth Utility
+### 1. **`src/utils/auth.ts`** - Auth Utility
    - Stores auth state in `localStorage`
    - Functions: `login()`, `logout()`, `isAuthenticated()`, `getUser()`
    - **Location**: This is where authentication logic lives
 
-### 2. **`src/routes/ProtectedRoute.jsx`** - Protected Routes Guard
+### 2. **`src/routes/ProtectedRoute.tsx`** - Protected Routes Guard
    - **Blocks access** if not authenticated
    - Redirects to `/login` if not logged in
    - **Used for**: All main app pages (dashboard, drivers, vehicles, etc.)
 
-### 3. **`src/routes/OnboardingGuard.jsx`** - Onboarding Flow Guard
+### 3. **`src/routes/OnboardingGuard.tsx`** - Onboarding Flow Guard
    - **Blocks access** if onboarding not complete
    - Redirects to `/setup/fleet-partner-profile` if onboarding incomplete
    - **Used for**: Onboarding setup pages
 
-### 4. **`src/routes/RoleGuard.jsx`** - Role-Based Access Control
+### 4. **`src/routes/RoleGuard.tsx`** - Role-Based Access Control
    - **Blocks access** if user role doesn't match
    - Redirects to `/access-denied` if role doesn't match
    - **Used for**: Pages that require specific roles (e.g., `/settings/roles`, `/ambulance/dispatch`)
 
-### 5. **`src/pages/auth/FleetPartnerLoginPage.jsx`** - Login Page
+### 5. **`src/pages/auth/FleetPartnerLoginPage.tsx`** - Login Page
    - **Accepts any email/password** for testing
    - Sets auth state in localStorage
    - Redirects to dashboard after login
@@ -95,16 +95,15 @@ Available roles:
 
 When you're ready to connect to a real backend:
 
-1. **Update `src/utils/auth.js`**:
+1. **Update `src/utils/auth.ts`**:
    - Replace `login()` function to call your API
    - Replace localStorage with API calls
    - Handle tokens/sessions from your backend
 
-2. **Update guards** (`ProtectedRoute.jsx`, etc.):
-   - They already use `auth.getAuth()` so they'll work automatically once you update `auth.js`
+2. **Update guards** (`ProtectedRoute.tsx`, etc.):
+   - They already use `auth.getAuth()` so they'll work automatically once you update `auth.ts`
 
 3. **Update login page**:
    - Replace the simple login with API call
    - Handle errors from backend
    - Store tokens/sessions appropriately
-

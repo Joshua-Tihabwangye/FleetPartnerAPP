@@ -260,6 +260,16 @@ main>div:first-child {
   background: linear-gradient(135deg, #4c1d95 0%, #5b21b6 100%);
 }
 
+/* Sidebar-only scrollbar hiding (keep scrolling behavior) */
+.sidebar-scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.sidebar-scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Search dropdown animation */
 .search-dropdown {
   animation: slideIn 0.15s ease-out;
