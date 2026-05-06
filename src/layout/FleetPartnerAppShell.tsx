@@ -71,8 +71,8 @@ function NavButton({ active, children, className = "", ...rest }: NavButtonProps
   const base =
     "w-full flex items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left transition text-[13px]";
   const activeClasses =
-    "bg-ev-green text-ev-slate shadow-sm shadow-emerald-500/40 font-medium";
-  const inactiveClasses = "text-slate-200 hover:bg-slate-800/80";
+    "bg-ev-green text-white shadow-sm shadow-emerald-500/40 font-medium";
+  const inactiveClasses = "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80";
   return (
     <button
       type="button"
@@ -195,7 +195,6 @@ export default function FleetPartnerAppShell() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { toasts, removeToast } = useToast();
 
   // Determine active nav ID strictly - check more specific paths first
@@ -232,10 +231,10 @@ export default function FleetPartnerAppShell() {
 
       {/* Sidebar */}
       <aside className={`${sidebarOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full md:translate-x-0 md:w-16'
-        } flex-shrink-0 bg-slate-900 text-white border-r border-slate-800 transition-all duration-300 md:relative fixed inset-y-0 left-0 z-50 overflow-hidden`}>
+        } flex-shrink-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-r border-slate-200 dark:border-slate-700 transition-all duration-300 md:relative fixed inset-y-0 left-0 z-50 overflow-hidden`}>
         <div className="h-full flex flex-col">
           {/* Logo & Toggle */}
-          <div className={`h-16 flex items-center justify-between px-3 border-b border-slate-800/60 flex-shrink-0 ${!sidebarOpen && 'md:px-2'}`}>
+          <div className={`h-16 flex items-center justify-between px-3 border-b border-slate-200 dark:border-slate-700/60 flex-shrink-0 ${!sidebarOpen && 'md:px-2'}`}>
             <div className={`flex items-center gap-2 ${!sidebarOpen ? 'justify-center w-full md:w-auto' : ''}`}>
               <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-white font-bold flex-shrink-0">
                 FP
@@ -245,7 +244,7 @@ export default function FleetPartnerAppShell() {
             {sidebarOpen && (
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors hidden md:block"
+                className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors hidden md:block"
                 title="Collapse sidebar"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -256,7 +255,7 @@ export default function FleetPartnerAppShell() {
             {!sidebarOpen && (
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors hidden md:block"
+                className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors hidden md:block"
                 title="Expand sidebar"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -266,12 +265,22 @@ export default function FleetPartnerAppShell() {
             )}
           </div>
 
+          {/* Mobile Utility Controls */}
+          <div className="md:hidden px-3 py-3 border-b border-slate-200 dark:border-slate-700/60 space-y-3">
+            <GlobalSearch />
+            <div className="flex items-center justify-between">
+              <NotificationCenter />
+              <ThemeToggle />
+              <UserProfileMenu userName="Fleet Manager" userEmail="manager@evzone.com" />
+            </div>
+          </div>
+
           {/* Nav Items */}
-          <nav className={`flex-1 overflow-y-auto py-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-700 ${sidebarOpen ? 'px-2' : 'px-1'}`}>
+          <nav className={`sidebar-scrollbar-hide flex-1 overflow-y-auto py-4 space-y-6 ${sidebarOpen ? 'px-2' : 'px-1'}`}>
             {NAV_SECTIONS.map((section) => (
               <div key={section.id}>
                 {sidebarOpen && (
-                  <div className="px-3 mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  <div className="px-3 mb-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                     {section.label}
                   </div>
                 )}
@@ -285,7 +294,7 @@ export default function FleetPartnerAppShell() {
                         title={!sidebarOpen ? item.label : undefined}
                       >
                         <span className={`flex items-center ${sidebarOpen ? 'gap-2.5 flex-1 min-w-0' : 'justify-center'}`}>
-                          <span className={`w-5 flex items-center justify-center text-[18px] flex-shrink-0 transition-colors ${item.id === activeNavId ? 'text-emerald-400' : 'text-slate-400 group-hover:text-slate-300'}`}>
+                          <span className={`w-5 flex items-center justify-center text-[18px] flex-shrink-0 transition-colors ${item.id === activeNavId ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`}>
                             {NAV_ICONS[item.id] || "•"}
                           </span>
                           {sidebarOpen && <span className="truncate text-[13px]">{item.label}</span>}
@@ -305,10 +314,10 @@ export default function FleetPartnerAppShell() {
 
           {/* Footer */}
           {sidebarOpen && (
-            <div className="p-4 border-t border-slate-800/60 text-[11px] text-slate-500 flex-shrink-0 bg-slate-900">
+            <div className="p-4 border-t border-slate-200 dark:border-slate-700/60 text-[11px] text-slate-500 dark:text-slate-400 flex-shrink-0 bg-slate-50 dark:bg-slate-900">
               <div className="flex justify-between items-center">
                 <span>© {new Date().getFullYear()} EVzone</span>
-                <span className="text-slate-600">v0.1.0</span>
+                <span className="text-slate-500 dark:text-slate-500">v0.1.0</span>
               </div>
             </div>
           )}
@@ -346,53 +355,7 @@ export default function FleetPartnerAppShell() {
             <div className="h-4 w-px bg-slate-300 dark:bg-slate-600 mx-1"></div>
             <UserProfileMenu userName="Fleet Manager" userEmail="manager@evzone.com" />
           </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition"
-            title="Toggle menu"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              {mobileMenuOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              )}
-            </svg>
-          </button>
         </header>
-
-        {/* Mobile Menu Overlay */}
-        {mobileMenuOpen && (
-          <>
-            <div
-              className="fixed inset-0 bg-black/50 z-40 md:hidden"
-              onClick={() => setMobileMenuOpen(false)}
-            />
-            <div className="fixed top-16 right-0 w-80 max-w-[85vw] bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 shadow-xl z-50 md:hidden h-[calc(100vh-4rem)] overflow-y-auto">
-              <div className="p-4 space-y-4">
-                <div className="pb-4 border-b border-slate-200 dark:border-slate-700">
-                  <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">Menu</h3>
-                  <GlobalSearch />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between py-2">
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Notifications</span>
-                    <NotificationCenter />
-                  </div>
-                  <div className="flex items-center justify-between py-2 border-t border-slate-200 dark:border-slate-700 pt-3">
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Theme</span>
-                    <ThemeToggle />
-                  </div>
-                  <div className="border-t border-slate-200 dark:border-slate-700 pt-3">
-                    <UserProfileMenu userName="Fleet Manager" userEmail="manager@evzone.com" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
 
         {/* Scrollable Content */}
         <main className="flex-1 overflow-auto bg-slate-50">

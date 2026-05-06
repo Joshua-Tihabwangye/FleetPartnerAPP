@@ -1,8 +1,8 @@
-# EVzone Fleet Partner (CRA + MUI + Tailwind, JavaScript)
+# EVzone Fleet Partner (Vite + React + TypeScript + MUI + Tailwind)
 
 This project is a **starter implementation** of the EVzone Fleet Partner portal:
 
-- Built with **Create React App (JavaScript)**.
+- Built with **Vite + React + TypeScript**.
 - Styling with **Tailwind CSS** and EVzone-inspired colors.
 - **MUI (Material UI)** theme wired at the root so you can introduce MUI components where needed.
 - Routing with **React Router v6**.
@@ -12,10 +12,18 @@ This project is a **starter implementation** of the EVzone Fleet Partner portal:
 
 ```bash
 npm install
+npm run dev
+```
+
+The app runs on `http://localhost:3000`.
+
+If you prefer legacy start command support:
+
+```bash
 npm start
 ```
 
-The app will start at `http://localhost:3000`.
+(`start` is mapped to Vite.)
 
 ## Where to plug in the detailed page designs
 
@@ -23,13 +31,13 @@ All pages are already **wired and stubbed** under `src/pages/**`.
 
 For each page you have a dedicated canvas/design, open the matching file and replace the stub component with your full implementation. Examples:
 
-- `/dashboard` → `src/pages/dashboard/DashboardOverviewPage.jsx`
-- `/drivers` → `src/pages/drivers/DriversListPage.jsx`
-- `/vehicles/:vehicleId/maintenance` → `src/pages/vehicles/VehicleMaintenanceHistoryPage.jsx`
-- `/school-shuttles/students/:studentId` → `src/pages/services/schoolShuttles/ShuttleStudentDetailPage.jsx`
-- `/rentals/catalog` → `src/pages/services/rentals/FleetPartnerRentalCatalogPage.jsx`
+- `/dashboard` → `src/pages/dashboard/DashboardOverviewPage.tsx`
+- `/drivers` → `src/pages/drivers/DriversListPage.tsx`
+- `/vehicles/:vehicleId/maintenance` → `src/pages/vehicles/VehicleMaintenanceHistoryPage.tsx`
+- `/school-shuttles/students/:studentId` → `src/pages/services/schoolShuttles/ShuttleStudentDetailPage.tsx`
+- `/rentals/catalog` → `src/pages/services/rentals/FleetPartnerRentalCatalogPage.tsx`
 
-The **shell** (`src/layout/FleetPartnerAppShell.jsx`) already includes:
+The **shell** (`src/layout/FleetPartnerAppShell.tsx`) already includes:
 
 - Top bar with workspace chip, notification icon and theme toggle.
 - Left sidebar with navigation for Operations, Assets, Earnings, Compliance, Training, Settings.
@@ -41,11 +49,11 @@ Pages rendered inside the shell are wrapped via React Router `<Outlet />`.
 
 Tailwind is configured via:
 
-- `tailwind.config.cjs`
-- `postcss.config.cjs`
+- `tailwind.config.js`
+- `postcss.config.js`
 - `src/index.css` (contains the `@tailwind` directives).
 
-MUI theme lives in `src/theme/muiTheme.js` and is applied at the root in `src/index.js`.
+MUI theme lives in `src/theme/muiTheme.ts` and is applied at the root in `src/main.tsx`.
 
 You can safely introduce MUI components into any page — the theme is already in place.
 
@@ -53,7 +61,6 @@ You can safely introduce MUI components into any page — the theme is already i
 
 For now, `ProtectedRoute`, `OnboardingGuard` and `RoleGuard` use **fake auth objects**. Replace them with real auth state from your backend / auth provider when you integrate:
 
-- `src/routes/ProtectedRoute.jsx`
-- `src/routes/OnboardingGuard.jsx`
-- `src/routes/RoleGuard.jsx`
-
+- `src/routes/ProtectedRoute.tsx`
+- `src/routes/OnboardingGuard.tsx`
+- `src/routes/RoleGuard.tsx`
