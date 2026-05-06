@@ -40,10 +40,10 @@ export default function EarningsStatementsPage() {
               key={statement.id}
               className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-md transition-shadow"
             >
-              <div className="flex items-center justify-between mb-4">
-                <div>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                <div className="min-w-0">
                   <h3 className="text-lg font-semibold text-slate-900 mb-1">{statement.period}</h3>
-                  <div className="flex items-center gap-4 text-sm text-slate-600">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-slate-600">
                     <span>Revenue: UGX {statement.revenue.toLocaleString()}</span>
                     <span>Payouts: UGX {statement.payouts.toLocaleString()}</span>
                     <span className="font-semibold text-slate-900">
@@ -55,16 +55,16 @@ export default function EarningsStatementsPage() {
                   {statement.status}
                 </span>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <button
                   onClick={() => navigate(`/earnings/statements/${statement.id}`)}
-                  className="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  className="w-full sm:w-auto px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
                 >
                   View details
                 </button>
                 <button
                   onClick={() => handleDownloadPDF(statement.id)}
-                  className="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  className="w-full sm:w-auto px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
                 >
                   Download PDF
                 </button>

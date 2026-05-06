@@ -32,7 +32,7 @@ export default function AmbulanceDispatchBoardPage() {
       </div>
 
       {/* Status Filters */}
-      <div className="mb-6 flex gap-2">
+      <div className="mb-6 flex flex-wrap gap-2">
         {["all", "pending", "assigned", "in-progress", "completed"].map((status) => (
           <button
             key={status}

@@ -140,7 +140,7 @@ export default function ShuttleStudentAttendancePage() {
           >
             ← Back to student details
           </Link>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-2">Student Attendance</h1>
               <p className="text-sm text-slate-600 dark:text-slate-400">
@@ -206,19 +206,21 @@ export default function ShuttleStudentAttendancePage() {
         </div>
 
         {/* Attendance Calendar View */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 mb-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 sm:p-6 mb-6">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
             Attendance Calendar - {new Date(selectedMonth + "-01").toLocaleDateString("en-US", { month: "long", year: "numeric" })}
           </h2>
-          <div className="grid grid-cols-7 gap-1.5 mb-4">
-            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-              <div key={day} className="text-center text-xs font-medium text-slate-500 dark:text-slate-400 py-2">
-                {day}
+          <div className="overflow-x-auto">
+            <div className="min-w-[560px]">
+              <div className="grid grid-cols-7 gap-1.5 mb-4">
+                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                  <div key={day} className="text-center text-xs font-medium text-slate-500 dark:text-slate-400 py-2">
+                    {day}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-7 gap-1.5">
-            {(() => {
+              <div className="grid grid-cols-7 gap-1.5">
+                {(() => {
               const year = parseInt(selectedMonth.split("-")[0]);
               const month = parseInt(selectedMonth.split("-")[1]);
               const firstDay = new Date(year, month - 1, 1).getDay();
@@ -258,7 +260,9 @@ export default function ShuttleStudentAttendancePage() {
               }
 
               return cells;
-            })()}
+                })()}
+              </div>
+            </div>
           </div>
           <div className="mt-4 flex flex-wrap gap-4 text-xs text-slate-600 dark:text-slate-300">
             <div className="flex items-center gap-2">
@@ -296,7 +300,7 @@ export default function ShuttleStudentAttendancePage() {
                   return (
                     <div
                       key={idx}
-                      className={`flex items-center justify-between p-4 rounded-lg border ${getStatusColor(record.status)}`}
+                      className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-lg border ${getStatusColor(record.status)}`}
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-3">

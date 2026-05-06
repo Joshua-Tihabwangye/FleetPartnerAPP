@@ -115,7 +115,7 @@ export default function GlobalSearch() {
     };
 
     return (
-        <div className="relative" ref={containerRef}>
+        <div className="relative w-full md:w-auto" ref={containerRef}>
             {/* Inline Search Input */}
             <div className="relative">
                 <svg
@@ -139,13 +139,13 @@ export default function GlobalSearch() {
                     onFocus={() => query && setShowDropdown(true)}
                     onKeyDown={handleKeyDown}
                     placeholder="Search drivers, vehicles, pages..."
-                    className="w-64 lg:w-80 pl-9 pr-4 py-2 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-ev-green focus:border-transparent transition"
+                    className="w-full md:w-44 lg:w-64 xl:w-80 pl-9 pr-4 py-2 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-ev-green focus:border-transparent transition"
                 />
             </div>
 
             {/* Dropdown Results */}
             {showDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-xl border border-slate-200 z-50 overflow-hidden max-h-96 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 z-50 overflow-hidden max-h-[70vh] overflow-y-auto">
                     {results.length === 0 ? (
                         <div className="px-4 py-6 text-center text-slate-500 text-sm">
                             No results found for "{query}"
@@ -167,14 +167,14 @@ export default function GlobalSearch() {
                                             <div className="text-sm font-medium text-slate-900">{result.title}</div>
                                             <div className="text-xs text-slate-500">{result.subtitle}</div>
                                         </div>
-                                        <span className="text-xs text-slate-400 capitalize">{result.type}</span>
+                                        <span className="hidden sm:inline text-xs text-slate-400 capitalize">{result.type}</span>
                                     </button>
                                 </li>
                             ))}
                         </ul>
                     )}
                     {/* Keyboard hint */}
-                    <div className="px-4 py-2 border-t border-slate-100 bg-slate-50 text-xs text-slate-500 flex gap-4">
+                    <div className="hidden sm:flex px-4 py-2 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs text-slate-500 gap-4">
                         <span>↑↓ Navigate</span>
                         <span>↵ Select</span>
                         <span>Esc Close</span>

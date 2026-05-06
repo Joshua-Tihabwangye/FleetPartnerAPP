@@ -17,13 +17,13 @@ export default function PeriodSelector({ value, onChange, className = "" }: Peri
     ];
 
     return (
-        <div className={`inline-flex items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 ${className}`}>
+        <div className={`inline-flex max-w-full flex-wrap items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 ${className}`}>
             {periods.map((period) => (
                 <button
                     key={period.id}
                     onClick={() => onChange(period.id)}
                     className={`
-            px-3 py-1.5 text-xs font-medium rounded-lg transition-all
+            px-3 py-1.5 text-xs font-medium rounded-lg transition-all whitespace-nowrap
             ${value === period.id
                             ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm ring-1 ring-slate-200 dark:ring-slate-600"
                             : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-700/50"

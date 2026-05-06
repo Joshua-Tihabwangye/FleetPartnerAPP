@@ -79,7 +79,7 @@ export default function DashboardOverviewPage() {
               Real-time fleet operations and performance metrics
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <PeriodSelector value={dateRange as any} onChange={(v) => setDateRange(v as any)} />
             <div className="h-6 w-px bg-slate-200 mx-2 hidden sm:block"></div>
             <Link
@@ -301,7 +301,7 @@ export default function DashboardOverviewPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="bg-bg-slate-50 rounded-xl border border-slate-200 p-6 shadow-sm bg-white">
           <h2 className="text-lg font-bold text-slate-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <Link
               to="/vehicles/create"
               className="flex flex-col items-center justify-center p-4 rounded-xl border border-slate-200 bg-white shadow-sm hover:border-ev-green hover:shadow-md transition-all group"
@@ -360,7 +360,7 @@ export default function DashboardOverviewPage() {
                   {activity.icon}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-start mb-0.5">
+                  <div className="flex flex-wrap justify-between items-start gap-1 mb-0.5">
                     <div className="text-sm font-semibold text-slate-900">{activity.title}</div>
                     <div className="text-xs text-slate-400">{activity.time}</div>
                   </div>

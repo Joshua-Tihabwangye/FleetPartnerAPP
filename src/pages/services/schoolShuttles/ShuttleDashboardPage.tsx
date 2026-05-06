@@ -237,7 +237,7 @@ export default function ShuttleDashboardPage() {
       )}
 
       {/* Key Metrics Grid - with visible period dropdowns */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         {keyMetrics.map((metric, idx) => {
           const colors: Record<string, string> = {
             emerald: "#10b981",
@@ -295,7 +295,7 @@ export default function ShuttleDashboardPage() {
       </div>
 
       {/* Payment Analytics - NEW */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         {/* Payments to School */}
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-blue-200 dark:border-blue-700 p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-2">
@@ -406,7 +406,7 @@ export default function ShuttleDashboardPage() {
       </div>
 
       {/* Performance Metrics - LIGHT SOLID COLORS (no gradients) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         {performanceStats.map((stat, idx) => (
           <div
             key={idx}

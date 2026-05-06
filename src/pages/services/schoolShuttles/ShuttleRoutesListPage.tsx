@@ -13,7 +13,7 @@ export default function ShuttleRoutesListPage() {
   return (
     <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50">
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <Link
             to="/school-shuttles"
@@ -24,23 +24,23 @@ export default function ShuttleRoutesListPage() {
           <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-2">School shuttle routes</h1>
           <p className="text-sm text-slate-600 dark:text-slate-400">Manage school shuttle routes and operations</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
 
           <Link
             to="/school-shuttles/operations"
-            className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700"
+            className="w-full sm:w-auto px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 text-center"
           >
             Operations
           </Link>
           <Link
             to="/school-shuttles/students"
-            className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="w-full sm:w-auto px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 text-center"
           >
             Students
           </Link>
           <Link
             to="/school-shuttles/routes/create"
-            className="px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark"
+            className="w-full sm:w-auto px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark text-center"
           >
             + Add Route
           </Link>

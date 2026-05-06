@@ -64,7 +64,7 @@ export default function NotificationCenter() {
             {/* Bell Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="relative p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition"
+                className="relative p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition"
                 title="Notifications"
             >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -84,10 +84,10 @@ export default function NotificationCenter() {
 
             {/* Dropdown */}
             {isOpen && (
-                <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden">
+                <div className="absolute right-0 top-full mt-2 w-[min(20rem,calc(100vw-1rem))] sm:w-80 max-w-[calc(100vw-1rem)] bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 overflow-hidden">
                     {/* Header */}
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50">
-                        <h3 className="font-semibold text-slate-900 text-sm">Notifications</h3>
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+                        <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">Notifications</h3>
                         {unreadCount > 0 && (
                             <button
                                 onClick={markAllAsRead}
@@ -99,7 +99,7 @@ export default function NotificationCenter() {
                     </div>
 
                     {/* Notifications List */}
-                    <div className="max-h-80 overflow-y-auto">
+                    <div className="max-h-[70vh] overflow-y-auto">
                         {notifications.length === 0 ? (
                             <div className="px-4 py-8 text-center text-slate-500 text-sm">
                                 No notifications
@@ -109,7 +109,7 @@ export default function NotificationCenter() {
                                 <div
                                     key={notification.id}
                                     onClick={() => handleNotificationClick(notification)}
-                                    className={`px-4 py-3 border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition ${!notification.read ? "bg-blue-50/50" : ""
+                                    className={`px-4 py-3 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/60 cursor-pointer transition ${!notification.read ? "bg-blue-50/50 dark:bg-blue-900/20" : ""
                                         }`}
                                 >
                                     <div className="flex gap-3">
@@ -118,7 +118,7 @@ export default function NotificationCenter() {
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-start justify-between gap-2">
-                                                <p className={`text-sm ${!notification.read ? "font-semibold text-slate-900" : "text-slate-700"}`}>
+                                                <p className={`text-sm ${!notification.read ? "font-semibold text-slate-900 dark:text-slate-100" : "text-slate-700 dark:text-slate-300"}`}>
                                                     {notification.title}
                                                 </p>
                                                 <button
@@ -131,7 +131,7 @@ export default function NotificationCenter() {
                                                     ✕
                                                 </button>
                                             </div>
-                                            <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{notification.message}</p>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">{notification.message}</p>
                                             <p className="text-[10px] text-slate-400 mt-1">{formatTime(notification.timestamp)}</p>
                                         </div>
                                     </div>
@@ -142,7 +142,7 @@ export default function NotificationCenter() {
 
                     {/* Footer */}
                     {notifications.length > 0 && (
-                        <div className="px-4 py-2 border-t border-slate-100 bg-slate-50">
+                        <div className="px-4 py-2 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
                             <button
                                 onClick={() => {
                                     navigate("/settings/activity-log");

@@ -327,8 +327,8 @@ export default function FleetPartnerAppShell() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         {/* Header */}
-        <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 flex-shrink-0 z-10 relative">
-          <div className="flex items-center gap-4">
+        <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 flex-shrink-0 z-10 relative gap-2">
+          <div className="flex items-center gap-3 min-w-0">
             {/* Mobile sidebar toggle */}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -339,7 +339,7 @@ export default function FleetPartnerAppShell() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <h1 className="text-xl font-semibold text-slate-900 dark:text-white hidden sm:block">
+            <h1 className="text-xl font-semibold text-slate-900 dark:text-white hidden lg:block truncate max-w-[55vw]">
               {Object.values(NAV_PATHS).includes(pathname)
                 ? NAV_SECTIONS.flatMap(s => s.items).find(i => i.path === pathname)?.label
                 : ''}
@@ -347,7 +347,7 @@ export default function FleetPartnerAppShell() {
           </div>
           
           {/* Desktop Header Items */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-2 lg:gap-3 min-w-0">
             <GlobalSearch />
             <NotificationCenter />
             <div className="h-4 w-px bg-slate-300 dark:bg-slate-600 mx-1"></div>
@@ -358,7 +358,7 @@ export default function FleetPartnerAppShell() {
         </header>
 
         {/* Scrollable Content */}
-        <main className="flex-1 overflow-auto bg-slate-50">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden min-w-0 bg-slate-50 dark:bg-slate-900">
           <Outlet />
           <div className="h-10"></div> {/* Spacer */}
         </main>

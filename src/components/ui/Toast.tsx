@@ -37,7 +37,7 @@ export default function Toast({ message, type = "success", onClose, duration = 3
     };
 
     return (
-        <div className={`fixed top-4 right-4 z-50 min-w-[300px] max-w-md rounded-lg border shadow-lg p-4 flex items-start gap-3 animate-slide-in ${typeStyles[type]}`}>
+        <div className={`w-full min-w-0 sm:min-w-[300px] max-w-full sm:max-w-md rounded-lg border shadow-lg p-4 flex items-start gap-3 animate-slide-in ${typeStyles[type]}`}>
             <span className="text-lg font-semibold">{icons[type]}</span>
             <p className="flex-1 text-sm font-medium">{message}</p>
             <button
@@ -52,7 +52,7 @@ export default function Toast({ message, type = "success", onClose, duration = 3
 
 export function ToastContainer({ toasts, removeToast }: ToastContainerProps) {
     return (
-        <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
+        <div className="fixed top-4 left-2 right-2 sm:left-auto sm:right-4 z-50 flex flex-col gap-2 items-stretch sm:items-end">
             {toasts.map((toast) => (
                 <Toast
                     key={toast.id}

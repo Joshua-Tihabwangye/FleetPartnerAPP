@@ -72,14 +72,14 @@ export default function ActivityLogPage() {
         <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50">
             <div className="w-full">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
                     <div>
                         <h1 className="text-2xl font-semibold text-slate-900 mb-1">Activity Log</h1>
                         <p className="text-sm text-slate-600">Track all actions and changes in your fleet</p>
                     </div>
                     <button
                         onClick={handleClear}
-                        className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
+                        className="w-full sm:w-auto px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
                     >
                         Clear Log
                     </button>
@@ -111,6 +111,7 @@ export default function ActivityLogPage() {
                             <p>No activity recorded yet</p>
                         </div>
                     ) : (
+                        <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead className="bg-slate-50 border-b border-slate-200">
                                 <tr>
@@ -139,11 +140,12 @@ export default function ActivityLogPage() {
                                             </span>
                                         </td>
                                         <td className="px-4 py-3 text-sm text-slate-600">{entry.user}</td>
-                                        <td className="px-4 py-3 text-sm text-slate-500">{entry.details}</td>
+                                        <td className="px-4 py-3 text-sm text-slate-500 min-w-[220px]">{entry.details}</td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
+                        </div>
                     )}
                 </div>
             </div>

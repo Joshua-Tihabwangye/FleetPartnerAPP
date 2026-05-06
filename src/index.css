@@ -270,6 +270,28 @@ main>div:first-child {
   display: none;
 }
 
+/* Horizontal data scroll containers: keep scroll, hide scrollbar */
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.overflow-x-auto::-webkit-scrollbar {
+  display: none;
+}
+
+/* Preserve table readability on small screens without squeezing columns */
+.overflow-x-auto>table {
+  min-width: 42rem;
+}
+
+@media (min-width: 768px) {
+  .overflow-x-auto>table {
+    min-width: 100%;
+  }
+}
+
 /* Search dropdown animation */
 .search-dropdown {
   animation: slideIn 0.15s ease-out;

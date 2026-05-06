@@ -195,16 +195,16 @@ export default function VehiclesListPage() {
             className="w-full px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green focus:border-transparent"
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap sm:flex-nowrap">
           <button
             onClick={() => setShowFilterModal(true)}
-            className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="flex-1 sm:flex-none px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
             Filter
           </button>
           <button
             onClick={handleExport}
-            className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="flex-1 sm:flex-none px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
             Export
           </button>
@@ -306,24 +306,24 @@ export default function VehiclesListPage() {
             )}
 
             {/* Actions */}
-            <div className="flex gap-2 pt-3 border-t border-slate-100">
+            <div className="flex flex-col gap-2 pt-3 border-t border-slate-100">
               <Link
                 to={`/vehicles/${vehicle.id}`}
-                className="flex-1 text-center px-3 py-2 rounded-lg bg-ev-green text-white text-xs font-medium hover:bg-ev-green-dark transition-colors"
+                className="w-full text-center px-3 py-2 rounded-lg bg-ev-green text-white text-xs font-medium hover:bg-ev-green-dark transition-colors"
                 onClick={(e) => e.stopPropagation()}
               >
                 View
               </Link>
               <Link
                 to={`/vehicles/${vehicle.id}/maintenance`}
-                className="flex-1 text-center px-3 py-2 rounded-lg bg-slate-100 text-xs font-medium text-slate-700 hover:bg-slate-200 flex items-center justify-center gap-1"
+                className="w-full text-center px-3 py-2 rounded-lg bg-slate-100 text-xs font-medium text-slate-700 hover:bg-slate-200 flex items-center justify-center gap-1"
                 onClick={(e) => e.stopPropagation()}
               >
                 🔧 Maintenance
               </Link>
               <Link
                 to={`/vehicles/${vehicle.id}/documents`}
-                className="flex-1 text-center px-3 py-2 rounded-lg bg-slate-100 text-xs font-medium text-slate-700 hover:bg-slate-200 flex items-center justify-center gap-1"
+                className="w-full text-center px-3 py-2 rounded-lg bg-slate-100 text-xs font-medium text-slate-700 hover:bg-slate-200 flex items-center justify-center gap-1"
                 onClick={(e) => e.stopPropagation()}
               >
                 📄 Documents

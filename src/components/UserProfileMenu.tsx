@@ -56,7 +56,7 @@ export default function UserProfileMenu({
             {/* Avatar Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2 p-1 rounded-lg hover:bg-slate-100 transition"
+                className="flex items-center gap-2 p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition"
                 title="User menu"
             >
                 {/* Avatar */}
@@ -68,12 +68,12 @@ export default function UserProfileMenu({
                     )}
                 </div>
                 {/* Name (hidden on mobile) */}
-                <span className="hidden sm:block text-sm font-medium text-slate-700 max-w-[100px] truncate">
+                <span className="hidden sm:block text-sm font-medium text-slate-700 dark:text-slate-200 max-w-[100px] truncate">
                     {userName}
                 </span>
                 {/* Arrow */}
                 <svg
-                    className={`hidden sm:block w-4 h-4 text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+                    className={`hidden sm:block w-4 h-4 text-slate-400 dark:text-slate-500 transition-transform ${isOpen ? "rotate-180" : ""}`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -84,9 +84,9 @@ export default function UserProfileMenu({
 
             {/* Dropdown Menu */}
             {isOpen && (
-                <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden">
+                <div className="absolute right-0 top-full mt-2 w-[min(14rem,calc(100vw-1rem))] bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 overflow-hidden">
                     {/* User Info Header */}
-                    <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
+                    <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
                         <div className="flex items-center gap-3">
                             <div className="h-10 w-10 rounded-full bg-gradient-to-br from-ev-green to-emerald-600 flex items-center justify-center text-white text-sm font-bold overflow-hidden flex-shrink-0">
                                 {userImage ? (
@@ -96,8 +96,8 @@ export default function UserProfileMenu({
                                 )}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <div className="text-sm font-semibold text-slate-900 truncate">{userName}</div>
-                                <div className="text-xs text-slate-500 truncate">{userEmail}</div>
+                                <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{userName}</div>
+                                <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{userEmail}</div>
                             </div>
                         </div>
                     </div>
@@ -106,9 +106,9 @@ export default function UserProfileMenu({
                     <div className="py-1">
                         <button
                             onClick={handleEditProfile}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition text-left"
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition text-left"
                         >
-                            <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-4 h-4 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
                             Edit Profile
@@ -118,9 +118,9 @@ export default function UserProfileMenu({
                                 navigate("/settings/account-security");
                                 setIsOpen(false);
                             }}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition text-left"
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition text-left"
                         >
-                            <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-4 h-4 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
@@ -129,7 +129,7 @@ export default function UserProfileMenu({
                     </div>
 
                     {/* Logout */}
-                    <div className="border-t border-slate-100">
+                    <div className="border-t border-slate-100 dark:border-slate-700">
                         <button
                             onClick={handleLogout}
                             className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition text-left"
