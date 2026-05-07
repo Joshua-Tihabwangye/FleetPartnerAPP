@@ -55,27 +55,27 @@ export default function VehicleDetailPage() {
           >
             ← Back to vehicles
           </Link>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <h1 className="text-2xl font-semibold text-slate-900 mb-1">{vehicle.plate}</h1>
               <p className="text-sm text-slate-600">{vehicle.model} • Vehicle ID: {vehicleId}</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Link
                 to={`/vehicles/${vehicleId}/maintenance`}
-                className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className="w-full sm:w-auto px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 text-center"
               >
                 Maintenance
               </Link>
               <Link
                 to={`/vehicles/${vehicleId}/documents`}
-                className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className="w-full sm:w-auto px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 text-center"
               >
                 Documents
               </Link>
               <Link
                 to={`/vehicles/${vehicleId}/edit`}
-                className="px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark"
+                className="w-full sm:w-auto px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark text-center"
               >
                 Edit vehicle
               </Link>

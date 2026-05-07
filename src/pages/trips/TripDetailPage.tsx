@@ -73,7 +73,7 @@ export default function TripDetailPage() {
           >
             ← Back to trips
           </Link>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <div className="flex items-center gap-3 mb-1">
                 <h1 className="text-2xl font-semibold text-slate-900">Trip #{tripId}</h1>
@@ -90,10 +90,11 @@ export default function TripDetailPage() {
         {/* Trip Timeline */}
         <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
           <h2 className="text-lg font-semibold text-slate-900 mb-4">Trip Timeline</h2>
-          <div className="relative">
-            <div className="flex items-center justify-between">
+          <div className="overflow-x-auto pb-2">
+            <div className="relative min-w-[560px]">
+            <div className="flex items-start gap-2">
               {trip.timeline.map((step, idx) => (
-                <div key={step.id} className="flex flex-col items-center flex-1">
+                <div key={step.id} className="flex flex-col items-center flex-1 min-w-[88px]">
                   {/* Connector line */}
                   {idx > 0 && (
                     <div
@@ -127,6 +128,7 @@ export default function TripDetailPage() {
                   </div>
                 </div>
               ))}
+            </div>
             </div>
           </div>
         </div>
@@ -247,7 +249,7 @@ export default function TripDetailPage() {
         </div>
 
         {/* Actions */}
-        <div className="flex justify-end gap-3">
+        <div className="flex flex-col sm:flex-row sm:justify-end gap-3">
           <button className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">
             Download Receipt
           </button>

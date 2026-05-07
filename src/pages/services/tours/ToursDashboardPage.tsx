@@ -144,7 +144,7 @@ export default function ToursDashboardPage() {
       </div>
 
       {/* Key Metrics Grid - with visible period dropdowns */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         {keyMetrics.map((metric, idx) => {
           const colors: Record<string, string> = {
             emerald: "#10b981",

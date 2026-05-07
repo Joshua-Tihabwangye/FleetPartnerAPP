@@ -143,7 +143,7 @@ export default function AmbulanceDashboardPage() {
       </div>
 
       {/* Key Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         {keyMetrics.map((metric, idx) => {
           let borderColor = "border-slate-200";
           let sparkColor = "#64748b";
@@ -194,7 +194,7 @@ export default function AmbulanceDashboardPage() {
       </div>
 
       {/* Performance Metrics - NO Average dropdown, just title */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         {performanceMetrics.map((stat, idx) => (
           <div
             key={idx}

@@ -84,14 +84,14 @@ export default function TripsListPage() {
   return (
     <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50">
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900 mb-2">Trips & deliveries</h1>
           <p className="text-sm text-slate-600">View and manage all trips and deliveries</p>
         </div>
         <Link
           to="/dispatch/new"
-          className="px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark transition-colors shadow-md shadow-emerald-500/20"
+          className="w-full sm:w-auto text-center px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark transition-colors shadow-md shadow-emerald-500/20"
         >
           + New dispatch
         </Link>
@@ -133,11 +133,11 @@ export default function TripsListPage() {
             className="w-full px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green focus:border-transparent"
           />
         </div>
-        <div className="flex gap-2">
-          <button className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">
+        <div className="flex gap-2 flex-wrap sm:flex-nowrap">
+          <button className="flex-1 sm:flex-none px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">
             Filter
           </button>
-          <button className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">
+          <button className="flex-1 sm:flex-none px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">
             Export
           </button>
         </div>

@@ -29,7 +29,7 @@ export function LineChart({
     const areaD = `${pathD} L 100 100 L 0 100 Z`;
 
     return (
-        <div className="relative" style={{ height }}>
+        <div className="relative min-w-0" style={{ height }}>
             <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full">
                 {showArea && (
                     <path d={areaD} fill={`${color}20`} />
@@ -40,9 +40,9 @@ export function LineChart({
                 ))}
             </svg>
             {labels.length > 0 && (
-                <div className="flex justify-between mt-2 text-xs text-slate-400">
+                <div className="flex justify-between mt-2 text-xs text-slate-400 gap-2">
                     {labels.map((label, i) => (
-                        <span key={i}>{label}</span>
+                        <span key={i} className="truncate">{label}</span>
                     ))}
                 </div>
             )}
@@ -61,24 +61,24 @@ export function BarChart({ data, height = 150, showValues = true }: BarChartProp
     const max = Math.max(...data.map((d) => d.value), 1);
 
     return (
-        <div className="flex items-end gap-2" style={{ height }}>
+        <div className="flex items-end gap-1 sm:gap-2 min-w-0" style={{ height }}>
             {data.map((item, i) => {
                 const barHeight = (item.value / max) * 100;
                 const bgColor = item.color || ["#10b981", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6"][i % 5];
                 return (
-                    <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                    <div key={i} className="flex-1 min-w-0 flex flex-col items-center gap-1">
                         <div className="w-full relative" style={{ height: height - 30 }}>
                             <div
                                 className="absolute bottom-0 w-full rounded-t-md transition-all duration-500"
                                 style={{ height: `${barHeight}%`, backgroundColor: bgColor }}
                             />
                             {showValues && (
-                                <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-medium text-slate-700">
+                                <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-medium text-slate-700 dark:text-slate-300 hidden sm:block">
                                     {item.value.toLocaleString()}
                                 </div>
                             )}
                         </div>
-                        <span className="text-xs text-slate-500 text-center truncate w-full">{item.label}</span>
+                        <span className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 text-center truncate w-full">{item.label}</span>
                     </div>
                 );
             })}
@@ -113,7 +113,7 @@ export function PieChart({ data, size = 120, donut = true, showLabels = true }: 
     };
 
     return (
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 min-w-0">
             <svg viewBox="0 0 100 100" style={{ width: size, height: size }}>
                 {segments.map((seg, i) => {
                     const start = polarToCartesian(seg.startAngle);
@@ -132,18 +132,18 @@ export function PieChart({ data, size = 120, donut = true, showLabels = true }: 
                     );
                 })}
                 {donut && (
-                    <text x="50" y="50" textAnchor="middle" dominantBaseline="middle" className="text-lg font-bold fill-slate-700">
+                    <text x="50" y="50" textAnchor="middle" dominantBaseline="middle" className="text-lg font-bold fill-slate-700 dark:fill-slate-200">
                         {total.toLocaleString()}
                     </text>
                 )}
             </svg>
             {showLabels && (
-                <div className="flex flex-col gap-1.5 text-xs">
+                <div className="flex flex-col gap-1.5 text-xs w-full sm:w-auto">
                     {data.map((item, i) => (
                         <div key={i} className="flex items-center gap-2">
                             <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: item.color }} />
-                            <span className="text-slate-600">{item.label}</span>
-                            <span className="text-slate-900 font-medium">{item.value}</span>
+                            <span className="text-slate-600 dark:text-slate-400">{item.label}</span>
+                            <span className="text-slate-900 dark:text-slate-100 font-medium">{item.value}</span>
                         </div>
                     ))}
                 </div>

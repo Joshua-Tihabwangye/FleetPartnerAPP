@@ -48,7 +48,7 @@ export default function FleetPartnerTwoFactorSetupPage() {
         </div>
 
         {/* Progress Steps */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between gap-2 mb-8">
           {[1, 2, 3].map((s) => (
             <div key={s} className="flex items-center">
               <div
@@ -94,7 +94,7 @@ export default function FleetPartnerTwoFactorSetupPage() {
 
             <div className="bg-slate-50 rounded-lg p-3 mb-4">
               <p className="text-xs text-slate-500 mb-1">Can't scan? Enter this code manually:</p>
-              <code className="text-sm font-mono text-slate-900 bg-white px-2 py-1 rounded border border-slate-200">
+              <code className="block overflow-x-auto text-sm font-mono text-slate-900 bg-white px-2 py-1 rounded border border-slate-200 whitespace-nowrap">
                 EVZN-FLTP-ABCD-1234-EFGH-5678
               </code>
             </div>
@@ -128,16 +128,16 @@ export default function FleetPartnerTwoFactorSetupPage() {
               />
             </label>
 
-            <div className="flex gap-3">
+            <div className="flex flex-col-reverse sm:flex-row gap-3">
               <button
                 onClick={() => setStep(1)}
-                className="flex-1 py-2.5 rounded-lg border border-slate-300 text-slate-700 font-medium hover:bg-slate-50"
+                className="w-full sm:flex-1 py-2.5 rounded-lg border border-slate-300 text-slate-700 font-medium hover:bg-slate-50"
               >
                 ← Back
               </button>
               <button
                 onClick={handleVerifyCode}
-                className="flex-1 py-2.5 rounded-lg bg-gradient-to-r from-ev-green to-emerald-600 text-white font-medium hover:opacity-90 transition"
+                className="w-full sm:flex-1 py-2.5 rounded-lg bg-gradient-to-r from-ev-green to-emerald-600 text-white font-medium hover:opacity-90 transition"
               >
                 Verify →
               </button>
@@ -163,7 +163,7 @@ export default function FleetPartnerTwoFactorSetupPage() {
             </div>
 
             <div className="bg-slate-50 rounded-lg p-4 mb-4">
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {backupCodes.map((code, i) => (
                   <div
                     key={i}
@@ -181,13 +181,13 @@ export default function FleetPartnerTwoFactorSetupPage() {
               </button>
             </div>
 
-            <div className="flex gap-2 mb-4">
+            <div className="flex flex-col sm:flex-row gap-2 mb-4">
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(backupCodes.join('\n'));
                   toastManager.show("Codes copied to clipboard", "success");
                 }}
-                className="flex-1 py-2 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className="w-full sm:flex-1 py-2 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50"
               >
                 📋 Copy codes
               </button>
@@ -201,7 +201,7 @@ export default function FleetPartnerTwoFactorSetupPage() {
                   a.click();
                   toastManager.show("Codes downloaded", "success");
                 }}
-                className="flex-1 py-2 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className="w-full sm:flex-1 py-2 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50"
               >
                 ⬇️ Download
               </button>

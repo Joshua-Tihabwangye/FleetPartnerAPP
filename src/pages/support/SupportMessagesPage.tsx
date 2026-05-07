@@ -63,7 +63,7 @@ export default function SupportMessagesPage() {
             {/* Filters */}
             <div className="bg-white rounded-xl border border-slate-200 p-4 mb-6 shadow-sm">
                 <div className="flex flex-wrap items-center gap-4">
-                    <div className="flex-1 min-w-[200px]">
+                    <div className="flex-1 min-w-0 w-full sm:min-w-[200px]">
                         <div className="flex items-center rounded-lg border border-slate-300 bg-slate-50 px-3 py-2">
                             <span className="mr-2 text-slate-400">🔍</span>
                             <input
@@ -141,7 +141,7 @@ export default function SupportMessagesPage() {
                                 </button>
                             </div>
                             <p className="text-sm text-slate-600 line-clamp-2">{msg.message}</p>
-                            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-4 text-xs text-slate-500">
+                            <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-slate-500">
                                 <span>📧 {msg.email}</span>
                                 <span>👤 {msg.name}</span>
                             </div>
@@ -151,7 +151,7 @@ export default function SupportMessagesPage() {
             )}
 
             {/* Stats Footer */}
-            <div className="mt-6 grid grid-cols-3 gap-4">
+            <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="bg-white rounded-xl border border-slate-200 p-4 text-center">
                     <div className="text-2xl font-semibold text-slate-900">{messages.length}</div>
                     <div className="text-xs text-slate-500">Total Messages</div>

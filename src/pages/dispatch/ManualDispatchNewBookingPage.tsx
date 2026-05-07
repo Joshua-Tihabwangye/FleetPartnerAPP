@@ -195,7 +195,7 @@ export default function ManualDispatchNewBookingPage() {
             {/* Service Type */}
             <div>
               <span className="text-sm font-medium text-slate-700 mb-3 block">Service type *</span>
-              <div className="grid grid-cols-5 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
                 {[
                   { id: "ride", label: "Rides", icon: "🚗" },
                   { id: "delivery", label: "Delivery", icon: "📦" },
@@ -318,16 +318,16 @@ export default function ManualDispatchNewBookingPage() {
             </label>
 
             {/* Actions */}
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
+            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-4 border-t border-slate-200">
               <Link
                 to="/trips"
-                className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className="w-full sm:w-auto px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 text-center"
               >
                 Cancel
               </Link>
               <button
                 type="submit"
-                className="px-6 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark shadow-md shadow-emerald-500/20"
+                className="w-full sm:w-auto px-6 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark shadow-md shadow-emerald-500/20"
               >
                 Create booking
               </button>

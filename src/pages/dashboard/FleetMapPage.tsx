@@ -91,6 +91,8 @@ export default function FleetMapPage() {
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [showQuickActions, setShowQuickActions] = useState(false);
+  const [showVehicleList, setShowVehicleList] = useState(false);
+  const [hideAlerts, setHideAlerts] = useState(false);
   const [alerts] = useState<Alert[]>(generateAlerts(generateMockVehicles()));
 
   const filters = [
@@ -108,6 +110,7 @@ export default function FleetMapPage() {
 
   const handleVehicleClick = (vehicle: Vehicle) => {
     setSelectedVehicle(vehicle);
+    setShowVehicleList(false);
     setShowQuickActions(true);
   };
 
@@ -123,12 +126,12 @@ export default function FleetMapPage() {
     <div className="min-h-[calc(100vh-56px)] flex flex-col bg-slate-50 dark:bg-slate-900">
       {/* Header */}
       <div className="px-4 sm:px-6 lg:px-10 py-4 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div>
             <h1 className="text-2xl font-semibold text-slate-900 dark:text-white mb-1">Live fleet map</h1>
             <p className="text-sm text-slate-600 dark:text-slate-400">Real-time vehicle locations and status</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
               Live
@@ -160,9 +163,9 @@ export default function FleetMapPage() {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex relative">
+      <div className="flex-1 flex relative min-h-0">
         {/* Map Container */}
-        <div className="flex-1 relative bg-slate-200 dark:bg-slate-950">
+        <div className="flex-1 relative bg-slate-200 dark:bg-slate-950 overflow-hidden">
           {/* Simulated Map with Vehicle Markers */}
           <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-800">
             {/* Grid lines to simulate map */}
@@ -214,11 +217,21 @@ export default function FleetMapPage() {
 
           {/* Alerts Panel */}
           {alerts.length > 0 && (
-            <div className="absolute top-4 left-4 w-72 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg overflow-hidden">
+            <div className={`absolute top-4 left-4 right-4 sm:right-auto sm:w-72 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg overflow-hidden ${hideAlerts ? 'hidden' : ''}`}>
               <div className="px-4 py-3 bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-900/30">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-red-700 dark:text-red-400">⚠️ Alerts</span>
-                  <span className="px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-bold">{alerts.length}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-bold">{alerts.length}</span>
+                    <button
+                      onClick={() => setHideAlerts(true)}
+                      className="h-6 w-6 rounded-md border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 hover:bg-red-100/70 dark:hover:bg-red-900/30 flex items-center justify-center text-sm leading-none"
+                      aria-label="Close alerts"
+                      title="Close alerts"
+                    >
+                      ✕
+                    </button>
+                  </div>
                 </div>
               </div>
               <div className="max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700">
@@ -243,10 +256,26 @@ export default function FleetMapPage() {
               </div>
             </div>
           )}
+
+          {alerts.length > 0 && hideAlerts && (
+            <button
+              onClick={() => setHideAlerts(false)}
+              className="absolute top-4 left-4 px-3 py-1.5 rounded-lg bg-white/95 dark:bg-slate-800/95 border border-slate-300 dark:border-slate-600 shadow-md text-xs font-semibold text-red-700 dark:text-red-400"
+            >
+              ⚠️ Alerts ({alerts.length})
+            </button>
+          )}
+
+          <button
+            onClick={() => setShowVehicleList(true)}
+            className="lg:hidden absolute bottom-4 left-4 px-4 py-2 rounded-lg bg-white/95 dark:bg-slate-800/95 border border-slate-300 dark:border-slate-600 shadow-lg text-sm font-medium text-slate-700 dark:text-slate-200"
+          >
+            Vehicles ({filteredVehicles.length})
+          </button>
         </div>
 
         {/* Sidebar - Vehicle List */}
-        <div className="w-80 bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 shadow-lg flex flex-col">
+        <div className="hidden lg:flex w-80 bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 shadow-lg flex-col">
           <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
             <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Vehicles ({filteredVehicles.length})</h2>
           </div>
@@ -294,11 +323,61 @@ export default function FleetMapPage() {
           </div>
         </div>
 
+        {showVehicleList && (
+          <div className="lg:hidden absolute inset-0 z-30 bg-black/30" onClick={() => setShowVehicleList(false)}>
+            <div
+              className="absolute left-0 right-0 bottom-0 h-[70vh] bg-white dark:bg-slate-800 rounded-t-2xl border-t border-slate-200 dark:border-slate-700 shadow-2xl flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Vehicles ({filteredVehicles.length})</h2>
+                <button
+                  onClick={() => setShowVehicleList(false)}
+                  className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                {filteredVehicles.map((vehicle) => {
+                  const colors = statusColors[vehicle.status];
+                  return (
+                    <div
+                      key={vehicle.id}
+                      onClick={() => handleVehicleClick(vehicle)}
+                      className={`px-4 py-3 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors ${selectedVehicle?.id === vehicle.id ? 'bg-emerald-50 dark:bg-emerald-900/20 border-l-2 border-l-ev-green' : ''}`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">{vehicle.plate}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${colors.bg} ${colors.text}`}>
+                          {vehicle.status}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
+                        <span className="truncate pr-2">👤 {vehicle.driver}</span>
+                        <span>{formatTimeAgo(vehicle.lastSeen)}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className={vehicle.soc < 20 ? 'text-red-500' : vehicle.soc < 50 ? 'text-amber-500' : 'text-emerald-500'}>
+                          🔋 {vehicle.soc}%
+                        </span>
+                        {vehicle.tripInfo && (
+                          <span className="text-emerald-600 dark:text-emerald-400 font-medium">ETA {vehicle.tripInfo.eta}</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Quick Actions Drawer */}
         {showQuickActions && selectedVehicle && (
-          <div className="absolute inset-0 bg-black/20 z-30" onClick={() => setShowQuickActions(false)}>
+          <div className="absolute inset-0 bg-black/20 z-40" onClick={() => setShowQuickActions(false)}>
             <div
-              className="absolute right-80 top-0 bottom-0 w-80 bg-white dark:bg-slate-800 shadow-2xl border-l border-slate-200 dark:border-slate-700"
+              className="absolute inset-x-0 bottom-0 h-[75vh] rounded-t-2xl bg-white dark:bg-slate-800 shadow-2xl border-t border-slate-200 dark:border-slate-700 md:inset-y-0 md:bottom-auto md:right-0 md:left-auto md:w-80 md:h-auto md:rounded-none md:border-t-0 md:border-l lg:right-80"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-4 border-b border-slate-200 dark:border-slate-700">

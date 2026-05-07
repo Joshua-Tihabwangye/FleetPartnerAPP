@@ -57,7 +57,7 @@ export default function ShuttleRunsBoardPage() {
     <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50">
       {/* Header */}
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between gap-3 mb-2">
           <div>
             <Link
               to="/school-shuttles"
@@ -73,8 +73,8 @@ export default function ShuttleRunsBoardPage() {
       </div>
 
       {/* Date Selector */}
-      <div className="mb-6 flex items-center gap-4">
-        <label className="flex items-center gap-2">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+        <label className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium text-slate-700">Date:</span>
           <input
             type="date"
@@ -83,7 +83,7 @@ export default function ShuttleRunsBoardPage() {
             className="px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green"
           />
         </label>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <div className="px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-xs font-medium text-blue-700">
             {shuttleRuns.filter(r => r.status === 'in-progress').length} In Progress
           </div>

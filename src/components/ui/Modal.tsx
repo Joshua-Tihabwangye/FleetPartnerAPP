@@ -34,11 +34,11 @@ export default function Modal({ isOpen, onClose, title, children, size = "md" }:
         md: "max-w-2xl",
         lg: "max-w-4xl",
         xl: "max-w-6xl",
-        square: "w-[600px] max-w-[90vw]"
+        square: "w-full max-w-2xl sm:max-w-[600px]"
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-2 sm:p-4">
             {/* Overlay */}
             <div
                 className="absolute inset-0 bg-black bg-opacity-50"
@@ -46,10 +46,10 @@ export default function Modal({ isOpen, onClose, title, children, size = "md" }:
             />
 
             {/* Modal */}
-            <div className={`relative bg-white dark:bg-slate-800 rounded-xl shadow-2xl ${sizeClasses[size]} mx-4 ${size === 'square' ? 'h-[600px] max-h-[90vh]' : 'w-full max-h-[90vh]'} overflow-y-auto flex flex-col`}>
+            <div className={`relative bg-white dark:bg-slate-800 rounded-xl shadow-2xl ${sizeClasses[size]} ${size === 'square' ? 'h-[75vh] sm:h-[600px] max-h-[92vh]' : 'w-full max-h-[92vh]'} overflow-y-auto flex flex-col`}>
                 {/* Header */}
                 {title && (
-                    <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+                    <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-200 dark:border-slate-700">
                         <h2 className="text-xl font-semibold text-slate-900 dark:text-white">{title}</h2>
                         <button
                             onClick={onClose}
@@ -61,7 +61,7 @@ export default function Modal({ isOpen, onClose, title, children, size = "md" }:
                 )}
 
                 {/* Content */}
-                <div className={`px-6 py-4 ${size === 'square' ? 'flex-1 flex flex-col' : ''}`}>
+                <div className={`px-4 sm:px-6 py-4 ${size === 'square' ? 'flex-1 flex flex-col' : ''}`}>
                     {children}
                 </div>
             </div>
