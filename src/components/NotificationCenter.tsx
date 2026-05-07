@@ -84,7 +84,7 @@ export default function NotificationCenter() {
 
             {/* Dropdown */}
             {isOpen && (
-                <div className="absolute right-0 top-full mt-2 w-[min(20rem,calc(100vw-1rem))] sm:w-80 max-w-[calc(100vw-1rem)] bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 overflow-hidden">
+                <div className="fixed left-2 right-2 top-[4.25rem] max-h-[calc(100vh-5rem)] md:absolute md:left-auto md:right-0 md:top-full md:mt-2 md:w-80 md:max-h-[70vh] bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 overflow-hidden">
                     {/* Header */}
                     <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
                         <h3 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">Notifications</h3>

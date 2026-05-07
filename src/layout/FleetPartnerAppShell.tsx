@@ -265,16 +265,6 @@ export default function FleetPartnerAppShell() {
             )}
           </div>
 
-          {/* Mobile Utility Controls */}
-          <div className="md:hidden px-3 py-3 border-b border-slate-200 dark:border-slate-700/60 space-y-3">
-            <GlobalSearch />
-            <div className="flex items-center justify-between">
-              <NotificationCenter />
-              <ThemeToggle />
-              <UserProfileMenu userName="Fleet Manager" userEmail="manager@evzone.com" />
-            </div>
-          </div>
-
           {/* Nav Items */}
           <nav className={`sidebar-scrollbar-hide flex-1 overflow-y-auto py-4 space-y-6 ${sidebarOpen ? 'px-2' : 'px-1'}`}>
             {NAV_SECTIONS.map((section) => (
@@ -344,6 +334,16 @@ export default function FleetPartnerAppShell() {
                 ? NAV_SECTIONS.flatMap(s => s.items).find(i => i.path === pathname)?.label
                 : ''}
             </h1>
+          </div>
+
+          {/* Mobile Header Items */}
+          <div className="md:hidden flex items-center gap-1.5 min-w-0">
+            <div className="w-32">
+              <GlobalSearch />
+            </div>
+            <NotificationCenter />
+            <ThemeToggle />
+            <UserProfileMenu userName="Fleet Manager" userEmail="manager@evzone.com" />
           </div>
           
           {/* Desktop Header Items */}

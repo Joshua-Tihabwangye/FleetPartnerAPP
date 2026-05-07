@@ -92,6 +92,7 @@ export default function FleetMapPage() {
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [showVehicleList, setShowVehicleList] = useState(false);
+  const [hideAlerts, setHideAlerts] = useState(false);
   const [alerts] = useState<Alert[]>(generateAlerts(generateMockVehicles()));
 
   const filters = [
@@ -216,11 +217,21 @@ export default function FleetMapPage() {
 
           {/* Alerts Panel */}
           {alerts.length > 0 && (
-            <div className="absolute top-4 left-4 right-4 sm:right-auto sm:w-72 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg overflow-hidden">
+            <div className={`absolute top-4 left-4 right-4 sm:right-auto sm:w-72 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg overflow-hidden ${hideAlerts ? 'hidden' : ''}`}>
               <div className="px-4 py-3 bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-900/30">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-red-700 dark:text-red-400">⚠️ Alerts</span>
-                  <span className="px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-bold">{alerts.length}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-bold">{alerts.length}</span>
+                    <button
+                      onClick={() => setHideAlerts(true)}
+                      className="h-6 w-6 rounded-md border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 hover:bg-red-100/70 dark:hover:bg-red-900/30 flex items-center justify-center text-sm leading-none"
+                      aria-label="Close alerts"
+                      title="Close alerts"
+                    >
+                      ✕
+                    </button>
+                  </div>
                 </div>
               </div>
               <div className="max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700">
@@ -244,6 +255,15 @@ export default function FleetMapPage() {
                 ))}
               </div>
             </div>
+          )}
+
+          {alerts.length > 0 && hideAlerts && (
+            <button
+              onClick={() => setHideAlerts(false)}
+              className="absolute top-4 left-4 px-3 py-1.5 rounded-lg bg-white/95 dark:bg-slate-800/95 border border-slate-300 dark:border-slate-600 shadow-md text-xs font-semibold text-red-700 dark:text-red-400"
+            >
+              ⚠️ Alerts ({alerts.length})
+            </button>
           )}
 
           <button
