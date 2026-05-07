@@ -189,6 +189,24 @@ interface ProgressRingProps {
     bgColor?: string;
 }
 
+const parseHexColor = (value: string): [number, number, number] | null => {
+    const normalized = value.trim().toLowerCase();
+    const hex = normalized.startsWith("#") ? normalized.slice(1) : normalized;
+    if (!/^[0-9a-f]{3}$|^[0-9a-f]{6}$/.test(hex)) return null;
+    const full = hex.length === 3 ? hex.split("").map((c) => c + c).join("") : hex;
+    const r = parseInt(full.slice(0, 2), 16);
+    const g = parseInt(full.slice(2, 4), 16);
+    const b = parseInt(full.slice(4, 6), 16);
+    return [r, g, b];
+};
+
+const luminance = (value: string): number | null => {
+    const rgb = parseHexColor(value);
+    if (!rgb) return null;
+    const [r, g, b] = rgb.map((n) => n / 255);
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+
 export function ProgressRing({
     percent,
     size = 80,
@@ -198,6 +216,21 @@ export function ProgressRing({
     textColor = "#1e293b",
     bgColor = "#e2e8f0",
 }: ProgressRingProps) {
+    const isDarkMode = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
+    const textLum = luminance(textColor);
+    const bgLum = luminance(bgColor);
+    const resolvedTextColor =
+        isDarkMode && textLum !== null && textLum < 0.45
+            ? "#e2e8f0"
+            : !isDarkMode && textLum !== null && textLum > 0.75
+                ? "#0f172a"
+                : textColor;
+    const resolvedBgColor =
+        isDarkMode && bgLum !== null && bgLum > 0.55
+            ? "#475569"
+            : !isDarkMode && bgLum !== null && bgLum < 0.25
+                ? "#e2e8f0"
+                : bgColor;
     const radius = (size - strokeWidth) / 2;
     const circumference = 2 * Math.PI * radius;
     const offset = circumference - (percent / 100) * circumference;
@@ -210,7 +243,7 @@ export function ProgressRing({
                     cy={size / 2}
                     r={radius}
                     fill="none"
-                    stroke={bgColor}
+                    stroke={resolvedBgColor}
                     strokeWidth={strokeWidth}
                 />
                 <circle
@@ -230,12 +263,12 @@ export function ProgressRing({
                     y="50%"
                     textAnchor="middle"
                     dominantBaseline="middle"
-                    style={{ fill: textColor, fontSize: size * 0.18, fontWeight: 700 }}
+                    style={{ fill: resolvedTextColor, fontSize: size * 0.18, fontWeight: 700 }}
                 >
                     {percent}%
                 </text>
             </svg>
-            {label && <span className="mt-1 text-xs text-slate-500">{label}</span>}
+            {label && <span className="mt-1 text-xs text-slate-500 dark:text-slate-300">{label}</span>}
         </div>
     );
 }
