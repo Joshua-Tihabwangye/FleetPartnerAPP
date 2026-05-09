@@ -1,12 +1,27 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { auth } from "../../utils/auth";
 
 export default function FleetPartnerForgotPasswordPage() {
   const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    alert("Password reset email sent. Wire to your auth API.");
+    setError("");
+    setMessage("");
+
+    try {
+      await auth.forgotPassword(email);
+      setMessage("Password reset email sent. Check your inbox.");
+    } catch (forgotError) {
+      const nextError =
+        forgotError instanceof Error
+          ? forgotError.message
+          : "Unable to send reset email. Please try again.";
+      setError(nextError);
+    }
   };
 
   return (
@@ -28,6 +43,16 @@ export default function FleetPartnerForgotPasswordPage() {
           Enter your work email and we&apos;ll send you a link to reset your password.
         </p>
         <form onSubmit={handleSubmit} className="space-y-3 text-[12px]">
+          {message ? (
+            <div className="rounded-xl border border-emerald-400/50 bg-emerald-500/10 px-3 py-2 text-[11px] text-emerald-100">
+              {message}
+            </div>
+          ) : null}
+          {error ? (
+            <div className="rounded-xl border border-red-400/50 bg-red-500/10 px-3 py-2 text-[11px] text-red-100">
+              {error}
+            </div>
+          ) : null}
           <label className="block space-y-1">
             <span className="text-[11px] text-emerald-100/90">Work email</span>
             <input

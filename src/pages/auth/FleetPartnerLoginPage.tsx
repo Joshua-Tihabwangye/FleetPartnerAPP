@@ -13,14 +13,20 @@ export default function FleetPartnerLoginPage() {
   const { isDark } = useTheme();
   const { language, setLanguage, t } = useLanguage();
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
 
     if (email && password) {
-      auth.login(email, password);
-      const from = location.state?.from?.pathname || "/dashboard";
-      navigate(from, { replace: true });
+      try {
+        await auth.login(email, password);
+        const from = location.state?.from?.pathname || "/dashboard";
+        navigate(from, { replace: true });
+      } catch (loginError) {
+        const message =
+          loginError instanceof Error ? loginError.message : "Unable to sign in. Please try again.";
+        setError(message);
+      }
     } else {
       setError("Please enter both email and password");
     }

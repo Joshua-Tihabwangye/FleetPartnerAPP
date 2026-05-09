@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toastManager } from "../../utils/toastManager";
 import { useTheme } from "../../context/ThemeContext";
+import { auth } from "../../utils/auth";
 
 export default function FleetPartnerRegistrationPage() {
   const navigate = useNavigate();
@@ -14,8 +15,26 @@ export default function FleetPartnerRegistrationPage() {
     services: [] as string[]
   });
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    try {
+      await auth.register({
+        companyName: formData.companyName,
+        email: formData.email,
+        phone: formData.phone,
+        fleetSize: formData.fleetSize,
+        services: formData.services,
+      });
+    } catch (registrationError) {
+      const message =
+        registrationError instanceof Error
+          ? registrationError.message
+          : "Unable to submit registration right now.";
+      toastManager.show(message, "error");
+      return;
+    }
+
     toastManager.show("Registration submitted successfully! We'll contact you shortly.", "success");
     setTimeout(() => navigate("/login"), 1500);
   };
