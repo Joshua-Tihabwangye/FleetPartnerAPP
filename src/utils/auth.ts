@@ -1,11 +1,16 @@
-// Simple auth utility for frontend testing without database
-// This stores auth state in localStorage for testing purposes
+import {
+  backendForgotPassword,
+  backendLogin,
+  backendRegister,
+  isBackendAuthEnabled,
+} from "../services/api/authApi";
+import { ApiRequestError } from "../services/api/httpClient";
 
 const AUTH_KEY = "fleet_partner_auth";
 
 export interface User {
   email: string;
-  role: 'FleetOwner' | 'Manager' | 'Dispatcher' | 'Finance';
+  role: "FleetOwner" | "Manager" | "Dispatcher" | "Finance";
   name: string;
 }
 
@@ -18,68 +23,132 @@ export interface AuthState {
 const defaultAuthState: AuthState = {
   isAuthenticated: false,
   hasFinishedOnboarding: false,
-  user: null
+  user: null,
 };
 
+function shouldFallbackToLocal(error: unknown): boolean {
+  if (error instanceof TypeError) return true;
+  if (error instanceof ApiRequestError) {
+    return error.status >= 500;
+  }
+  return false;
+}
+
+function buildLocalAuthState(email: string): AuthState {
+  return {
+    isAuthenticated: true,
+    hasFinishedOnboarding: true,
+    user: {
+      email,
+      role: "FleetOwner",
+      name: email.split("@")[0] || "fleet-user",
+    },
+  };
+}
+
 export const auth = {
-  // Get auth state from localStorage
   getAuth: (): AuthState => {
     if (typeof window === "undefined") {
       return defaultAuthState;
     }
+
     const stored = localStorage.getItem(AUTH_KEY);
-    if (stored) {
-      try {
-        return JSON.parse(stored) as AuthState;
-      } catch {
-        return defaultAuthState;
-      }
+    if (!stored) return defaultAuthState;
+
+    try {
+      return JSON.parse(stored) as AuthState;
+    } catch {
+      return defaultAuthState;
     }
-    return defaultAuthState;
   },
 
-  // Set auth state
   setAuth: (authData: AuthState): void => {
     if (typeof window !== "undefined") {
       localStorage.setItem(AUTH_KEY, JSON.stringify(authData));
     }
   },
 
-  // Login - accepts any email/password for testing
-  login: (email: string, _password: string): AuthState => {
-    // For testing: accept any email/password
-    const authData: AuthState = {
-      isAuthenticated: true,
-      hasFinishedOnboarding: true, // Set to false if you want to test onboarding flow
-      user: {
-        email: email,
-        role: "FleetOwner", // Can be: FleetOwner, Manager, Dispatcher, Finance
-        name: email.split("@")[0]
+  login: async (email: string, password: string): Promise<AuthState> => {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (isBackendAuthEnabled()) {
+      try {
+        const backend = await backendLogin({
+          email: normalizedEmail,
+          password,
+        });
+
+        const authData = buildLocalAuthState(backend.user.email);
+        auth.setAuth(authData);
+        return authData;
+      } catch (error) {
+        if (!shouldFallbackToLocal(error)) {
+          throw error;
+        }
+        console.warn("Fleet backend login unavailable. Falling back to local auth.", error);
       }
-    };
+    }
+
+    const authData = buildLocalAuthState(normalizedEmail || email);
     auth.setAuth(authData);
     return authData;
   },
 
-  // Logout
+  register: async (input: {
+    companyName: string;
+    email: string;
+    phone?: string;
+    fleetSize?: string;
+    services?: string[];
+  }): Promise<void> => {
+    if (!isBackendAuthEnabled()) return;
+
+    try {
+      const normalizedEmail = input.email.trim().toLowerCase();
+      const generatedPassword = `Fleet#${Date.now()}Aa1`;
+
+      await backendRegister({
+        fullName: input.companyName.trim() || "Fleet Partner",
+        email: normalizedEmail,
+        phone: input.phone?.trim(),
+        password: generatedPassword,
+      });
+    } catch (error) {
+      if (!shouldFallbackToLocal(error)) {
+        throw error;
+      }
+      console.warn("Fleet backend registration unavailable. Continuing local flow.", error);
+    }
+  },
+
+  forgotPassword: async (email: string): Promise<void> => {
+    if (!isBackendAuthEnabled()) return;
+
+    try {
+      await backendForgotPassword({ email: email.trim().toLowerCase() });
+    } catch (error) {
+      if (!shouldFallbackToLocal(error)) {
+        throw error;
+      }
+      console.warn("Fleet backend forgot-password unavailable. Continuing local flow.", error);
+    }
+  },
+
   logout: (): void => {
     if (typeof window !== "undefined") {
       localStorage.removeItem(AUTH_KEY);
     }
   },
 
-  // Check if authenticated
   isAuthenticated: (): boolean => {
     return auth.getAuth().isAuthenticated;
   },
 
-  // Check if onboarding is complete
   hasFinishedOnboarding: (): boolean => {
     return auth.getAuth().hasFinishedOnboarding;
   },
 
-  // Get current user
   getUser: (): User | null => {
     return auth.getAuth().user;
-  }
+  },
 };
