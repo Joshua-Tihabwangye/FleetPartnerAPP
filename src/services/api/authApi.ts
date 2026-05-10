@@ -1,4 +1,4 @@
-import { USE_BACKEND } from "./config";
+import { getBackendEnabled } from "./config";
 import { request } from "./httpClient";
 
 interface BackendAuthUser {
@@ -32,7 +32,7 @@ export interface BackendForgotPasswordInput {
 }
 
 export function isBackendAuthEnabled(): boolean {
-  return USE_BACKEND;
+  return getBackendEnabled();
 }
 
 export async function backendLogin(input: BackendLoginInput): Promise<BackendAuthResponse> {
@@ -45,7 +45,10 @@ export async function backendLogin(input: BackendLoginInput): Promise<BackendAut
 export async function backendRegister(input: BackendRegisterInput): Promise<BackendAuthResponse> {
   return request<BackendAuthResponse>("/auth/register", {
     method: "POST",
-    body: input,
+    body: {
+      ...input,
+      roles: ["fleet_owner"],
+    },
   });
 }
 

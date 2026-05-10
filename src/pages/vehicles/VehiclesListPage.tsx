@@ -54,7 +54,7 @@ export default function VehiclesListPage() {
       zone: v.zone || "Unknown",
       estimatedRange: v.estimatedRange ?? 200,
     }));
-    setAllVehicles([...mockVehicles, ...storedVehicles]);
+    setAllVehicles(storedVehicles.length > 0 ? storedVehicles : mockVehicles);
   }, []);
 
   // KPI calculations

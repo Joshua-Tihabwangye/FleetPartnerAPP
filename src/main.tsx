@@ -5,6 +5,7 @@ import { ThemeProvider as MuiThemeProvider } from "@mui/material";
 import { ThemeProvider } from "./context/ThemeContext";
 import { LanguageProvider } from "./context/LanguageContext";
 import { NotificationsProvider } from "./context/NotificationsContext";
+import FleetBackendBootstrap from "./components/FleetBackendBootstrap";
 import AppRoutes from "./routes/AppRoutes";
 import muiTheme from "./theme/muiTheme";
 import "./index.css";
@@ -19,6 +20,7 @@ root.render(
                 <ThemeProvider>
                     <MuiThemeProvider theme={muiTheme}>
                         <HashRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+                            <FleetBackendBootstrap />
                             <AppRoutes />
                         </HashRouter>
                     </MuiThemeProvider>

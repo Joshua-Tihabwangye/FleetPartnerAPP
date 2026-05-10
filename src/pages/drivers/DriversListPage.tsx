@@ -38,7 +38,7 @@ export default function DriversListPage() {
     ];
 
     const storedDrivers = JSON.parse(localStorage.getItem("drivers") || "[]");
-    setAllDrivers([...mockDrivers, ...storedDrivers]);
+    setAllDrivers(storedDrivers.length > 0 ? storedDrivers : mockDrivers);
   }, []);
 
   // KPI calculations
