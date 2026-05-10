@@ -3,12 +3,18 @@ import { Link } from "react-router-dom";
 
 export default function ToursListPage() {
   const [searchQuery, setSearchQuery] = useState("");
-
-  const tours = [
+  const [tours, setTours] = React.useState([
     { id: 1, name: "Kampala City Tour", vehicle: "UAA 123A", status: "active", bookings: 12, capacity: 20 },
     { id: 2, name: "Safari Adventure", vehicle: "UAA 124B", status: "scheduled", bookings: 8, capacity: 15 },
     { id: 3, name: "Cultural Heritage Tour", vehicle: "UAA 125C", status: "completed", bookings: 18, capacity: 20 }
-  ];
+  ]);
+
+  React.useEffect(() => {
+    const storedTours = JSON.parse(localStorage.getItem("tours") || "[]");
+    if (Array.isArray(storedTours) && storedTours.length > 0) {
+      setTours(storedTours);
+    }
+  }, []);
 
   return (
     <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50">

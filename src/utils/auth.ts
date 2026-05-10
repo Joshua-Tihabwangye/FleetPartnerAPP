@@ -5,6 +5,11 @@ import {
   isBackendAuthEnabled,
 } from "../services/api/authApi";
 import { ApiRequestError } from "../services/api/httpClient";
+import {
+  clearFleetBackendTokens,
+  saveFleetBackendTokens,
+  syncFleetWorkspaceState,
+} from "../services/api/fleetApi";
 
 const AUTH_KEY = "fleet_partner_auth";
 
@@ -46,6 +51,13 @@ function buildLocalAuthState(email: string): AuthState {
   };
 }
 
+function mapFleetRole(roles?: string[]): User["role"] {
+  if (roles?.includes("fleet_finance")) return "Finance";
+  if (roles?.includes("fleet_dispatcher")) return "Dispatcher";
+  if (roles?.includes("fleet_manager")) return "Manager";
+  return "FleetOwner";
+}
+
 export const auth = {
   getAuth: (): AuthState => {
     if (typeof window === "undefined") {
@@ -78,8 +90,20 @@ export const auth = {
           password,
         });
 
-        const authData = buildLocalAuthState(backend.user.email);
+        saveFleetBackendTokens(backend.accessToken, backend.refreshToken);
+        const authData = {
+          isAuthenticated: true,
+          hasFinishedOnboarding: true,
+          user: {
+            email: backend.user.email,
+            role: mapFleetRole(backend.user.roles),
+            name: backend.user.email.split("@")[0] || "fleet-user",
+          },
+        } satisfies AuthState;
         auth.setAuth(authData);
+        void syncFleetWorkspaceState().catch((error) => {
+          console.warn("Fleet backend bootstrap sync failed. Keeping current local state.", error);
+        });
         return authData;
       } catch (error) {
         if (!shouldFallbackToLocal(error)) {
@@ -138,6 +162,7 @@ export const auth = {
     if (typeof window !== "undefined") {
       localStorage.removeItem(AUTH_KEY);
     }
+    clearFleetBackendTokens();
   },
 
   isAuthenticated: (): boolean => {
