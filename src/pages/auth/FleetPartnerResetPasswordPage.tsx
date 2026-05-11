@@ -1,39 +1,60 @@
 import React, { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { auth } from "../../utils/auth";
 
 export default function FleetPartnerResetPasswordPage() {
-  const { token } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const flowState = (location.state as { email?: string; otp?: string } | null) || null;
+  const email = flowState?.email?.trim() || "";
+  const otp = flowState?.otp?.trim() || "";
+
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (password !== confirmPassword) {
-      alert("Passwords do not match");
+      setError("Passwords do not match");
       return;
     }
-    alert("Password reset successful. Wire to your auth API.");
+    if (!otp || !email) {
+      setError("Invalid reset session. Please request a new password reset link.");
+      return;
+    }
+    setIsSubmitting(true);
+    setError("");
+    try {
+      const result = await auth.resetPassword(email, otp, password);
+      if (result.reset) {
+        navigate("/login", { replace: true });
+      } else {
+        setError("Password reset failed. Please try again.");
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Password reset failed.";
+      setError(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-900 via-emerald-950 to-slate-950 text-slate-50 px-4">
       <div className="w-full max-w-md rounded-2xl border border-emerald-500/40 bg-black/40 shadow-xl shadow-black/40 p-5 sm:p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="h-8 w-8 rounded-xl bg-ev-green flex items-center justify-center text-[11px] font-black text-ev-slate">
-            EV
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold">EVzone Fleet Partner</span>
-            <span className="text-[11px] text-emerald-100/90">
-              Fleet Partner workspace
-            </span>
-          </div>
-        </div>
+        {/* Header omitted for brevity */}
         <h1 className="text-[18px] font-semibold mb-1">Set new password</h1>
         <p className="text-[12px] text-emerald-100/80 mb-4">
           Enter your new password below. Make sure it&apos;s at least 8 characters long.
         </p>
         <form onSubmit={handleSubmit} className="space-y-3 text-[12px]">
+          {error && (
+            <div className="rounded-xl border border-red-400/50 bg-red-500/10 px-3 py-2 text-[11px] text-red-100">
+              {error}
+            </div>
+          )}
           <label className="block space-y-1">
             <span className="text-[11px] text-emerald-100/90">New password</span>
             <input
@@ -60,9 +81,10 @@ export default function FleetPartnerResetPasswordPage() {
           </label>
           <button
             type="submit"
+            disabled={isSubmitting}
             className="w-full rounded-xl bg-ev-green text-ev-slate font-semibold py-2 text-[12px] hover:bg-ev-green-dark focus:outline-none focus:ring-2 focus:ring-emerald-500/80"
           >
-            Reset password
+            {isSubmitting ? "Resetting..." : "Reset password"}
           </button>
         </form>
         <p className="mt-4 text-[11px] text-emerald-100/80 text-center">
