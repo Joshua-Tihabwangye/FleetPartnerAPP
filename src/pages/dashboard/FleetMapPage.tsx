@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow, OverlayView } from "@react-google-maps/api";
+import { GoogleMap, useJsApiLoader, OverlayView } from "@react-google-maps/api";
 
-// Types
-interface Vehicle {
+// Types from localStorage (augmented)
+interface StoredVehicle {
   id: number;
   plate: string;
   model: string;
@@ -13,8 +13,11 @@ interface Vehicle {
   estimatedRange: number;
   lastSeen: string;
   zone: string;
-  // optional location for map - added by transformation
-  location?: { lat: number; lng: number };
+}
+
+interface Vehicle extends StoredVehicle {
+  location: { lat: number; lng: number };
+  displayStatus: "active" | "idle" | "offline" | "charging" | "maintenance";
 }
 
 interface Alert {
@@ -49,34 +52,32 @@ const ZONE_COORDS: Record<string, { lat: number; lng: number }> = {
 };
 
 function getZoneCoordinates(zone: string): { lat: number; lng: number } {
-  const normalized = zone.trim();
+  const normalized = zone?.trim() || "Unknown";
   return ZONE_COORDS[normalized] || ZONE_COORDS.default;
 }
 
-function transformVehicles(raw: any[]): Vehicle[] {
+function transformVehicles(raw: StoredVehicle[]): Vehicle[] {
   return raw.map(v => {
-    const coords = getZoneCoordinates(v.zone || "Unknown");
+    const coords = getZoneCoordinates(v.zone);
+    let displayStatus: Vehicle["displayStatus"] = "offline";
+    if (v.status === "available") displayStatus = "active";
+    else if (v.status === "maintenance") displayStatus = "maintenance";
+    else if (v.status === "out-of-service") displayStatus = "offline";
+    else if (v.status === "offline") displayStatus = "offline";
     return {
-      id: v.id,
-      plate: v.plate,
-      model: v.model,
-      status: v.status === "available" ? "available" : v.status === "maintenance" ? "maintenance" : v.status === "out-of-service" ? "offline" : v.status === "offline" ? "offline" : "available",
-      opsStatus: v.opsStatus || "unavailable",
-      driver: v.driver || "-",
-      soc: v.soc ?? 50,
-      estimatedRange: v.estimatedRange ?? 200,
-      lastSeen: v.lastSeen || "recently",
-      zone: v.zone || "Unknown",
+      ...v,
       location: coords,
+      displayStatus,
     };
   });
 }
 
-const statusColors: Record<Vehicle["status"], { bg: string; text: string; dot: string }> = {
-  available: { bg: "bg-emerald-100", text: "text-emerald-700", dot: "bg-emerald-500" },
-  offline: { bg: "bg-red-100", text: "text-red-700", dot: "bg-red-500" },
-  maintenance: { bg: "bg-slate-100", text: "text-slate-700", dot: "bg-slate-500" },
-  "out-of-service": { bg: "bg-red-100", text: "text-red-700", dot: "bg-red-500" },
+const statusColors: Record<Vehicle["displayStatus"], { bg: string; text: string; dot: string }> = {
+  active: { bg: "bg-emerald-100 dark:bg-emerald-500/10", text: "text-emerald-700 dark:text-emerald-400", dot: "bg-emerald-500" },
+  idle: { bg: "bg-amber-100 dark:bg-amber-500/10", text: "text-amber-700 dark:text-amber-400", dot: "bg-amber-500" },
+  offline: { bg: "bg-red-100 dark:bg-red-500/10", text: "text-red-700 dark:text-red-400", dot: "bg-red-500" },
+  charging: { bg: "bg-blue-100 dark:bg-blue-500/10", text: "text-blue-700 dark:text-blue-400", dot: "bg-blue-500" },
+  maintenance: { bg: "bg-slate-100 dark:bg-slate-500/10", text: "text-slate-700 dark:text-slate-400", dot: "bg-slate-500" },
 };
 
 function generateAlerts(vehicles: Vehicle[]): Alert[] {
@@ -84,7 +85,7 @@ function generateAlerts(vehicles: Vehicle[]): Alert[] {
   let alertId = 1;
 
   vehicles.forEach(v => {
-    if (v.status === "offline") {
+    if (v.displayStatus === "offline") {
       alerts.push({ id: alertId++, type: "offline", vehicleId: v.id, message: `${v.plate} offline`, timestamp: new Date(), priority: "high" });
     }
     if (v.soc < 15) {
@@ -97,7 +98,6 @@ function generateAlerts(vehicles: Vehicle[]): Alert[] {
 
 function formatTimeAgo(dateStr: string): string {
   if (dateStr === "recently") return "just now";
-  // Simple relative formatting for mock purposes
   return dateStr;
 }
 
@@ -124,14 +124,16 @@ export default function FleetMapPage() {
 
   // Load vehicles from localStorage on mount
   useEffect(() => {
-    const storedVehicles = JSON.parse(localStorage.getItem("vehicles") || "[]") as any[];
+    const storedVehicles = JSON.parse(localStorage.getItem("vehicles") || "[]") as StoredVehicle[];
     if (storedVehicles.length > 0) {
       setVehicles(transformVehicles(storedVehicles));
     } else {
-      // Fallback mock data
+      // Fallback mock data with all statuses for UI showcase
       const mock: Vehicle[] = [
-        { id: 1, plate: "UAA 123A", model: "Tesla Model 3", status: "available", opsStatus: "ready", driver: "John Doe", soc: 78, lastSeen: "20s ago", zone: "Kampala Central", location: { lat: 0.3136, lng: 32.5811 }, estimatedRange: 280 },
-        { id: 2, plate: "UAA 124B", model: "Nissan Leaf", status: "offline", opsStatus: "unavailable", driver: "Jane Smith", soc: 65, lastSeen: "4h ago", zone: "Nakasero", location: { lat: 0.3176, lng: 32.5721 }, estimatedRange: 140 },
+        { id: 1, plate: "UAA 123A", model: "Tesla Model 3", status: "available", opsStatus: "ready", driver: "John Doe", soc: 78, lastSeen: "20s ago", zone: "Kampala Central", location: { lat: 0.3136, lng: 32.5811 }, estimatedRange: 280, displayStatus: "active" },
+        { id: 2, plate: "UAA 124B", model: "Nissan Leaf", status: "offline", opsStatus: "unavailable", driver: "Jane Smith", soc: 65, lastSeen: "4h ago", zone: "Nakasero", location: { lat: 0.3176, lng: 32.5721 }, estimatedRange: 140, displayStatus: "offline" },
+        { id: 3, plate: "UAA 125C", model: "BYD E6", status: "available", opsStatus: "ready", driver: "Mike Johnson", soc: 12, lastSeen: "2m ago", zone: "Kololo", location: { lat: 0.2986, lng: 32.5911 }, estimatedRange: 35, displayStatus: "active" },
+        { id: 4, plate: "UAA 126D", model: "Tesla Model Y", status: "maintenance", opsStatus: "unavailable", driver: "Sarah Wilson", soc: 0, lastSeen: "2d ago", zone: "Service Center", location: { lat: 0.3056, lng: 32.5681 }, estimatedRange: 0, displayStatus: "maintenance" },
       ];
       setVehicles(mock);
     }
@@ -141,16 +143,16 @@ export default function FleetMapPage() {
 
   const filters = [
     { id: "all", label: "All vehicles", count: vehicles.length },
-    { id: "available", label: "Active trips", count: vehicles.filter(v => v.status === "available").length },
-    { id: "offline", label: "Offline", count: vehicles.filter(v => v.status === "offline").length },
-    { id: "maintenance", label: "Maintenance", count: vehicles.filter(v => v.status === "maintenance").length },
-    { id: "out-of-service", label: "Out of service", count: vehicles.filter(v => v.status === "out-of-service").length },
-    { id: "charging", label: "Charging", count: 0 },
+    { id: "active", label: "Active trips", count: vehicles.filter(v => v.displayStatus === "active").length },
+    { id: "idle", label: "Idle", count: vehicles.filter(v => v.displayStatus === "idle").length },
+    { id: "offline", label: "Offline", count: vehicles.filter(v => v.displayStatus === "offline").length },
+    { id: "charging", label: "Charging", count: vehicles.filter(v => v.displayStatus === "charging").length },
+    { id: "maintenance", label: "Maintenance", count: vehicles.filter(v => v.displayStatus === "maintenance").length },
   ];
 
   const filteredVehicles = selectedFilter === "all"
     ? vehicles
-    : vehicles.filter(v => v.status === selectedFilter);
+    : vehicles.filter(v => v.displayStatus === selectedFilter);
 
   const handleVehicleClick = (vehicle: Vehicle) => {
     setSelectedVehicle(vehicle);
@@ -176,7 +178,8 @@ export default function FleetMapPage() {
 
   const handleZoomIn = () => {
     if (map) {
-      const newZoom = Math.min(map.getZoom() + 1, 20);
+      const currentZoom = map.getZoom() ?? 12;
+      const newZoom = Math.min(currentZoom + 1, 20);
       map.setZoom(newZoom);
       setZoom(newZoom);
     }
@@ -184,22 +187,24 @@ export default function FleetMapPage() {
 
   const handleZoomOut = () => {
     if (map) {
-      const newZoom = Math.max(map.getZoom() - 1, 1);
+      const currentZoom = map.getZoom() ?? 12;
+      const newZoom = Math.max(currentZoom - 1, 1);
       map.setZoom(newZoom);
       setZoom(newZoom);
     }
   };
 
   const handleRotate = () => {
-    // placeholder for rotate - could add bearing control later
+    // placeholder for rotate
   };
 
-  // Custom Marker component
+  // Custom Marker component using OverlayView for custom HTML
   const VehicleMarker = ({ vehicle }: { vehicle: Vehicle }) => {
-    const colors = statusColors[vehicle.status];
+    const colors = statusColors[vehicle.displayStatus];
     return (
       <OverlayView
-        position={vehicle.location || KampalaCenter}
+        position={vehicle.location}
+        mapPaneName="overlayMouseTarget"
         getPixelPositionOffset={(width, height) => {
           return {
             x: -(width / 2),
@@ -211,11 +216,11 @@ export default function FleetMapPage() {
           onClick={() => handleVehicleClick(vehicle)}
           className="cursor-pointer transition-all hover:scale-110"
         >
-          <div className={`relative flex items-center justify-center`}>
-            <div className={`h-10 w-10 rounded-full ${colors.bg} border-2 border-white shadow-lg flex items-center justify-center text-sm`}>
+          <div className="relative flex items-center justify-center">
+            <div className={`h-10 w-10 rounded-full ${colors.bg} border-2 border-white dark:border-slate-700 shadow-lg flex items-center justify-center text-sm`}>
               🚗
             </div>
-            <span className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full ${colors.dot} border-2 border-white`} />
+            <span className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full ${colors.dot} border-2 border-white dark:border-slate-700`} />
           </div>
         </div>
       </OverlayView>
@@ -224,27 +229,27 @@ export default function FleetMapPage() {
 
   if (loadError) {
     return (
-      <div className="min-h-[calc(100vh-56px)] flex items-center justify-center bg-slate-50">
-        <div className="text-red-600">Failed to load Google Maps. Please check your API key.</div>
+      <div className="min-h-[calc(100vh-56px)] flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <div className="text-red-600 dark:text-red-400">Failed to load Google Maps. Please check your API key.</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-[calc(100vh-56px)] flex flex-col bg-slate-50">
+    <div className="min-h-[calc(100vh-56px)] flex flex-col bg-slate-50 dark:bg-slate-900">
       {/* Header */}
-      <div className="px-4 sm:px-6 lg:px-10 py-4 bg-white border-b border-slate-200">
+      <div className="px-4 sm:px-6 lg:px-10 py-4 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-900 mb-1">Live fleet map</h1>
-            <p className="text-sm text-slate-600">Real-time vehicle locations and status</p>
+            <h1 className="text-2xl font-semibold text-slate-900 dark:text-white mb-1">Live fleet map</h1>
+            <p className="text-sm text-slate-600 dark:text-slate-400">Real-time vehicle locations and status</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
+            <span className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
               Live
             </span>
-            <button className="px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50">
+            <button className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600">
               🔄 Refresh
             </button>
             <button className="px-3 py-1.5 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark shadow-sm">
@@ -261,7 +266,7 @@ export default function FleetMapPage() {
               onClick={() => setSelectedFilter(filter.id)}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${selectedFilter === filter.id
                 ? "bg-ev-green text-white shadow-md shadow-emerald-500/20"
-                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                : "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600"
                 }`}
             >
               {filter.label} ({filter.count})
@@ -298,8 +303,8 @@ export default function FleetMapPage() {
               ))}
             </GoogleMap>
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-slate-200">
-              <div className="text-slate-600">Loading map...</div>
+            <div className="w-full h-full flex items-center justify-center bg-slate-200 dark:bg-slate-800">
+              <div className="text-slate-600 dark:text-slate-300">Loading map...</div>
             </div>
           )}
 
@@ -307,40 +312,40 @@ export default function FleetMapPage() {
           <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
             <button
               onClick={handleZoomIn}
-              className="w-10 h-10 rounded-lg bg-white border border-slate-300 shadow-sm hover:bg-slate-50 flex items-center justify-center text-slate-700"
+              className="w-10 h-10 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200"
             >
               +
             </button>
             <button
               onClick={handleZoomOut}
-              className="w-10 h-10 rounded-lg bg-white border border-slate-300 shadow-sm hover:bg-slate-50 flex items-center justify-center text-slate-700"
+              className="w-10 h-10 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200"
             >
               −
             </button>
             <button
               onClick={handleRotate}
-              className="w-10 h-10 rounded-lg bg-white border border-slate-300 shadow-sm hover:bg-slate-50 flex items-center justify-center text-slate-700"
+              className="w-10 h-10 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200"
             >
               🧭
             </button>
           </div>
 
           {/* Zoom Info */}
-          <div className="absolute bottom-4 right-4 px-3 py-1.5 rounded-lg bg-white/90 border border-slate-300 shadow-sm text-xs text-slate-600 z-10">
+          <div className="absolute bottom-4 right-4 px-3 py-1.5 rounded-lg bg-white/90 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-600 shadow-sm text-xs text-slate-600 dark:text-slate-400 z-10">
             ZOOM {zoom}
           </div>
 
           {/* Alerts Panel */}
           {alerts.length > 0 && (
-            <div className={`absolute top-4 left-4 right-4 sm:right-auto sm:w-72 bg-white rounded-xl border border-slate-200 shadow-lg overflow-hidden z-10 ${hideAlerts ? 'hidden' : ''}`}>
-              <div className="px-4 py-3 bg-red-50 border-b border-red-100">
+            <div className={`absolute top-4 left-4 right-4 sm:right-auto sm:w-72 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg overflow-hidden z-10 ${hideAlerts ? 'hidden' : ''}`}>
+              <div className="px-4 py-3 bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-900/30">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-red-700">⚠️ Alerts</span>
+                  <span className="text-sm font-semibold text-red-700 dark:text-red-400">⚠️ Alerts</span>
                   <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-xs font-bold">{alerts.length}</span>
+                    <span className="px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-bold">{alerts.length}</span>
                     <button
                       onClick={() => setHideAlerts(true)}
-                      className="h-6 w-6 rounded-md border border-red-200 text-red-700 hover:bg-red-100/70 flex items-center justify-center text-sm leading-none"
+                      className="h-6 w-6 rounded-md border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 hover:bg-red-100/70 dark:hover:bg-red-900/30 flex items-center justify-center text-sm leading-none"
                       aria-label="Close alerts"
                     >
                       ✕
@@ -355,17 +360,17 @@ export default function FleetMapPage() {
                     <div
                       key={alert.id}
                       onClick={() => handleAlertClick(alert)}
-                      className="px-4 py-2.5 hover:bg-slate-50 cursor-pointer transition-colors border-b border-slate-100 last:border-0"
+                      className="px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors border-b border-slate-100 dark:border-slate-700 last:border-0"
                     >
                       <div className="flex items-start gap-2">
                         <span className="text-base">
                           {alert.type === "offline" ? "📡" : alert.type === "low_battery" ? "🔋" : "⏰"}
                         </span>
                         <div className="flex-1 min-w-0">
-                          <div className="text-xs font-medium text-slate-900 truncate">{alert.message}</div>
-                          <div className="text-[10px] text-slate-500">{formatTimeAgo(alert.timestamp.toString())}</div>
+                          <div className="text-xs font-medium text-slate-900 dark:text-slate-100 truncate">{alert.message}</div>
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400">{formatTimeAgo(alert.timestamp.toString())}</div>
                         </div>
-                        <span className={`text-xs px-1.5 py-0.5 rounded ${alert.priority === 'high' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+                        <span className={`text-xs px-1.5 py-0.5 rounded ${alert.priority === 'high' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'}`}>
                           {alert.priority}
                         </span>
                       </div>
@@ -379,7 +384,7 @@ export default function FleetMapPage() {
           {alerts.length > 0 && hideAlerts && (
             <button
               onClick={() => setHideAlerts(false)}
-              className="absolute top-4 left-4 px-3 py-1.5 rounded-lg bg-white/95 border border-slate-300 shadow-md text-xs font-semibold text-red-700 z-10"
+              className="absolute top-4 left-4 px-3 py-1.5 rounded-lg bg-white/95 dark:bg-slate-800/95 border border-slate-300 dark:border-slate-600 shadow-md text-xs font-semibold text-red-700 dark:text-red-400 z-10"
             >
               ⚠️ Alerts ({alerts.length})
             </button>
@@ -387,33 +392,33 @@ export default function FleetMapPage() {
 
           <button
             onClick={() => setShowVehicleList(true)}
-            className="lg:hidden absolute bottom-4 left-4 px-4 py-2 rounded-lg bg-white/95 border border-slate-300 shadow-lg text-sm font-medium text-slate-700"
+            className="lg:hidden absolute bottom-4 left-4 px-4 py-2 rounded-lg bg-white/95 dark:bg-slate-800/95 border border-slate-300 dark:border-slate-600 shadow-lg text-sm font-medium text-slate-700 dark:text-slate-200"
           >
             Vehicles ({filteredVehicles.length})
           </button>
         </div>
 
         {/* Sidebar - Vehicle List */}
-        <div className="hidden lg:flex w-80 bg-white border-l border-slate-200 shadow-lg flex-col">
-          <div className="px-4 py-3 border-b border-slate-200">
-            <h2 className="text-sm font-semibold text-slate-900">Vehicles ({filteredVehicles.length})</h2>
+        <div className="hidden lg:flex w-80 bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 shadow-lg flex-col">
+          <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
+            <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Vehicles ({filteredVehicles.length})</h2>
           </div>
           <div className="flex-1 overflow-y-auto">
             {filteredVehicles.map((vehicle) => {
-              const colors = statusColors[vehicle.status];
+              const colors = statusColors[vehicle.displayStatus];
               return (
                 <div
                   key={vehicle.id}
                   onClick={() => handleVehicleClick(vehicle)}
-                  className={`px-4 py-3 border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors ${selectedVehicle?.id === vehicle.id ? 'bg-emerald-50 border-l-2 border-l-ev-green' : ''}`}
+                  className={`px-4 py-3 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors ${selectedVehicle?.id === vehicle.id ? 'bg-emerald-50 dark:bg-emerald-900/20 border-l-2 border-l-ev-green' : ''}`}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-semibold text-slate-900">{vehicle.plate}</span>
+                    <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">{vehicle.plate}</span>
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${colors.bg} ${colors.text}`}>
                       {vehicle.status}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+                  <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
                     <span>👤 {vehicle.driver}</span>
                     <span>{formatTimeAgo(vehicle.lastSeen)}</span>
                   </div>
@@ -422,7 +427,7 @@ export default function FleetMapPage() {
                       <span className={vehicle.soc < 20 ? 'text-red-500' : vehicle.soc < 50 ? 'text-amber-500' : 'text-emerald-500'}>
                         🔋 {vehicle.soc}%
                       </span>
-                      <div className="w-12 h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                      <div className="w-12 h-1.5 rounded-full bg-slate-200 dark:bg-slate-600 overflow-hidden">
                         <div
                           className={`h-full rounded-full ${vehicle.soc < 20 ? 'bg-red-500' : vehicle.soc < 50 ? 'bg-amber-500' : 'bg-emerald-500'}`}
                           style={{ width: `${vehicle.soc}%` }}
@@ -430,7 +435,7 @@ export default function FleetMapPage() {
                       </div>
                     </div>
                     {vehicle.opsStatus === "busy" && (
-                      <span className="text-emerald-600 font-medium">ETA 15 min</span>
+                      <span className="text-emerald-600 dark:text-emerald-400 font-medium">ETA 15 min</span>
                     )}
                   </div>
                 </div>
@@ -443,34 +448,34 @@ export default function FleetMapPage() {
         {showVehicleList && (
           <div className="lg:hidden absolute inset-0 z-30 bg-black/30" onClick={() => setShowVehicleList(false)}>
             <div
-              className="absolute left-0 right-0 bottom-0 h-[70vh] bg-white rounded-t-2xl border-t border-slate-200 shadow-2xl flex flex-col"
+              className="absolute left-0 right-0 bottom-0 h-[70vh] bg-white dark:bg-slate-800 rounded-t-2xl border-t border-slate-200 dark:border-slate-700 shadow-2xl flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-slate-900">Vehicles ({filteredVehicles.length})</h2>
+              <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Vehicles ({filteredVehicles.length})</h2>
                 <button
                   onClick={() => setShowVehicleList(false)}
-                  className="text-slate-500 hover:text-slate-700"
+                  className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                 >
                   ✕
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto">
                 {filteredVehicles.map((vehicle) => {
-                  const colors = statusColors[vehicle.status];
+                  const colors = statusColors[vehicle.displayStatus];
                   return (
                     <div
                       key={vehicle.id}
                       onClick={() => handleVehicleClick(vehicle)}
-                      className={`px-4 py-3 border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors ${selectedVehicle?.id === vehicle.id ? 'bg-emerald-50 border-l-2 border-l-ev-green' : ''}`}
+                      className={`px-4 py-3 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors ${selectedVehicle?.id === vehicle.id ? 'bg-emerald-50 dark:bg-emerald-900/20 border-l-2 border-l-ev-green' : ''}`}
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-semibold text-slate-900">{vehicle.plate}</span>
+                        <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">{vehicle.plate}</span>
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${colors.bg} ${colors.text}`}>
                           {vehicle.status}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+                      <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
                         <span>{vehicle.driver}</span>
                         <span>{formatTimeAgo(vehicle.lastSeen)}</span>
                       </div>
@@ -479,7 +484,7 @@ export default function FleetMapPage() {
                           🔋 {vehicle.soc}%
                         </span>
                         {vehicle.opsStatus === "busy" && (
-                          <span className="text-emerald-600 font-medium">ETA 15 min</span>
+                          <span className="text-emerald-600 dark:text-emerald-400 font-medium">ETA 15 min</span>
                         )}
                       </div>
                     </div>
@@ -494,56 +499,56 @@ export default function FleetMapPage() {
         {showQuickActions && selectedVehicle && (
           <div className="absolute inset-0 bg-black/20 z-40" onClick={() => setShowQuickActions(false)}>
             <div
-              className="absolute inset-x-0 bottom-0 h-[75vh] rounded-t-2xl bg-white shadow-2xl border-t border-slate-200 md:inset-y-0 md:bottom-auto md:right-0 md:left-auto md:w-80 md:h-auto md:rounded-none md:border-t-0 md:border-l lg:right-80"
+              className="absolute inset-x-0 bottom-0 h-[75vh] rounded-t-2xl bg-white dark:bg-slate-800 shadow-2xl border-t border-slate-200 dark:border-slate-700 md:inset-y-0 md:bottom-auto md:right-0 md:left-auto md:w-80 md:h-auto md:rounded-none md:border-t-0 md:border-l lg:right-80"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="p-4 border-b border-slate-200">
+              <div className="p-4 border-b border-slate-200 dark:border-slate-700">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-lg font-semibold text-slate-900">{selectedVehicle.plate}</h3>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{selectedVehicle.plate}</h3>
                   <button
                     onClick={() => setShowQuickActions(false)}
-                    className="text-slate-400 hover:text-slate-600"
+                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                   >
                     ✕
                   </button>
                 </div>
-                <p className="text-sm text-slate-500">{selectedVehicle.model} • {selectedVehicle.driver}</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{selectedVehicle.model} • {selectedVehicle.driver}</p>
               </div>
 
-              <div className="p-4 border-b border-slate-200 space-y-3">
+              <div className="p-4 border-b border-slate-200 dark:border-slate-700 space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Status</span>
-                  <span className={`font-medium text-slate-900`}>{selectedVehicle.status}</span>
+                  <span className="text-slate-500 dark:text-slate-400">Status</span>
+                  <span className="font-medium text-slate-900 dark:text-white">{selectedVehicle.status}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Battery</span>
-                  <span className="font-medium text-slate-900">{selectedVehicle.soc}%</span>
+                  <span className="text-slate-500 dark:text-slate-400">Battery</span>
+                  <span className="font-medium text-slate-900 dark:text-white">{selectedVehicle.soc}%</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Zone</span>
-                  <span className="font-medium text-slate-900">{selectedVehicle.zone}</span>
+                  <span className="text-slate-500 dark:text-slate-400">Zone</span>
+                  <span className="font-medium text-slate-900 dark:text-white">{selectedVehicle.zone}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Last seen</span>
-                  <span className="font-medium text-slate-900">{formatTimeAgo(selectedVehicle.lastSeen)}</span>
+                  <span className="text-slate-500 dark:text-slate-400">Last seen</span>
+                  <span className="font-medium text-slate-900 dark:text-white">{formatTimeAgo(selectedVehicle.lastSeen)}</span>
                 </div>
               </div>
 
               <div className="p-4 space-y-2">
-                <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Quick Actions</h4>
+                <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Quick Actions</h4>
                 <button className="w-full px-4 py-2.5 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark transition-colors flex items-center gap-2">
                   <span>📲</span> Dispatch / Assign
                 </button>
-                <button className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors flex items-center gap-2">
+                <button className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2">
                   <span>📞</span> Call Driver
                 </button>
-                <button className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors flex items-center gap-2">
+                <button className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2">
                   <span>💬</span> Message Driver
                 </button>
-                <button className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors flex items-center gap-2">
+                <button className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2">
                   <span>🔄</span> Set Availability
                 </button>
-                <button className="w-full px-4 py-2.5 rounded-lg border border-red-300 text-red-600 text-sm font-medium hover:bg-red-50 transition-colors flex items-center gap-2">
+                <button className="w-full px-4 py-2.5 rounded-lg border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2">
                   <span>🚩</span> Flag Issue / Incident
                 </button>
               </div>
