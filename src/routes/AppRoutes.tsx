@@ -15,6 +15,7 @@ import FleetPartnerRegistrationPage from "../pages/marketing/FleetPartnerRegistr
 import FleetPartnerLoginPage from "../pages/auth/FleetPartnerLoginPage";
 import FleetPartnerForgotPasswordPage from "../pages/auth/FleetPartnerForgotPasswordPage";
 import FleetPartnerResetPasswordPage from "../pages/auth/FleetPartnerResetPasswordPage";
+import FleetPartnerOtpVerificationPage from "../pages/auth/FleetPartnerOtpVerificationPage";
 import FleetPartnerEmailVerificationPage from "../pages/auth/FleetPartnerEmailVerificationPage";
 import FleetPartnerTwoFactorVerifyPage from "../pages/auth/FleetPartnerTwoFactorVerifyPage";
 import FleetPartnerInviteAcceptPage from "../pages/auth/FleetPartnerInviteAcceptPage";
@@ -145,7 +146,8 @@ export default function AppRoutes() {
       {/* Auth */}
       <Route path="/login" element={<FleetPartnerLoginPage />} />
       <Route path="/forgot-password" element={<FleetPartnerForgotPasswordPage />} />
-      <Route path="/reset-password/:token" element={<FleetPartnerResetPasswordPage />} />
+      <Route path="/auth/verify-otp" element={<FleetPartnerOtpVerificationPage />} />
+      <Route path="/auth/reset-password" element={<FleetPartnerResetPasswordPage />} />
       <Route path="/login/2fa" element={<FleetPartnerTwoFactorVerifyPage />} />
       <Route path="/verify-email" element={<FleetPartnerEmailVerificationPage />} />
       <Route path="/verify-email/:token" element={<FleetPartnerEmailVerificationPage />} />

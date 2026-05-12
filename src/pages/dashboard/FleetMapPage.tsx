@@ -1,17 +1,23 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { GoogleMap, useJsApiLoader, OverlayView } from "@react-google-maps/api";
 
-// Mock vehicle data with realistic statuses
-interface Vehicle {
+// Types from localStorage (augmented)
+interface StoredVehicle {
   id: number;
   plate: string;
   model: string;
+  status: "available" | "offline" | "maintenance" | "out-of-service";
+  opsStatus: "ready" | "busy" | "unavailable";
   driver: string;
-  phone: string;
-  status: "active" | "idle" | "offline" | "charging" | "maintenance";
-  soc: number; // State of Charge %
-  lastSeen: Date;
-  location: { lat: number; lng: number; zone: string };
-  tripInfo?: { pickup: string; dropoff: string; eta: string };
+  soc: number;
+  estimatedRange: number;
+  lastSeen: string;
+  zone: string;
+}
+
+interface Vehicle extends StoredVehicle {
+  location: { lat: number; lng: number };
+  displayStatus: "active" | "idle" | "offline" | "charging" | "maintenance";
 }
 
 interface Alert {
@@ -23,54 +29,50 @@ interface Alert {
   priority: "high" | "medium" | "low";
 }
 
-const generateMockVehicles = (): Vehicle[] => [
-  { id: 1, plate: "UAA 123A", model: "Tesla Model 3", driver: "John Doe", phone: "+256 700 000 001", status: "active", soc: 78, lastSeen: new Date(Date.now() - 20000), location: { lat: 0.3136, lng: 32.5811, zone: "Kampala Central" }, tripInfo: { pickup: "Garden City", dropoff: "Entebbe Airport", eta: "25 min" } },
-  { id: 2, plate: "UAA 124B", model: "Nissan Leaf", driver: "Jane Smith", phone: "+256 700 000 002", status: "idle", soc: 65, lastSeen: new Date(Date.now() - 180000), location: { lat: 0.3176, lng: 32.5721, zone: "Nakasero" } },
-  { id: 3, plate: "UAA 125C", model: "BYD E6", driver: "Mike Johnson", phone: "+256 700 000 003", status: "active", soc: 45, lastSeen: new Date(Date.now() - 15000), location: { lat: 0.2986, lng: 32.5911, zone: "Kololo" }, tripInfo: { pickup: "Acacia Mall", dropoff: "Kisementi", eta: "8 min" } },
-  { id: 4, plate: "UAA 126D", model: "Tesla Model Y", driver: "Sarah Wilson", phone: "+256 700 000 004", status: "charging", soc: 32, lastSeen: new Date(Date.now() - 60000), location: { lat: 0.3056, lng: 32.5681, zone: "Wandegeya" } },
-  { id: 5, plate: "UAA 127E", model: "Hyundai Ioniq", driver: "David Brown", phone: "+256 700 000 005", status: "offline", soc: 89, lastSeen: new Date(Date.now() - 14400000), location: { lat: 0.3236, lng: 32.5621, zone: "Bukoto" } },
-  { id: 6, plate: "UAA 128F", model: "Kia EV6", driver: "Emily Davis", phone: "+256 700 000 006", status: "maintenance", soc: 55, lastSeen: new Date(Date.now() - 86400000), location: { lat: 0.2876, lng: 32.5911, zone: "Ntinda" } },
-  { id: 7, plate: "UAA 129G", model: "Tesla Model 3", driver: "Peter Okello", phone: "+256 700 000 007", status: "active", soc: 91, lastSeen: new Date(Date.now() - 10000), location: { lat: 0.3316, lng: 32.5781, zone: "Bugolobi" }, tripInfo: { pickup: "Forest Mall", dropoff: "Gaba Road", eta: "12 min" } },
-  { id: 8, plate: "UAA 130H", model: "Nissan Leaf", driver: "Grace Nakato", phone: "+256 700 000 008", status: "idle", soc: 72, lastSeen: new Date(Date.now() - 300000), location: { lat: 0.2926, lng: 32.6011, zone: "Muyenga" } },
-  { id: 9, plate: "UAA 131I", model: "BYD Han", driver: "James Ssebunya", phone: "+256 700 000 009", status: "active", soc: 58, lastSeen: new Date(Date.now() - 25000), location: { lat: 0.3406, lng: 32.5651, zone: "Kisaasi" }, tripInfo: { pickup: "Namugongo", dropoff: "City Centre", eta: "18 min" } },
-  { id: 10, plate: "UAA 132J", model: "Hyundai Kona", driver: "Alice Namutebi", phone: "+256 700 000 010", status: "idle", soc: 12, lastSeen: new Date(Date.now() - 600000), location: { lat: 0.2786, lng: 32.5521, zone: "Naalya" } },
-  { id: 11, plate: "UAA 133K", model: "Tesla Model S", driver: "Robert Mugisha", phone: "+256 700 000 011", status: "offline", soc: 67, lastSeen: new Date(Date.now() - 28800000), location: { lat: 0.3086, lng: 32.5941, zone: "Naguru" } },
-  { id: 12, plate: "UAA 134L", model: "Kia Niro EV", driver: "Christine Apio", phone: "+256 700 000 012", status: "charging", soc: 48, lastSeen: new Date(Date.now() - 120000), location: { lat: 0.3506, lng: 32.5871, zone: "Kyanja" } },
-];
+// Kampala zone center coordinates (approximate)
+const ZONE_COORDS: Record<string, { lat: number; lng: number }> = {
+  "Kampala Central": { lat: 0.3136, lng: 32.5811 },
+  Nakasero: { lat: 0.3176, lng: 32.5721 },
+  Kololo: { lat: 0.2986, lng: 32.5911 },
+  Wandegeya: { lat: 0.3056, lng: 32.5681 },
+  Bukoto: { lat: 0.3236, lng: 32.5621 },
+  "Ntinda": { lat: 0.2876, lng: 32.5911 },
+  Bugolobi: { lat: 0.3316, lng: 32.5781 },
+  Muyenga: { lat: 0.2926, lng: 32.6011 },
+  Kisaasi: { lat: 0.3406, lng: 32.5651 },
+  Naalya: { lat: 0.2786, lng: 32.5521 },
+  Naguru: { lat: 0.3086, lng: 32.5941 },
+  Kyanja: { lat: 0.3506, lng: 32.5871 },
+  "Entebbe": { lat: 0.0528, lng: 32.4632 },
+  "Jinja": { lat: 0.4433, lng: 33.2026 },
+  "Service Center": { lat: 0.3056, lng: 32.5681 },
+  Unknown: { lat: 0.3136, lng: 32.5811 },
+  Fleet: { lat: 0.3136, lng: 32.5811 },
+  default: { lat: 0.3136, lng: 32.5811 },
+};
 
-const generateAlerts = (vehicles: Vehicle[]): Alert[] => {
-  const alerts: Alert[] = [];
-  let alertId = 1;
+function getZoneCoordinates(zone: string): { lat: number; lng: number } {
+  const normalized = zone?.trim() || "Unknown";
+  return ZONE_COORDS[normalized] || ZONE_COORDS.default;
+}
 
-  vehicles.forEach(v => {
-    if (v.status === "offline") {
-      alerts.push({ id: alertId++, type: "offline", vehicleId: v.id, message: `${v.plate} offline for ${formatTimeAgo(v.lastSeen)}`, timestamp: v.lastSeen, priority: "high" });
-    }
-    if (v.soc < 15) {
-      alerts.push({ id: alertId++, type: "low_battery", vehicleId: v.id, message: `${v.plate} low battery (${v.soc}%)`, timestamp: new Date(), priority: "high" });
-    }
-    if (v.status === "idle") {
-      const idleTime = Date.now() - v.lastSeen.getTime();
-      if (idleTime > 7200000) { // 2 hours
-        alerts.push({ id: alertId++, type: "long_idle", vehicleId: v.id, message: `${v.plate} idle for ${formatTimeAgo(v.lastSeen)}`, timestamp: v.lastSeen, priority: "medium" });
-      }
-    }
+function transformVehicles(raw: StoredVehicle[]): Vehicle[] {
+  return raw.map(v => {
+    const coords = getZoneCoordinates(v.zone);
+    let displayStatus: Vehicle["displayStatus"] = "offline";
+    if (v.status === "available") displayStatus = "active";
+    else if (v.status === "maintenance") displayStatus = "maintenance";
+    else if (v.status === "out-of-service") displayStatus = "offline";
+    else if (v.status === "offline") displayStatus = "offline";
+    return {
+      ...v,
+      location: coords,
+      displayStatus,
+    };
   });
+}
 
-  return alerts.sort((a, b) => (a.priority === "high" ? -1 : 1));
-};
-
-const formatTimeAgo = (date: Date): string => {
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (seconds < 60) return `${seconds}s ago`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-};
-
-const statusColors: Record<Vehicle["status"], { bg: string; text: string; dot: string }> = {
+const statusColors: Record<Vehicle["displayStatus"], { bg: string; text: string; dot: string }> = {
   active: { bg: "bg-emerald-100 dark:bg-emerald-500/10", text: "text-emerald-700 dark:text-emerald-400", dot: "bg-emerald-500" },
   idle: { bg: "bg-amber-100 dark:bg-amber-500/10", text: "text-amber-700 dark:text-amber-400", dot: "bg-amber-500" },
   offline: { bg: "bg-red-100 dark:bg-red-500/10", text: "text-red-700 dark:text-red-400", dot: "bg-red-500" },
@@ -78,40 +80,88 @@ const statusColors: Record<Vehicle["status"], { bg: string; text: string; dot: s
   maintenance: { bg: "bg-slate-100 dark:bg-slate-500/10", text: "text-slate-700 dark:text-slate-400", dot: "bg-slate-500" },
 };
 
-const alertIcons: Record<Alert["type"], string> = {
-  offline: "📡",
-  low_battery: "🔋",
-  long_idle: "⏰",
-  geofence: "🚧",
-  sos: "🚨",
-};
+function generateAlerts(vehicles: Vehicle[]): Alert[] {
+  const alerts: Alert[] = [];
+  let alertId = 1;
+
+  vehicles.forEach(v => {
+    if (v.displayStatus === "offline") {
+      alerts.push({ id: alertId++, type: "offline", vehicleId: v.id, message: `${v.plate} offline`, timestamp: new Date(), priority: "high" });
+    }
+    if (v.soc < 15) {
+      alerts.push({ id: alertId++, type: "low_battery", vehicleId: v.id, message: `${v.plate} low battery (${v.soc}%)`, timestamp: new Date(), priority: "high" });
+    }
+  });
+
+  return alerts.sort((a, b) => (a.priority === "high" ? -1 : 1));
+}
+
+function formatTimeAgo(dateStr: string): string {
+  if (dateStr === "recently") return "just now";
+  return dateStr;
+}
+
+const KampalaCenter = { lat: 0.3136, lng: 32.5811 };
 
 export default function FleetMapPage() {
-  const [vehicles] = useState<Vehicle[]>(generateMockVehicles());
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [showQuickActions, setShowQuickActions] = useState(false);
   const [showVehicleList, setShowVehicleList] = useState(false);
   const [hideAlerts, setHideAlerts] = useState(false);
-  const [alerts] = useState<Alert[]>(generateAlerts(generateMockVehicles()));
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [zoom, setZoom] = useState(12);
+  const mapRef = useRef<HTMLDivElement>(null);
+
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
+  const { isLoaded, loadError } = useJsApiLoader({
+    id: "google-maps-script",
+    googleMapsApiKey: apiKey || "",
+    libraries: ["places"],
+  });
+
+  // Load vehicles from localStorage on mount
+  useEffect(() => {
+    const storedVehicles = JSON.parse(localStorage.getItem("vehicles") || "[]") as StoredVehicle[];
+    if (storedVehicles.length > 0) {
+      setVehicles(transformVehicles(storedVehicles));
+    } else {
+      // Fallback mock data with all statuses for UI showcase
+      const mock: Vehicle[] = [
+        { id: 1, plate: "UAA 123A", model: "Tesla Model 3", status: "available", opsStatus: "ready", driver: "John Doe", soc: 78, lastSeen: "20s ago", zone: "Kampala Central", location: { lat: 0.3136, lng: 32.5811 }, estimatedRange: 280, displayStatus: "active" },
+        { id: 2, plate: "UAA 124B", model: "Nissan Leaf", status: "offline", opsStatus: "unavailable", driver: "Jane Smith", soc: 65, lastSeen: "4h ago", zone: "Nakasero", location: { lat: 0.3176, lng: 32.5721 }, estimatedRange: 140, displayStatus: "offline" },
+        { id: 3, plate: "UAA 125C", model: "BYD E6", status: "available", opsStatus: "ready", driver: "Mike Johnson", soc: 12, lastSeen: "2m ago", zone: "Kololo", location: { lat: 0.2986, lng: 32.5911 }, estimatedRange: 35, displayStatus: "active" },
+        { id: 4, plate: "UAA 126D", model: "Tesla Model Y", status: "maintenance", opsStatus: "unavailable", driver: "Sarah Wilson", soc: 0, lastSeen: "2d ago", zone: "Service Center", location: { lat: 0.3056, lng: 32.5681 }, estimatedRange: 0, displayStatus: "maintenance" },
+      ];
+      setVehicles(mock);
+    }
+  }, []);
+
+  const alerts = generateAlerts(vehicles);
 
   const filters = [
     { id: "all", label: "All vehicles", count: vehicles.length },
-    { id: "active", label: "Active trips", count: vehicles.filter(v => v.status === "active").length },
-    { id: "idle", label: "Idle", count: vehicles.filter(v => v.status === "idle").length },
-    { id: "offline", label: "Offline", count: vehicles.filter(v => v.status === "offline").length },
-    { id: "charging", label: "Charging", count: vehicles.filter(v => v.status === "charging").length },
-    { id: "maintenance", label: "Maintenance", count: vehicles.filter(v => v.status === "maintenance").length },
+    { id: "active", label: "Active trips", count: vehicles.filter(v => v.displayStatus === "active").length },
+    { id: "idle", label: "Idle", count: vehicles.filter(v => v.displayStatus === "idle").length },
+    { id: "offline", label: "Offline", count: vehicles.filter(v => v.displayStatus === "offline").length },
+    { id: "charging", label: "Charging", count: vehicles.filter(v => v.displayStatus === "charging").length },
+    { id: "maintenance", label: "Maintenance", count: vehicles.filter(v => v.displayStatus === "maintenance").length },
   ];
 
   const filteredVehicles = selectedFilter === "all"
     ? vehicles
-    : vehicles.filter(v => v.status === selectedFilter);
+    : vehicles.filter(v => v.displayStatus === selectedFilter);
 
   const handleVehicleClick = (vehicle: Vehicle) => {
     setSelectedVehicle(vehicle);
     setShowVehicleList(false);
     setShowQuickActions(true);
+    if (map) {
+      map.panTo(vehicle.location || KampalaCenter);
+      map.setZoom(15);
+    }
   };
 
   const handleAlertClick = (alert: Alert) => {
@@ -121,6 +171,69 @@ export default function FleetMapPage() {
       setShowQuickActions(true);
     }
   };
+
+  const onMapLoad = useCallback((map: google.maps.Map) => {
+    setMap(map);
+  }, []);
+
+  const handleZoomIn = () => {
+    if (map) {
+      const currentZoom = map.getZoom() ?? 12;
+      const newZoom = Math.min(currentZoom + 1, 20);
+      map.setZoom(newZoom);
+      setZoom(newZoom);
+    }
+  };
+
+  const handleZoomOut = () => {
+    if (map) {
+      const currentZoom = map.getZoom() ?? 12;
+      const newZoom = Math.max(currentZoom - 1, 1);
+      map.setZoom(newZoom);
+      setZoom(newZoom);
+    }
+  };
+
+  const handleRotate = () => {
+    // placeholder for rotate
+  };
+
+  // Custom Marker component using OverlayView for custom HTML
+  const VehicleMarker = ({ vehicle }: { vehicle: Vehicle }) => {
+    const colors = statusColors[vehicle.displayStatus];
+    return (
+      <OverlayView
+        position={vehicle.location}
+        mapPaneName="overlayMouseTarget"
+        getPixelPositionOffset={(width, height) => {
+          return {
+            x: -(width / 2),
+            y: -height,
+          };
+        }}
+      >
+        <div
+          onClick={() => handleVehicleClick(vehicle)}
+          className="cursor-pointer transition-all hover:scale-110"
+        >
+          <div className="relative flex items-center justify-center">
+            <div className={`h-10 w-10 rounded-full ${colors.bg} border-2 border-white dark:border-slate-700 shadow-lg flex items-center justify-center text-sm`}>
+              🚗
+            </div>
+            <span className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full ${colors.dot} border-2 border-white dark:border-slate-700`} />
+          </div>
+        </div>
+      </OverlayView>
+    );
+  };
+
+  if (loadError) {
+    return (
+      <div className="min-h-[calc(100vh-56px)] flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <div className="text-red-600 dark:text-red-400">Failed to load Google Maps. Please check your API key.</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[calc(100vh-56px)] flex flex-col bg-slate-50 dark:bg-slate-900">
@@ -165,59 +278,66 @@ export default function FleetMapPage() {
       {/* Main Content Area */}
       <div className="flex-1 flex relative min-h-0">
         {/* Map Container */}
-        <div className="flex-1 relative bg-slate-200 dark:bg-slate-950 overflow-hidden">
-          {/* Simulated Map with Vehicle Markers */}
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-800">
-            {/* Grid lines to simulate map */}
-            <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'linear-gradient(#94a3b8 1px, transparent 1px), linear-gradient(90deg, #94a3b8 1px, transparent 1px)', backgroundSize: '50px 50px' }} />
-
-            {/* Vehicle Markers */}
-            {filteredVehicles.map((vehicle, idx) => {
-              const colors = statusColors[vehicle.status];
-              const x = 15 + (idx % 5) * 18 + Math.random() * 5;
-              const y = 15 + Math.floor(idx / 5) * 25 + Math.random() * 5;
-              return (
-                <div
-                  key={vehicle.id}
-                  onClick={() => handleVehicleClick(vehicle)}
-                  className={`absolute cursor-pointer transition-all hover:scale-125 hover:z-10 group`}
-                  style={{ left: `${x}%`, top: `${y}%` }}
-                >
-                  <div className={`relative`}>
-                    <div className={`h-8 w-8 rounded-full ${colors.bg} border-2 border-white dark:border-slate-700 shadow-lg flex items-center justify-center text-xs font-bold ${colors.text}`}>
-                      🚗
-                    </div>
-                    <span className={`absolute -bottom-1 -right-1 h-3 w-3 rounded-full ${colors.dot} border-2 border-white dark:border-slate-700`} />
-                    {/* Tooltip */}
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-20">
-                      <div className="bg-slate-900 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap shadow-xl">
-                        <div className="font-semibold">{vehicle.plate}</div>
-                        <div className="text-slate-300">{vehicle.driver}</div>
-                        <div className="text-slate-400">{vehicle.status} • {vehicle.soc}%</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+        <div ref={mapRef} className="flex-1 relative overflow-hidden">
+          {isLoaded ? (
+            <GoogleMap
+              mapContainerClassName="w-full h-full"
+              center={KampalaCenter}
+              zoom={zoom}
+              onLoad={onMapLoad}
+              options={{
+                disableDefaultUI: false,
+                zoomControl: false,
+                mapTypeControl: false,
+                streetViewControl: false,
+                fullscreenControl: false,
+                styles: [
+                  { elementType: "geometry", stylers: [{ color: "#f5f5f5" }] },
+                  { elementType: "labels.text.fill", stylers: [{ color: "#616161" }] },
+                  { elementType: "labels.text.stroke", stylers: [{ color: "#f5f5f5" }] },
+                ],
+              }}
+            >
+              {filteredVehicles.map(vehicle => (
+                vehicle.location && <VehicleMarker key={vehicle.id} vehicle={vehicle} />
+              ))}
+            </GoogleMap>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-slate-200 dark:bg-slate-800">
+              <div className="text-slate-600 dark:text-slate-300">Loading map...</div>
+            </div>
+          )}
 
           {/* Map Controls */}
-          <div className="absolute top-4 right-4 flex flex-col gap-2">
-            <button className="w-10 h-10 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200">
+          <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
+            <button
+              onClick={handleZoomIn}
+              className="w-10 h-10 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200"
+            >
               +
             </button>
-            <button className="w-10 h-10 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200">
+            <button
+              onClick={handleZoomOut}
+              className="w-10 h-10 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200"
+            >
               −
             </button>
-            <button className="w-10 h-10 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200">
+            <button
+              onClick={handleRotate}
+              className="w-10 h-10 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200"
+            >
               🧭
             </button>
           </div>
 
+          {/* Zoom Info */}
+          <div className="absolute bottom-4 right-4 px-3 py-1.5 rounded-lg bg-white/90 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-600 shadow-sm text-xs text-slate-600 dark:text-slate-400 z-10">
+            ZOOM {zoom}
+          </div>
+
           {/* Alerts Panel */}
           {alerts.length > 0 && (
-            <div className={`absolute top-4 left-4 right-4 sm:right-auto sm:w-72 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg overflow-hidden ${hideAlerts ? 'hidden' : ''}`}>
+            <div className={`absolute top-4 left-4 right-4 sm:right-auto sm:w-72 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg overflow-hidden z-10 ${hideAlerts ? 'hidden' : ''}`}>
               <div className="px-4 py-3 bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-900/30">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-red-700 dark:text-red-400">⚠️ Alerts</span>
@@ -227,32 +347,36 @@ export default function FleetMapPage() {
                       onClick={() => setHideAlerts(true)}
                       className="h-6 w-6 rounded-md border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 hover:bg-red-100/70 dark:hover:bg-red-900/30 flex items-center justify-center text-sm leading-none"
                       aria-label="Close alerts"
-                      title="Close alerts"
                     >
                       ✕
                     </button>
                   </div>
                 </div>
               </div>
-              <div className="max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700">
-                {alerts.slice(0, 5).map((alert) => (
-                  <div
-                    key={alert.id}
-                    onClick={() => handleAlertClick(alert)}
-                    className="px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors"
-                  >
-                    <div className="flex items-start gap-2">
-                      <span className="text-base">{alertIcons[alert.type]}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs font-medium text-slate-900 dark:text-slate-100 truncate">{alert.message}</div>
-                        <div className="text-[10px] text-slate-500">{formatTimeAgo(alert.timestamp)}</div>
+              <div className="max-h-48 overflow-y-auto">
+                {alerts.slice(0, 5).map((alert) => {
+                  const vehicle = vehicles.find(v => v.id === alert.vehicleId);
+                  return (
+                    <div
+                      key={alert.id}
+                      onClick={() => handleAlertClick(alert)}
+                      className="px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors border-b border-slate-100 dark:border-slate-700 last:border-0"
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="text-base">
+                          {alert.type === "offline" ? "📡" : alert.type === "low_battery" ? "🔋" : "⏰"}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-medium text-slate-900 dark:text-slate-100 truncate">{alert.message}</div>
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400">{formatTimeAgo(alert.timestamp.toString())}</div>
+                        </div>
+                        <span className={`text-xs px-1.5 py-0.5 rounded ${alert.priority === 'high' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'}`}>
+                          {alert.priority}
+                        </span>
                       </div>
-                      <span className={`text-xs px-1.5 py-0.5 rounded ${alert.priority === 'high' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
-                        {alert.priority}
-                      </span>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -260,7 +384,7 @@ export default function FleetMapPage() {
           {alerts.length > 0 && hideAlerts && (
             <button
               onClick={() => setHideAlerts(false)}
-              className="absolute top-4 left-4 px-3 py-1.5 rounded-lg bg-white/95 dark:bg-slate-800/95 border border-slate-300 dark:border-slate-600 shadow-md text-xs font-semibold text-red-700 dark:text-red-400"
+              className="absolute top-4 left-4 px-3 py-1.5 rounded-lg bg-white/95 dark:bg-slate-800/95 border border-slate-300 dark:border-slate-600 shadow-md text-xs font-semibold text-red-700 dark:text-red-400 z-10"
             >
               ⚠️ Alerts ({alerts.length})
             </button>
@@ -281,26 +405,23 @@ export default function FleetMapPage() {
           </div>
           <div className="flex-1 overflow-y-auto">
             {filteredVehicles.map((vehicle) => {
-              const colors = statusColors[vehicle.status];
+              const colors = statusColors[vehicle.displayStatus];
               return (
                 <div
                   key={vehicle.id}
                   onClick={() => handleVehicleClick(vehicle)}
                   className={`px-4 py-3 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors ${selectedVehicle?.id === vehicle.id ? 'bg-emerald-50 dark:bg-emerald-900/20 border-l-2 border-l-ev-green' : ''}`}
                 >
-                  {/* Row 1: Plate + Status */}
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">{vehicle.plate}</span>
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${colors.bg} ${colors.text}`}>
                       {vehicle.status}
                     </span>
                   </div>
-                  {/* Row 2: Driver + Last seen */}
                   <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
                     <span>👤 {vehicle.driver}</span>
                     <span>{formatTimeAgo(vehicle.lastSeen)}</span>
                   </div>
-                  {/* Row 3: Battery + Trip info */}
                   <div className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-1.5">
                       <span className={vehicle.soc < 20 ? 'text-red-500' : vehicle.soc < 50 ? 'text-amber-500' : 'text-emerald-500'}>
@@ -313,8 +434,8 @@ export default function FleetMapPage() {
                         />
                       </div>
                     </div>
-                    {vehicle.tripInfo && (
-                      <span className="text-emerald-600 dark:text-emerald-400 font-medium">ETA {vehicle.tripInfo.eta}</span>
+                    {vehicle.opsStatus === "busy" && (
+                      <span className="text-emerald-600 dark:text-emerald-400 font-medium">ETA 15 min</span>
                     )}
                   </div>
                 </div>
@@ -323,6 +444,7 @@ export default function FleetMapPage() {
           </div>
         </div>
 
+        {/* Mobile Vehicle List Drawer */}
         {showVehicleList && (
           <div className="lg:hidden absolute inset-0 z-30 bg-black/30" onClick={() => setShowVehicleList(false)}>
             <div
@@ -340,7 +462,7 @@ export default function FleetMapPage() {
               </div>
               <div className="flex-1 overflow-y-auto">
                 {filteredVehicles.map((vehicle) => {
-                  const colors = statusColors[vehicle.status];
+                  const colors = statusColors[vehicle.displayStatus];
                   return (
                     <div
                       key={vehicle.id}
@@ -354,15 +476,15 @@ export default function FleetMapPage() {
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
-                        <span className="truncate pr-2">👤 {vehicle.driver}</span>
+                        <span>{vehicle.driver}</span>
                         <span>{formatTimeAgo(vehicle.lastSeen)}</span>
                       </div>
                       <div className="flex items-center justify-between text-xs">
                         <span className={vehicle.soc < 20 ? 'text-red-500' : vehicle.soc < 50 ? 'text-amber-500' : 'text-emerald-500'}>
                           🔋 {vehicle.soc}%
                         </span>
-                        {vehicle.tripInfo && (
-                          <span className="text-emerald-600 dark:text-emerald-400 font-medium">ETA {vehicle.tripInfo.eta}</span>
+                        {vehicle.opsStatus === "busy" && (
+                          <span className="text-emerald-600 dark:text-emerald-400 font-medium">ETA 15 min</span>
                         )}
                       </div>
                     </div>
@@ -393,36 +515,25 @@ export default function FleetMapPage() {
                 <p className="text-sm text-slate-500 dark:text-slate-400">{selectedVehicle.model} • {selectedVehicle.driver}</p>
               </div>
 
-              {/* Vehicle Details */}
               <div className="p-4 border-b border-slate-200 dark:border-slate-700 space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Status</span>
-                  <span className={`font-medium ${statusColors[selectedVehicle.status].text}`}>{selectedVehicle.status}</span>
+                  <span className="text-slate-500 dark:text-slate-400">Status</span>
+                  <span className="font-medium text-slate-900 dark:text-white">{selectedVehicle.status}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Battery</span>
+                  <span className="text-slate-500 dark:text-slate-400">Battery</span>
                   <span className="font-medium text-slate-900 dark:text-white">{selectedVehicle.soc}%</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Zone</span>
-                  <span className="font-medium text-slate-900 dark:text-white">{selectedVehicle.location.zone}</span>
+                  <span className="text-slate-500 dark:text-slate-400">Zone</span>
+                  <span className="font-medium text-slate-900 dark:text-white">{selectedVehicle.zone}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Last seen</span>
+                  <span className="text-slate-500 dark:text-slate-400">Last seen</span>
                   <span className="font-medium text-slate-900 dark:text-white">{formatTimeAgo(selectedVehicle.lastSeen)}</span>
                 </div>
-                {selectedVehicle.tripInfo && (
-                  <div className="mt-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
-                    <div className="text-xs font-medium text-emerald-700 dark:text-emerald-400 mb-1">Active Trip</div>
-                    <div className="text-xs text-slate-600 dark:text-slate-300">
-                      {selectedVehicle.tripInfo.pickup} → {selectedVehicle.tripInfo.dropoff}
-                    </div>
-                    <div className="text-xs font-medium text-emerald-600 mt-1">ETA: {selectedVehicle.tripInfo.eta}</div>
-                  </div>
-                )}
               </div>
 
-              {/* Quick Actions */}
               <div className="p-4 space-y-2">
                 <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Quick Actions</h4>
                 <button className="w-full px-4 py-2.5 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark transition-colors flex items-center gap-2">

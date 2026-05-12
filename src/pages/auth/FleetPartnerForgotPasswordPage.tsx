@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { auth } from "../../utils/auth";
 
 export default function FleetPartnerForgotPasswordPage() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -14,13 +15,11 @@ export default function FleetPartnerForgotPasswordPage() {
 
     try {
       await auth.forgotPassword(email);
-      setMessage("Password reset email sent. Check your inbox.");
-    } catch (forgotError) {
-      const nextError =
-        forgotError instanceof Error
-          ? forgotError.message
-          : "Unable to send reset email. Please try again.";
-      setError(nextError);
+      // Navigate to OTP verification passing email
+      navigate("/auth/verify-otp", { state: { email } });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unable to send reset email. Please try again.";
+      setError(msg);
     }
   };
 

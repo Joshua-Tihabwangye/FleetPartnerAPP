@@ -2,6 +2,8 @@ import {
   backendForgotPassword,
   backendLogin,
   backendRegister,
+  backendVerifyOtp,
+  backendResetPassword,
   isBackendAuthEnabled,
 } from "../services/api/authApi";
 import { ApiRequestError } from "../services/api/httpClient";
@@ -31,26 +33,6 @@ const defaultAuthState: AuthState = {
   user: null,
 };
 
-function shouldFallbackToLocal(error: unknown): boolean {
-  if (error instanceof TypeError) return true;
-  if (error instanceof ApiRequestError) {
-    return error.status >= 500;
-  }
-  return false;
-}
-
-function buildLocalAuthState(email: string): AuthState {
-  return {
-    isAuthenticated: true,
-    hasFinishedOnboarding: true,
-    user: {
-      email,
-      role: "FleetOwner",
-      name: email.split("@")[0] || "fleet-user",
-    },
-  };
-}
-
 function mapFleetRole(roles?: string[]): User["role"] {
   if (roles?.includes("fleet_finance")) return "Finance";
   if (roles?.includes("fleet_dispatcher")) return "Dispatcher";
@@ -59,78 +41,65 @@ function mapFleetRole(roles?: string[]): User["role"] {
 }
 
 export const auth = {
-  getAuth: (): AuthState => {
+  getAuth(): AuthState {
     if (typeof window === "undefined") {
       return defaultAuthState;
     }
-
-    const stored = localStorage.getItem(AUTH_KEY);
-    if (!stored) return defaultAuthState;
-
     try {
-      return JSON.parse(stored) as AuthState;
+      const stored = localStorage.getItem(AUTH_KEY);
+      return stored ? JSON.parse(stored) : defaultAuthState;
     } catch {
       return defaultAuthState;
     }
   },
 
-  setAuth: (authData: AuthState): void => {
+  setAuth(authData: AuthState): void {
     if (typeof window !== "undefined") {
       localStorage.setItem(AUTH_KEY, JSON.stringify(authData));
     }
   },
 
-  login: async (email: string, password: string): Promise<AuthState> => {
+  async login(email: string, password: string): Promise<AuthState> {
     const normalizedEmail = email.trim().toLowerCase();
-
-    if (isBackendAuthEnabled()) {
-      try {
-        const backend = await backendLogin({
-          email: normalizedEmail,
-          password,
-        });
-
-        saveFleetBackendTokens(backend.accessToken, backend.refreshToken);
-        const authData = {
-          isAuthenticated: true,
-          hasFinishedOnboarding: true,
-          user: {
-            email: backend.user.email,
-            role: mapFleetRole(backend.user.roles),
-            name: backend.user.email.split("@")[0] || "fleet-user",
-          },
-        } satisfies AuthState;
-        auth.setAuth(authData);
-        void syncFleetWorkspaceState().catch((error) => {
-          console.warn("Fleet backend bootstrap sync failed. Keeping current local state.", error);
-        });
-        return authData;
-      } catch (error) {
-        if (!shouldFallbackToLocal(error)) {
-          throw error;
-        }
-        console.warn("Fleet backend login unavailable. Falling back to local auth.", error);
-      }
+    if (!isBackendAuthEnabled()) {
+      throw new Error("Authentication service is unavailable.");
     }
-
-    const authData = buildLocalAuthState(normalizedEmail || email);
-    auth.setAuth(authData);
-    return authData;
+    try {
+      const backend = await backendLogin({ email: normalizedEmail, password });
+      saveFleetBackendTokens(backend.accessToken, backend.refreshToken);
+      const authData: AuthState = {
+        isAuthenticated: true,
+        hasFinishedOnboarding: true,
+        user: {
+          email: backend.user.email,
+          role: mapFleetRole(backend.user.roles),
+          name: backend.user.email.split("@")[0] || "fleet-user",
+        },
+      };
+      auth.setAuth(authData);
+      void syncFleetWorkspaceState().catch((error) => {
+        console.warn("Fleet backend bootstrap sync failed.", error);
+      });
+      return authData;
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Sign in failed.";
+      throw new Error(msg);
+    }
   },
 
-  register: async (input: {
+  async register(input: {
     companyName: string;
     email: string;
     phone?: string;
     fleetSize?: string;
     services?: string[];
-  }): Promise<void> => {
-    if (!isBackendAuthEnabled()) return;
-
+  }): Promise<void> {
+    if (!isBackendAuthEnabled()) {
+      throw new Error("Authentication service is unavailable.");
+    }
     try {
       const normalizedEmail = input.email.trim().toLowerCase();
       const generatedPassword = `Fleet#${Date.now()}Aa1`;
-
       await backendRegister({
         fullName: input.companyName.trim() || "Fleet Partner",
         email: normalizedEmail,
@@ -138,42 +107,63 @@ export const auth = {
         password: generatedPassword,
       });
     } catch (error) {
-      if (!shouldFallbackToLocal(error)) {
-        throw error;
-      }
-      console.warn("Fleet backend registration unavailable. Continuing local flow.", error);
+      const msg = error instanceof Error ? error.message : "Registration failed.";
+      throw new Error(msg);
     }
   },
 
-  forgotPassword: async (email: string): Promise<void> => {
-    if (!isBackendAuthEnabled()) return;
-
+  async forgotPassword(email: string): Promise<void> {
+    if (!isBackendAuthEnabled()) {
+      throw new Error("Authentication service is unavailable.");
+    }
     try {
       await backendForgotPassword({ email: email.trim().toLowerCase() });
     } catch (error) {
-      if (!shouldFallbackToLocal(error)) {
-        throw error;
-      }
-      console.warn("Fleet backend forgot-password unavailable. Continuing local flow.", error);
+      const msg = error instanceof Error ? error.message : "Failed to send reset link.";
+      throw new Error(msg);
     }
   },
 
-  logout: (): void => {
+  async verifyOtp(email: string, otp: string): Promise<{ verified: boolean; resetRequired?: boolean }> {
+    if (!isBackendAuthEnabled()) {
+      throw new Error("Authentication service is unavailable.");
+    }
+    try {
+      return await backendVerifyOtp({ email: email.trim().toLowerCase(), otp });
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "OTP verification failed.";
+      throw new Error(msg);
+    }
+  },
+
+  async resetPassword(email: string, otp: string, newPassword: string): Promise<{ reset: boolean }> {
+    if (!isBackendAuthEnabled()) {
+      throw new Error("Authentication service is unavailable.");
+    }
+    try {
+      return await backendResetPassword({ email: email.trim().toLowerCase(), otp, newPassword });
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Password reset failed.";
+      throw new Error(msg);
+    }
+  },
+
+  logout(): void {
     if (typeof window !== "undefined") {
       localStorage.removeItem(AUTH_KEY);
     }
     clearFleetBackendTokens();
   },
 
-  isAuthenticated: (): boolean => {
+  isAuthenticated(): boolean {
     return auth.getAuth().isAuthenticated;
   },
 
-  hasFinishedOnboarding: (): boolean => {
+  hasFinishedOnboarding(): boolean {
     return auth.getAuth().hasFinishedOnboarding;
   },
 
-  getUser: (): User | null => {
+  getUser(): User | null {
     return auth.getAuth().user;
   },
 };
