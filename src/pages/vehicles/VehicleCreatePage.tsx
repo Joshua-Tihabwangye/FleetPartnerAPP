@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toastManager } from "../../utils/toastManager";
+import { createFleetVehicle, isFleetBackendEnabled } from "../../services/api/fleetApi";
 
 interface VehicleFormData {
   plateNumber: string;
@@ -26,10 +27,7 @@ export default function VehicleCreatePage() {
     registrationExpiry: ""
   });
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    // Create new vehicle object
+  const persistLocally = () => {
     const newVehicle = {
       ...formData,
       id: Date.now(),
@@ -39,20 +37,33 @@ export default function VehicleCreatePage() {
       driver: "Unassigned",
       mileage: 0
     };
-
-    // Get existing vehicles from localStorage
     const existingVehicles: any[] = JSON.parse(localStorage.getItem("vehicles") || "[]");
-
-    // Add new vehicle
     existingVehicles.push(newVehicle);
-
-    // Save to localStorage
     localStorage.setItem("vehicles", JSON.stringify(existingVehicles));
+  };
 
-    // Show success toast
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (isFleetBackendEnabled()) {
+      try {
+        await createFleetVehicle({
+          make: formData.make.trim(),
+          model: formData.model.trim(),
+          year: Number(formData.year),
+          plate: formData.plateNumber.trim(),
+          type: formData.vehicleType,
+          status: "active",
+        });
+      } catch (error) {
+        console.warn("Fleet backend create vehicle failed. Falling back to local mode.", error);
+        persistLocally();
+      }
+    } else {
+      persistLocally();
+    }
+
     toastManager.show("Vehicle created successfully!", "success");
-
-    // Navigate to vehicles list
     navigate("/vehicles");
   };
 

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toastManager } from "../../utils/toastManager";
+import { createFleetDriver, isFleetBackendEnabled } from "../../services/api/fleetApi";
 
 export default function DriverCreatePage() {
   const navigate = useNavigate();
@@ -13,31 +14,40 @@ export default function DriverCreatePage() {
     address: ""
   });
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    // Create new driver object
+  const persistLocally = () => {
     const newDriver = {
       id: Date.now(),
-      // name and phone are included in ...formData
       status: "active",
       trips: 0,
       rating: 5.0,
       ...formData
     };
-
-    // Get existing drivers from localStorage
     const existingDrivers = JSON.parse(localStorage.getItem("drivers") || "[]");
-
-    // Add new driver
     existingDrivers.push(newDriver);
-
-    // Save to localStorage
     localStorage.setItem("drivers", JSON.stringify(existingDrivers));
+  };
 
-    // Show success toast
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (isFleetBackendEnabled()) {
+      try {
+        await createFleetDriver({
+          fullName: formData.name.trim(),
+          email: formData.email.trim(),
+          phone: formData.phone.trim(),
+          city: "Kampala",
+          serviceModes: ["ride"],
+        });
+      } catch (error) {
+        console.warn("Fleet backend create driver failed. Falling back to local mode.", error);
+        persistLocally();
+      }
+    } else {
+      persistLocally();
+    }
+
     toastManager.show("Driver created successfully!", "success");
-
     navigate("/drivers");
   };
 

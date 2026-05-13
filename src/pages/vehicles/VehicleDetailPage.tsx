@@ -1,5 +1,6 @@
 import React from "react";
 import { Link, useParams } from "react-router-dom";
+import { getCachedFleetVehicles, isFleetBackendEnabled, refreshFleetWorkspaceState } from "../../services/api/fleetApi";
 
 interface Vehicle {
   id: string | number;
@@ -19,14 +20,23 @@ export default function VehicleDetailPage() {
   const [vehicle, setVehicle] = React.useState<Vehicle | null>(null);
 
   React.useEffect(() => {
-    // Load from localStorage
-    const storedVehicles: Vehicle[] = JSON.parse(localStorage.getItem("vehicles") || "[]");
-    const foundVehicle = storedVehicles.find(v => v.id.toString() === vehicleId);
+    const load = async () => {
+      if (isFleetBackendEnabled()) {
+        try {
+          await refreshFleetWorkspaceState();
+        } catch (error) {
+          console.warn("Fleet backend vehicle detail sync failed. Using cached/local data.", error);
+        }
+      }
 
-    if (foundVehicle) {
-      setVehicle(foundVehicle);
-    } else {
-      // Fallback for demo if not found in local storage (e.g. direct link)
+      const storedVehicles: Vehicle[] = getCachedFleetVehicles() as Vehicle[];
+      const foundVehicle = storedVehicles.find(v => v.id.toString() === vehicleId);
+
+      if (foundVehicle) {
+        setVehicle(foundVehicle);
+        return;
+      }
+
       setVehicle({
         id: vehicleId || '',
         plate: "UAA 123A",
@@ -39,7 +49,9 @@ export default function VehicleDetailPage() {
         driver: "John Doe",
         type: "sedan"
       });
-    }
+    };
+
+    void load();
   }, [vehicleId]);
 
   if (!vehicle) return <div className="p-6">Loading...</div>;

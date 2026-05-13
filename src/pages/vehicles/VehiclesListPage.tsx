@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Modal from "../../components/ui/Modal";
+import { getCachedFleetVehicles, isFleetBackendEnabled, refreshFleetWorkspaceState } from "../../services/api/fleetApi";
 
 export interface Vehicle {
   id: number;
@@ -44,17 +45,29 @@ export default function VehiclesListPage() {
       { id: 8, plate: "UAA 130H", model: "BYD Han", status: "offline", opsStatus: "unavailable", driver: "Grace Nakato", mileage: 18200, vehicleType: "sedan", soc: 8, estimatedRange: 25, lastSeen: "6h ago", zone: "Muyenga", condition: "good", compliance: { insurance: { status: "ok", expiry: "2025-05-20" }, inspection: { status: "expiring", expiry: "2025-01-28" } } },
     ];
 
-    const storedVehicles = (JSON.parse(localStorage.getItem("vehicles") || "[]") as any[]).map(v => ({
-      ...v,
-      compliance: v.compliance || { insurance: { status: "ok" }, inspection: { status: "ok" } },
-      soc: v.soc ?? 50,
-      condition: v.condition || "good",
-      opsStatus: v.opsStatus || (v.status === "available" ? "ready" : "unavailable"),
-      lastSeen: v.lastSeen || "recently",
-      zone: v.zone || "Unknown",
-      estimatedRange: v.estimatedRange ?? 200,
-    }));
-    setAllVehicles(storedVehicles.length > 0 ? storedVehicles : mockVehicles);
+    const load = async () => {
+      if (isFleetBackendEnabled()) {
+        try {
+          await refreshFleetWorkspaceState();
+        } catch (error) {
+          console.warn("Fleet backend vehicle sync failed. Using cached/local data.", error);
+        }
+      }
+
+      const storedVehicles = (getCachedFleetVehicles() as any[]).map(v => ({
+        ...v,
+        compliance: v.compliance || { insurance: { status: "ok" }, inspection: { status: "ok" } },
+        soc: v.soc ?? 50,
+        condition: v.condition || "good",
+        opsStatus: v.opsStatus || (v.status === "available" ? "ready" : "unavailable"),
+        lastSeen: v.lastSeen || "recently",
+        zone: v.zone || "Unknown",
+        estimatedRange: v.estimatedRange ?? 200,
+      }));
+      setAllVehicles(storedVehicles.length > 0 ? storedVehicles : mockVehicles);
+    };
+
+    void load();
   }, []);
 
   // KPI calculations

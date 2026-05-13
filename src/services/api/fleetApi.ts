@@ -1,5 +1,5 @@
 import { request, configureHttpClientAuth, type TokenRefreshResult } from "./httpClient";
-import { API_BASE_URL, getBackendEnabled } from "./config";
+import { SOCKET_BASE_URL, SOCKET_PATH, getBackendEnabled } from "./config";
 import { io, type Socket } from "socket.io-client";
 
 export const FLEET_BACKEND_ACCESS_TOKEN_KEY = "fleet_backend_access_token";
@@ -34,7 +34,8 @@ type FleetVehicleResponse = {
   id: string;
   make: string;
   model: string;
-  plate: string;
+  plate?: string;
+  licensePlate?: string;
   type: string;
   status: "active" | "inactive" | "maintenance";
 };
@@ -57,7 +58,7 @@ type FleetServiceResponse = {
   scheduledAt: number;
 };
 
-type FleetIncidentResponse = {
+export type FleetIncidentResponse = {
   id: string;
   category: string;
   severity: "low" | "medium" | "high" | "critical";
@@ -156,8 +157,8 @@ configureHttpClientAuth({
 });
 
 export function createFleetSocket(): Socket {
-  return io(`${API_BASE_URL}/fleet`, {
-    path: "/socket.io",
+  return io(`${SOCKET_BASE_URL}/fleet`, {
+    path: SOCKET_PATH,
     transports: ["websocket"],
     autoConnect: false,
     withCredentials: false,
@@ -170,6 +171,17 @@ export function createFleetSocket(): Socket {
 function writeStorage(key: string, value: unknown) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(key, JSON.stringify(value));
+}
+
+function readStorage<T>(key: string, fallback: T): T {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
 }
 
 function driverStatus(status: FleetDriverResponse["status"]) {
@@ -286,7 +298,7 @@ export async function syncFleetWorkspaceState(): Promise<void> {
   writeStorage("vehicles", vehicles.map((vehicle, index) => ({
     id: index + 1,
     backendId: vehicle.id,
-    plate: vehicle.plate,
+    plate: vehicle.plate ?? vehicle.licensePlate ?? "-",
     model: `${vehicle.make} ${vehicle.model}`.trim(),
     status: vehicleStatus(vehicle.status),
     opsStatus: vehicle.status === "active" ? "ready" : "unavailable",
@@ -371,4 +383,143 @@ export async function syncFleetWorkspaceState(): Promise<void> {
   })));
   writeStorage("fleet_payouts", payouts);
   writeStorage("fleet_earnings_summary", earningsSummary);
+}
+
+export type FleetCreateDriverInput = {
+  fullName: string;
+  email: string;
+  phone: string;
+  city?: string;
+  country?: string;
+  branchId?: string;
+  serviceModes?: string[];
+};
+
+export type FleetUpdateDriverInput = Partial<FleetCreateDriverInput> & {
+  status?: "invited" | "active" | "suspended";
+};
+
+export type FleetCreateVehicleInput = {
+  make: string;
+  model: string;
+  year: number;
+  plate: string;
+  type: string;
+  status?: "active" | "inactive" | "maintenance";
+};
+
+export type FleetUpdateVehicleInput = Partial<FleetCreateVehicleInput>;
+
+export type FleetCreateDispatchInput = {
+  pickup: string;
+  dropoff: string;
+  notes?: string;
+  type?: string;
+  driverId?: string;
+  vehicleId?: string;
+};
+
+export type FleetCreateComplianceIncidentInput = {
+  category: string;
+  severity: "low" | "medium" | "high" | "critical";
+  description: string;
+};
+
+export type FleetRiderServiceResponse = {
+  id: string;
+  riderId: string;
+  driverId?: string;
+  serviceType: "rental" | "tour" | "ambulance";
+  status: string;
+  payload: Record<string, unknown>;
+  createdAt: number;
+  updatedAt: number;
+};
+
+export async function createFleetDriver(input: FleetCreateDriverInput) {
+  const created = await request<FleetDriverResponse>("/fleet/drivers", {
+    method: "POST",
+    body: input,
+  });
+  await syncFleetWorkspaceState();
+  return created;
+}
+
+export async function patchFleetDriver(driverId: string, patch: FleetUpdateDriverInput) {
+  const updated = await request<FleetDriverResponse>(`/fleet/drivers/${driverId}`, {
+    method: "PATCH",
+    body: patch,
+  });
+  await syncFleetWorkspaceState();
+  return updated;
+}
+
+export async function createFleetVehicle(input: FleetCreateVehicleInput) {
+  const created = await request<FleetVehicleResponse>("/fleet/vehicles", {
+    method: "POST",
+    body: input,
+  });
+  await syncFleetWorkspaceState();
+  return created;
+}
+
+export async function patchFleetVehicle(vehicleId: string, patch: FleetUpdateVehicleInput) {
+  const updated = await request<FleetVehicleResponse>(`/fleet/vehicles/${vehicleId}`, {
+    method: "PATCH",
+    body: patch,
+  });
+  await syncFleetWorkspaceState();
+  return updated;
+}
+
+export async function createFleetDispatch(input: FleetCreateDispatchInput) {
+  const created = await request<FleetDispatchResponse>("/fleet/dispatches", {
+    method: "POST",
+    body: input,
+  });
+  await syncFleetWorkspaceState();
+  return created;
+}
+
+export async function listFleetComplianceIncidents() {
+  return request<FleetIncidentResponse[]>("/fleet/compliance/incidents", { method: "GET" });
+}
+
+export async function createFleetComplianceIncident(input: FleetCreateComplianceIncidentInput) {
+  const created = await request<FleetIncidentResponse>("/fleet/compliance/incidents", {
+    method: "POST",
+    body: input,
+  });
+  await syncFleetWorkspaceState();
+  return created;
+}
+
+export async function refreshFleetWorkspaceState() {
+  if (!isFleetBackendEnabled() || !readFleetBackendAccessToken()) {
+    return;
+  }
+  await syncFleetWorkspaceState();
+}
+
+export async function listFleetRiderServices(query?: {
+  serviceType?: "rental" | "tour" | "ambulance";
+  status?: string;
+}): Promise<FleetRiderServiceResponse[]> {
+  const search = new URLSearchParams();
+  if (query?.serviceType) search.set("serviceType", query.serviceType);
+  if (query?.status) search.set("status", query.status);
+  const suffix = search.toString() ? `?${search.toString()}` : "";
+  return request<FleetRiderServiceResponse[]>(`/fleet/rider-services${suffix}`, { method: "GET" });
+}
+
+export function getCachedFleetDrivers() {
+  return readStorage<any[]>("drivers", []);
+}
+
+export function getCachedFleetVehicles() {
+  return readStorage<any[]>("vehicles", []);
+}
+
+export function getCachedFleetDispatches() {
+  return readStorage<any[]>("dispatches", []);
 }

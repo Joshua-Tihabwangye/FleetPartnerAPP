@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { BarChart, PieChart, Sparkline } from "../../components/ui/Charts";
 import PeriodSelector from "../../components/ui/PeriodSelector";
+import { isFleetBackendEnabled, listFleetComplianceIncidents } from "../../services/api/fleetApi";
 
 export default function DashboardOverviewPage() {
   const navigate = useNavigate();
@@ -9,16 +10,38 @@ export default function DashboardOverviewPage() {
   const [messagesCount, setMessagesCount] = useState(0);
   const [lastMessageSubject, setLastMessageSubject] = useState("No messages");
 
-  // Load messages count from localStorage
+  // Load support activity from backend incidents when backend mode is enabled.
   useEffect(() => {
-    const messages = JSON.parse(localStorage.getItem("support_messages") || "[]");
-    setMessagesCount(messages.length);
-    if (messages.length > 0) {
-      const lastMessage = messages[messages.length - 1];
-      setLastMessageSubject(lastMessage.subject || "Invoice query");
-    } else {
-      setLastMessageSubject("Vehicle onboarding");
-    }
+    const hydrate = async () => {
+      if (isFleetBackendEnabled()) {
+        try {
+          const incidents = await listFleetComplianceIncidents();
+          const support = incidents.filter((item) => item.category.toLowerCase() === "support");
+          setMessagesCount(support.length);
+          if (support.length > 0) {
+            const latest = support[0];
+            const subjectMatch = latest.description.match(/^\[(.*?)\]\s*/);
+            setLastMessageSubject(subjectMatch?.[1] || "Support request");
+          } else {
+            setLastMessageSubject("No messages");
+          }
+          return;
+        } catch (error) {
+          console.warn("Failed to load backend support incident summary. Using local cache.", error);
+        }
+      }
+
+      const messages = JSON.parse(localStorage.getItem("support_messages") || "[]");
+      setMessagesCount(messages.length);
+      if (messages.length > 0) {
+        const lastMessage = messages[messages.length - 1];
+        setLastMessageSubject(lastMessage.subject || "Invoice query");
+      } else {
+        setLastMessageSubject("Vehicle onboarding");
+      }
+    };
+
+    void hydrate();
   }, []);
 
   // Revenue data based on date range

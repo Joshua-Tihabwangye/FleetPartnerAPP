@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { toastManager } from "../../utils/toastManager";
+import { isFleetBackendEnabled, listFleetComplianceIncidents } from "../../services/api/fleetApi";
 
 interface Message {
-    id: number;
+    id: number | string;
     subject: string;
     message: string;
     status: "sent" | "pending" | "resolved";
@@ -18,9 +19,40 @@ export default function SupportMessagesPage() {
     const [searchQuery, setSearchQuery] = useState<string>("");
 
     useEffect(() => {
-        // Load messages from localStorage
-        const storedMessages = JSON.parse(localStorage.getItem("support_messages") || "[]");
-        setMessages(storedMessages);
+        const hydrate = async () => {
+            if (isFleetBackendEnabled()) {
+                try {
+                    const incidents = await listFleetComplianceIncidents();
+                    const supportIncidents = incidents
+                        .filter((incident) => incident.category.toLowerCase() === "support")
+                        .map((incident) => {
+                            const subjectMatch = incident.description.match(/^\[(.*?)\]\s*/);
+                            const subject = subjectMatch?.[1] || "Support request";
+                            const message = incident.description.replace(/^\[(.*?)\]\s*/, "");
+                            const mappedStatus =
+                                incident.status === "resolved"
+                                    ? "resolved"
+                                    : "pending";
+                            return {
+                                id: incident.id,
+                                subject,
+                                message,
+                                status: mappedStatus,
+                                createdAt: new Date(incident.createdAt).toISOString(),
+                                email: "n/a",
+                                name: "Fleet support",
+                            } as Message;
+                        });
+                    setMessages(supportIncidents);
+                    return;
+                } catch (error) {
+                    console.warn("Failed to load backend support incidents. Falling back to local messages.", error);
+                }
+            }
+            const storedMessages = JSON.parse(localStorage.getItem("support_messages") || "[]");
+            setMessages(storedMessages);
+        };
+        void hydrate();
     }, []);
 
     const filteredMessages = messages.filter(msg => {
@@ -30,7 +62,11 @@ export default function SupportMessagesPage() {
         return matchesFilter && matchesSearch;
     });
 
-    const handleDeleteMessage = (id: number) => {
+    const handleDeleteMessage = (id: number | string) => {
+        if (isFleetBackendEnabled()) {
+            toastManager.show("Delete is not available for backend support incidents yet.", "info");
+            return;
+        }
         const updatedMessages = messages.filter(msg => msg.id !== id);
         setMessages(updatedMessages);
         localStorage.setItem("support_messages", JSON.stringify(updatedMessages));
@@ -41,7 +77,7 @@ export default function SupportMessagesPage() {
         const styles: Record<string, string> = {
             sent: "bg-emerald-100 text-emerald-700",
             pending: "bg-amber-100 text-amber-700",
-            resolved: "bg-blue-100 text-blue-700"
+            resolved: "bg-blue-100 text-blue-700",
         };
         return styles[status] || styles.sent;
     };

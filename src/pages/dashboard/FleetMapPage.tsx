@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { GoogleMap, useJsApiLoader, OverlayView } from "@react-google-maps/api";
+import { isFleetBackendEnabled } from "../../services/api/fleetApi";
 
 // Types from localStorage (augmented)
 interface StoredVehicle {
@@ -114,7 +115,8 @@ export default function FleetMapPage() {
   const [zoom, setZoom] = useState(12);
   const mapRef = useRef<HTMLDivElement>(null);
 
-  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  const rawApiKey = (import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "").trim();
+  const apiKey = rawApiKey && !/^https?:\/\//i.test(rawApiKey) ? rawApiKey : "";
 
   const { isLoaded, loadError } = useJsApiLoader({
     id: "google-maps-script",
@@ -128,7 +130,11 @@ export default function FleetMapPage() {
     if (storedVehicles.length > 0) {
       setVehicles(transformVehicles(storedVehicles));
     } else {
-      // Fallback mock data with all statuses for UI showcase
+      if (isFleetBackendEnabled()) {
+        setVehicles([]);
+        return;
+      }
+      // Offline/local showcase fallback data
       const mock: Vehicle[] = [
         { id: 1, plate: "UAA 123A", model: "Tesla Model 3", status: "available", opsStatus: "ready", driver: "John Doe", soc: 78, lastSeen: "20s ago", zone: "Kampala Central", location: { lat: 0.3136, lng: 32.5811 }, estimatedRange: 280, displayStatus: "active" },
         { id: 2, plate: "UAA 124B", model: "Nissan Leaf", status: "offline", opsStatus: "unavailable", driver: "Jane Smith", soc: 65, lastSeen: "4h ago", zone: "Nakasero", location: { lat: 0.3176, lng: 32.5721 }, estimatedRange: 140, displayStatus: "offline" },

@@ -1,9 +1,16 @@
 import React, { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { toastManager } from "../../utils/toastManager";
+import {
+    getCachedFleetVehicles,
+    isFleetBackendEnabled,
+    patchFleetVehicle,
+    refreshFleetWorkspaceState,
+} from "../../services/api/fleetApi";
 
 interface Vehicle {
     id: string | number;
+    backendId?: string;
     plate: string;
     model: string;
     year: string;
@@ -29,7 +36,6 @@ export default function VehicleEditPage() {
     const { vehicleId } = useParams();
     const navigate = useNavigate();
 
-    // Mock data - in production, fetch from API
     const [formData, setFormData] = useState<VehicleEditFormData>({
         plate: "UAA 123A",
         model: "Tesla Model 3",
@@ -41,12 +47,56 @@ export default function VehicleEditPage() {
         status: "active"
     });
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    React.useEffect(() => {
+        const load = async () => {
+            if (isFleetBackendEnabled()) {
+                try {
+                    await refreshFleetWorkspaceState();
+                } catch (error) {
+                    console.warn("Fleet backend vehicle sync failed. Using cached/local data.", error);
+                }
+            }
+
+            const vehicles = getCachedFleetVehicles() as Vehicle[];
+            const current = vehicles.find((v) => String(v.id) === String(vehicleId));
+            if (!current) return;
+
+            setFormData({
+                plate: current.plate ?? "",
+                model: current.model ?? "",
+                year: String(current.year ?? ""),
+                type: current.type ?? "sedan",
+                capacity: String(current.capacity ?? "5"),
+                color: current.color ?? "",
+                vin: current.vin ?? "",
+                status: current.status ?? "active",
+            });
+        };
+
+        void load();
+    }, [vehicleId]);
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        // Save to localStorage
-        const vehicles: Vehicle[] = JSON.parse(localStorage.getItem("vehicles") || "[]");
+        const vehicles: Vehicle[] = getCachedFleetVehicles() as Vehicle[];
         const index = vehicles.findIndex((v: Vehicle) => String(v.id) === String(vehicleId));
+        const current = index >= 0 ? vehicles[index] : null;
+
+        if (isFleetBackendEnabled() && current?.backendId) {
+            try {
+                await patchFleetVehicle(current.backendId, {
+                    plate: formData.plate,
+                    model: formData.model,
+                    year: Number(formData.year),
+                    type: formData.type,
+                    status: formData.status as "active" | "inactive" | "maintenance",
+                });
+            } catch (error) {
+                console.warn("Fleet backend vehicle update failed. Falling back to local update.", error);
+            }
+        }
+
         if (index !== -1) {
             vehicles[index] = { ...vehicles[index], ...formData };
             localStorage.setItem("vehicles", JSON.stringify(vehicles));

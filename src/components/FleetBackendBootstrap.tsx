@@ -44,12 +44,26 @@ export default function FleetBackendBootstrap() {
 
     const socket = createFleetSocket();
     socket.connect();
-
-    socket.on("notification.new", () => {
+    const syncFromRealtime = () => {
       void syncFleetWorkspaceState().catch(() => undefined);
+    };
+
+    const syncEvents = [
+      "dispatch.created",
+      "dispatch.updated",
+      "dispatch.completed",
+      "fleet.alert",
+      "notification.new",
+    ];
+
+    syncEvents.forEach((eventName) => {
+      socket.on(eventName, syncFromRealtime);
     });
 
     return () => {
+      syncEvents.forEach((eventName) => {
+        socket.off(eventName, syncFromRealtime);
+      });
       socket.disconnect();
     };
   }, [fleetBackendEnabled]);
