@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Modal from "../../components/ui/Modal";
+import { getCachedFleetDrivers, isFleetBackendEnabled, refreshFleetWorkspaceState } from "../../services/api/fleetApi";
 
 interface Driver {
   id: number;
@@ -37,8 +38,25 @@ export default function DriversListPage() {
       { id: 8, name: "Grace Nakato", phone: "+256 700 000 008", status: "offline", trips: 67, rating: 4.4, cancelRate: 6, lastSeen: "8h ago", zone: "Naalya", vehicle: "UAA 130H", docsStatus: "expiring" },
     ];
 
-    const storedDrivers = JSON.parse(localStorage.getItem("drivers") || "[]");
-    setAllDrivers(storedDrivers.length > 0 ? storedDrivers : mockDrivers);
+    const load = async () => {
+      if (isFleetBackendEnabled()) {
+        try {
+          await refreshFleetWorkspaceState();
+        } catch (error) {
+          console.warn("Fleet backend driver sync failed. Using cached/local data.", error);
+        }
+      }
+
+      const storedDrivers = getCachedFleetDrivers();
+      if (storedDrivers.length > 0) {
+        setAllDrivers(storedDrivers);
+        return;
+      }
+
+      setAllDrivers(mockDrivers);
+    };
+
+    void load();
   }, []);
 
   // KPI calculations

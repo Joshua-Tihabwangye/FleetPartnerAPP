@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { getCachedFleetDispatches, isFleetBackendEnabled, refreshFleetWorkspaceState } from "../../services/api/fleetApi";
 
 interface Dispatch {
     id: number;
@@ -15,8 +16,20 @@ export default function DispatchListPage() {
     const [dispatches, setDispatches] = useState<Dispatch[]>([]);
 
     useEffect(() => {
-        const storedDispatches = JSON.parse(localStorage.getItem("dispatches") || "[]");
-        setDispatches(storedDispatches);
+        const load = async () => {
+            if (isFleetBackendEnabled()) {
+                try {
+                    await refreshFleetWorkspaceState();
+                } catch (error) {
+                    console.warn("Fleet backend dispatch sync failed. Using cached/local data.", error);
+                }
+            }
+
+            const storedDispatches = getCachedFleetDispatches() as Dispatch[];
+            setDispatches(storedDispatches);
+        };
+
+        void load();
     }, []);
 
     const getStatusColor = (status: string) => {

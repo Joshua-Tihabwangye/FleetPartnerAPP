@@ -1,9 +1,16 @@
 import React from "react";
 import { Link, useParams } from "react-router-dom";
 import { toastManager } from "../../utils/toastManager";
+import {
+  getCachedFleetDrivers,
+  isFleetBackendEnabled,
+  patchFleetDriver,
+  refreshFleetWorkspaceState,
+} from "../../services/api/fleetApi";
 
 interface DriverProfile {
   id: string | number;
+  backendId?: string;
   name: string;
   email: string;
   phone: string;
@@ -23,15 +30,24 @@ export default function DriverProfilePage() {
   const [editForm, setEditForm] = React.useState<Partial<DriverProfile>>({});
 
   React.useEffect(() => {
-    // Load from localStorage
-    const storedDrivers: DriverProfile[] = JSON.parse(localStorage.getItem("drivers") || "[]");
-    const foundDriver = storedDrivers.find((d: DriverProfile) => d.id.toString() === driverId);
+    const load = async () => {
+      if (isFleetBackendEnabled()) {
+        try {
+          await refreshFleetWorkspaceState();
+        } catch (error) {
+          console.warn("Fleet backend driver profile sync failed. Using cached/local data.", error);
+        }
+      }
 
-    if (foundDriver) {
-      setDriver(foundDriver);
-      setEditForm(foundDriver);
-    } else {
-      // Fallback for demo
+      const storedDrivers = getCachedFleetDrivers() as DriverProfile[];
+      const foundDriver = storedDrivers.find((d: DriverProfile) => d.id.toString() === driverId);
+
+      if (foundDriver) {
+        setDriver(foundDriver);
+        setEditForm(foundDriver);
+        return;
+      }
+
       const demoDriver: DriverProfile = {
         id: driverId || "",
         name: "John Doe",
@@ -47,7 +63,9 @@ export default function DriverProfilePage() {
       };
       setDriver(demoDriver);
       setEditForm(demoDriver);
-    }
+    };
+
+    void load();
   }, [driverId]);
 
   const handleEdit = () => {
@@ -60,17 +78,31 @@ export default function DriverProfilePage() {
     setEditForm({ ...driver });
   };
 
-  const handleSave = () => {
-    // Update localStorage
-    const storedDrivers: DriverProfile[] = JSON.parse(localStorage.getItem("drivers") || "[]");
-    const driverIndex = storedDrivers.findIndex((d: DriverProfile) => d.id.toString() === driverId);
+  const handleSave = async () => {
+    const currentDriver = driver;
+    if (!currentDriver) return;
 
+    if (isFleetBackendEnabled() && currentDriver.backendId) {
+      try {
+        await patchFleetDriver(currentDriver.backendId, {
+          fullName: editForm.name,
+          email: editForm.email,
+          phone: editForm.phone,
+          city: editForm.address,
+          status: editForm.status as "invited" | "active" | "suspended" | undefined,
+        });
+      } catch (error) {
+        console.warn("Fleet backend driver update failed. Falling back to local update.", error);
+      }
+    }
+
+    const storedDrivers = getCachedFleetDrivers() as DriverProfile[];
+    const driverIndex = storedDrivers.findIndex((d: DriverProfile) => d.id.toString() === driverId);
     if (driverIndex >= 0) {
-      storedDrivers[driverIndex] = editForm as DriverProfile;
+      storedDrivers[driverIndex] = { ...storedDrivers[driverIndex], ...(editForm as DriverProfile) };
     } else {
       storedDrivers.push(editForm as DriverProfile);
     }
-
     localStorage.setItem("drivers", JSON.stringify(storedDrivers));
     setDriver(editForm as DriverProfile);
     setIsEditing(false);

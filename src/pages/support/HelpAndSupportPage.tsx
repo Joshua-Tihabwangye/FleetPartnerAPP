@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Modal from "../../components/ui/Modal";
 import { toastManager } from "../../utils/toastManager";
+import { createFleetComplianceIncident, isFleetBackendEnabled } from "../../services/api/fleetApi";
 
 type SupportAction = "documentation" | "email" | "videos";
 
@@ -44,7 +45,7 @@ export default function HelpAndSupportPage() {
     }
   };
 
-  const handleEmailSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleEmailSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const supportRequest = {
@@ -54,10 +55,24 @@ export default function HelpAndSupportPage() {
       status: "sent"
     };
 
-    // Save to localStorage
-    const storedRequests = JSON.parse(localStorage.getItem("support_messages") || "[]");
-    const updatedRequests = [supportRequest, ...storedRequests];
-    localStorage.setItem("support_messages", JSON.stringify(updatedRequests));
+    if (isFleetBackendEnabled()) {
+      try {
+        await createFleetComplianceIncident({
+          category: "support",
+          severity: "low",
+          description: `[${emailForm.subject}] ${emailForm.message}`,
+        });
+      } catch (error) {
+        console.warn("Fleet support request sync failed. Storing local fallback copy.", error);
+        const storedRequests = JSON.parse(localStorage.getItem("support_messages") || "[]");
+        const updatedRequests = [supportRequest, ...storedRequests];
+        localStorage.setItem("support_messages", JSON.stringify(updatedRequests));
+      }
+    } else {
+      const storedRequests = JSON.parse(localStorage.getItem("support_messages") || "[]");
+      const updatedRequests = [supportRequest, ...storedRequests];
+      localStorage.setItem("support_messages", JSON.stringify(updatedRequests));
+    }
 
     toastManager.show("Support request submitted successfully! We'll get back to you soon.", "success");
     setShowEmailModal(false);

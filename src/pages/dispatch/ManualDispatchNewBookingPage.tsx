@@ -1,6 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toastManager } from "../../utils/toastManager";
+import {
+  createFleetDispatch,
+  getCachedFleetDrivers,
+  getCachedFleetVehicles,
+  isFleetBackendEnabled,
+  refreshFleetWorkspaceState,
+} from "../../services/api/fleetApi";
 
 // Mock address suggestions for autocomplete simulation
 const mockAddresses = [
@@ -90,6 +97,8 @@ function AutocompleteInput({ value, onChange, placeholder, label, required }: Au
 
 export default function ManualDispatchNewBookingPage() {
   const navigate = useNavigate();
+  const [availableDrivers, setAvailableDrivers] = useState<any[]>([]);
+  const [availableVehicles, setAvailableVehicles] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     pickupLocation: "",
     dropoffLocation: "",
@@ -105,10 +114,7 @@ export default function ManualDispatchNewBookingPage() {
     customerPhone: "",
   });
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    // Create new dispatch object
+  const persistLocally = () => {
     const newDispatch = {
       id: Date.now(),
       pickup: formData.pickupLocation,
@@ -118,11 +124,63 @@ export default function ManualDispatchNewBookingPage() {
       scheduledFor: formData.pickupTime === "scheduled" ? formData.scheduledDateTime : null,
       ...formData
     };
-
-    // Get existing dispatches
     const existingDispatches = JSON.parse(localStorage.getItem("dispatches") || "[]");
     existingDispatches.push(newDispatch);
     localStorage.setItem("dispatches", JSON.stringify(existingDispatches));
+  };
+
+  useEffect(() => {
+    const load = async () => {
+      if (isFleetBackendEnabled()) {
+        try {
+          await refreshFleetWorkspaceState();
+        } catch (error) {
+          console.warn("Fleet backend dispatch bootstrap failed. Using cached/local data.", error);
+        }
+      }
+
+      setAvailableDrivers(getCachedFleetDrivers());
+      setAvailableVehicles(getCachedFleetVehicles());
+    };
+
+    void load();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (isFleetBackendEnabled()) {
+      try {
+        const selectedVehicle = availableVehicles.find((item) => String(item.id) === formData.vehicle);
+        const selectedDriver = availableDrivers.find((item) => String(item.id) === formData.driver);
+
+        const serviceType =
+          formData.serviceType === "shuttle"
+            ? "school_shuttle"
+            : formData.serviceType === "ems"
+              ? "ambulance"
+              : formData.serviceType;
+        const scheduledSuffix =
+          formData.pickupTime === "scheduled" && formData.scheduledDateTime
+            ? ` | Scheduled for: ${formData.scheduledDateTime}`
+            : "";
+
+        await createFleetDispatch({
+          pickup: formData.pickupLocation,
+          dropoff: formData.dropoffLocation,
+          vehicleId: selectedVehicle?.backendId,
+          driverId: selectedDriver?.backendId,
+          type: serviceType,
+          notes: `${formData.notes || ""}${scheduledSuffix}`.trim() || undefined,
+        });
+      } catch (error) {
+        console.error("Fleet backend dispatch create failed.", error);
+        toastManager.show("Dispatch creation failed. Please retry.", "error");
+        return;
+      }
+    } else {
+      persistLocally();
+    }
 
     toastManager.show("Dispatch created successfully!", "success");
     navigate("/dispatch");
@@ -273,9 +331,11 @@ export default function ManualDispatchNewBookingPage() {
                   className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green focus:border-transparent"
                 >
                   <option value="">Auto-assign / Unassigned</option>
-                  <option value="1">UAA 123A - Tesla Model 3</option>
-                  <option value="2">UAA 124B - Nissan Leaf</option>
-                  <option value="3">UAA 125C - BYD E6</option>
+                  {availableVehicles.map((vehicle) => (
+                    <option key={vehicle.id} value={String(vehicle.id)}>
+                      {vehicle.plate ?? "-"} - {vehicle.model ?? "Vehicle"}
+                    </option>
+                  ))}
                 </select>
               </label>
               <label className="block">
@@ -286,9 +346,11 @@ export default function ManualDispatchNewBookingPage() {
                   className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green focus:border-transparent"
                 >
                   <option value="">Auto-assign / Unassigned</option>
-                  <option value="1">John Doe</option>
-                  <option value="2">Jane Smith</option>
-                  <option value="3">Mike Johnson</option>
+                  {availableDrivers.map((driver) => (
+                    <option key={driver.id} value={String(driver.id)}>
+                      {driver.name ?? "Driver"}
+                    </option>
+                  ))}
                 </select>
               </label>
             </div>
