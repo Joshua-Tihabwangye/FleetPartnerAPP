@@ -103,7 +103,10 @@ export async function loadBackendRuntimeFlag(force = false): Promise<boolean> {
       }
       return getBackendEnabled();
     } catch {
-      return getBackendEnabled();
+      // If runtime flags cannot be fetched (e.g., missing endpoint on hosted builds),
+      // fall back to configured default to avoid stale persisted overrides.
+      setBackendEnabled(USE_BACKEND);
+      return USE_BACKEND;
     }
   })();
 
