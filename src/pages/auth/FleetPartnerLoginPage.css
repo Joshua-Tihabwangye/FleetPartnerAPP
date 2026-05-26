@@ -5,25 +5,26 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 48px 24px;
+  padding: 14px 18px;
   box-sizing: border-box;
 }
 
 .fleet-login-shell {
   width: 100%;
-  max-width: 1240px;
-  min-height: 720px;
+  max-width: 1160px;
+  min-height: 620px;
+  height: calc(100vh - 28px);
   background: #ffffff;
   border: 1px solid #e5eaf0;
-  border-radius: 22px;
+  border-radius: 18px;
   display: grid;
   grid-template-columns: 1fr 1px 1.1fr;
   overflow: hidden;
-  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
 }
 
 .fleet-login-left {
-  padding: 48px 56px;
+  padding: 24px 30px;
   display: flex;
   flex-direction: column;
   background: #ffffff;
@@ -35,19 +36,19 @@
 }
 
 .fleet-login-right {
-  padding: 48px 56px;
+  padding: 24px 30px;
   background: #ffffff;
 }
 
 .fleet-login-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .fleet-login-logo-icon {
-  width: 42px;
-  height: 42px;
+  width: 36px;
+  height: 36px;
   border-radius: 999px;
   background: #16a34a;
   color: #ffffff;
@@ -59,26 +60,26 @@
 
 .fleet-login-brand h2 {
   margin: 0;
-  font-size: 26px;
+  font-size: 20px;
   font-weight: 800;
   color: #059669;
 }
 
 .fleet-login-brand p {
   margin: 2px 0 0;
-  font-size: 17px;
+  font-size: 14px;
   color: #334155;
 }
 
 .fleet-login-hero-copy {
-  margin-top: 88px;
+  margin-top: 42px;
 }
 
 .fleet-login-hero-copy h1 {
   margin: 0;
-  max-width: 430px;
-  font-size: 46px;
-  line-height: 1.12;
+  max-width: 360px;
+  font-size: 28px;
+  line-height: 1.16;
   font-weight: 850;
   letter-spacing: -0.04em;
   color: #0f172a;
@@ -89,17 +90,17 @@
 }
 
 .fleet-login-hero-copy p {
-  margin: 24px 0 0;
-  max-width: 390px;
-  font-size: 19px;
-  line-height: 1.55;
+  margin: 12px 0 0;
+  max-width: 350px;
+  font-size: 14px;
+  line-height: 1.45;
   color: #334155;
 }
 
 .fleet-login-feature-row {
-  margin-top: 42px;
+  margin-top: 18px;
   display: flex;
-  gap: 42px;
+  gap: 18px;
   align-items: flex-start;
 }
 
@@ -107,39 +108,42 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   text-align: center;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
   color: #0f172a;
 }
 
 .fleet-login-feature-icon {
-  width: 54px;
-  height: 54px;
-  border-radius: 14px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
   border: 1px solid #e5eaf0;
   background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #059669;
-  font-size: 24px;
+  font-size: 18px;
 }
 
 .fleet-login-illustration-wrap {
-  margin-top: auto;
+  margin-top: 10px;
+  flex: 1;
+  min-height: 220px;
   width: 100%;
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: center;
-  padding-top: 48px;
+  padding-top: 0;
 }
 
 .fleet-login-illustration {
-  width: 100%;
-  max-width: 460px;
-  height: auto;
+  width: auto;
+  max-width: 100%;
+  max-height: 100%;
+  height: 100%;
   object-fit: contain;
   display: block;
 }
@@ -147,8 +151,8 @@
 .fleet-login-backlink {
   display: inline-flex;
   align-items: center;
-  margin-bottom: 22px;
-  font-size: 14px;
+  margin-bottom: 12px;
+  font-size: 13px;
   color: #64748b;
   text-decoration: none;
 }
@@ -158,7 +162,7 @@
 }
 
 .fleet-login-title {
-  font-size: 30px;
+  font-size: 24px;
   line-height: 1.2;
   font-weight: 800;
   color: #0f172a;
@@ -166,15 +170,15 @@
 }
 
 .fleet-login-subtitle {
-  font-size: 16px;
+  font-size: 14px;
   color: #475569;
-  margin: 0 0 32px;
+  margin: 0 0 14px;
 }
 
 .fleet-login-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
 }
 
 .fleet-login-form-group {
@@ -183,19 +187,19 @@
 }
 
 .fleet-login-form-group span {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: #0f172a;
-  margin-bottom: 8px;
+  margin-bottom: 5px;
 }
 
 .fleet-login-control {
-  height: 50px;
-  border-radius: 12px;
+  height: 42px;
+  border-radius: 10px;
   border: 1px solid #d8e0ea;
   background: #ffffff;
-  padding: 0 16px;
-  font-size: 15px;
+  padding: 0 12px;
+  font-size: 14px;
   color: #0f172a;
   outline: none;
   box-sizing: border-box;
@@ -210,7 +214,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 10px;
 }
 
 .fleet-login-remember {
@@ -218,7 +222,7 @@
   align-items: center;
   gap: 8px;
   color: #64748b;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .fleet-login-remember input {
@@ -226,7 +230,7 @@
 }
 
 .fleet-login-forgot {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: #059669;
   text-decoration: none;
@@ -238,25 +242,25 @@
 
 .fleet-login-dev-note {
   margin: 0;
-  padding: 12px;
+  padding: 8px 10px;
   border: 1px solid #d8e0ea;
-  border-radius: 10px;
-  font-size: 12px;
+  border-radius: 8px;
+  font-size: 11px;
   color: #475569;
   background: #f8fafc;
 }
 
 .fleet-login-button {
   width: 100%;
-  height: 54px;
-  border-radius: 12px;
+  height: 44px;
+  border-radius: 10px;
   border: none;
   background: #079447;
   color: #ffffff;
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 800;
   cursor: pointer;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .fleet-login-button:hover {
@@ -264,17 +268,17 @@
 }
 
 .fleet-login-error {
-  padding: 12px;
+  padding: 9px 10px;
   border: 1px solid #fecaca;
-  border-radius: 10px;
+  border-radius: 8px;
   background: #fef2f2;
   color: #b91c1c;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .fleet-login-signup-text {
-  margin: 20px 0 0;
-  font-size: 14px;
+  margin: 10px 0 0;
+  font-size: 13px;
   color: #64748b;
   text-align: center;
 }
@@ -298,6 +302,7 @@
   .fleet-login-shell {
     grid-template-columns: 1fr;
     min-height: auto;
+    height: auto;
   }
 
   .fleet-login-divider {
@@ -307,15 +312,15 @@
 
   .fleet-login-left,
   .fleet-login-right {
-    padding: 32px 24px;
+    padding: 24px 20px;
   }
 
   .fleet-login-hero-copy {
-    margin-top: 48px;
+    margin-top: 28px;
   }
 
   .fleet-login-hero-copy h1 {
-    font-size: 36px;
+    font-size: 26px;
   }
 
   .fleet-login-feature-row {
@@ -324,17 +329,19 @@
   }
 
   .fleet-login-illustration {
-    max-width: 360px;
+    max-width: 320px;
+    max-height: 180px;
+    height: auto;
   }
 }
 
 @media (max-width: 520px) {
   .fleet-login-hero-copy h1 {
-    font-size: 30px;
+    font-size: 22px;
   }
 
   .fleet-login-hero-copy p {
-    font-size: 16px;
+    font-size: 14px;
   }
 
   .fleet-login-feature-row {
