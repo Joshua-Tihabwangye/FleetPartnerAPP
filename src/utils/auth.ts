@@ -134,8 +134,17 @@ export const auth = {
       });
       return authData;
     } catch (error) {
-      const msg = error instanceof Error ? error.message : "Sign in failed.";
-      throw new Error(msg);
+      const message = error instanceof Error ? error.message : "Sign in failed.";
+
+      // If backend mode is enabled but the API is unreachable, do not block testing access.
+      if (message === "Failed to fetch" || /network|fetch/i.test(message)) {
+        const authData = createDevelopmentAuthState(normalizedEmail);
+        clearFleetBackendTokens();
+        auth.setAuth(authData);
+        return authData;
+      }
+
+      throw new Error(message);
     }
   },
 
