@@ -98,7 +98,8 @@ type FleetEarningsSummaryResponse = {
 };
 
 export function isFleetBackendEnabled(): boolean {
-  return getBackendEnabled();
+  // Backend features require both the runtime flag and an authenticated backend session.
+  return getBackendEnabled() && !!readFleetBackendAccessToken();
 }
 
 export function readFleetBackendAccessToken(): string | null {
