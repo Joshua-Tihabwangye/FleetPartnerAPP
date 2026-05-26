@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { GoogleMap, useJsApiLoader, OverlayView } from "@react-google-maps/api";
+import { GoogleMap, useJsApiLoader, OverlayView, Circle } from "@react-google-maps/api";
 import { isFleetBackendEnabled } from "../../services/api/fleetApi";
 
 // Types from localStorage (augmented)
@@ -114,8 +114,12 @@ export default function FleetMapPage() {
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [zoom, setZoom] = useState(12);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [currentLocationAccuracy, setCurrentLocationAccuracy] = useState<number | null>(null);
+  const [locationError, setLocationError] = useState("");
   const [locating, setLocating] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
+  const locateWatchIdRef = useRef<number | null>(null);
+  const locateTimeoutRef = useRef<number | null>(null);
 
   const rawApiKey = (import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "").trim();
   const apiKey = rawApiKey && !/^https?:\/\//i.test(rawApiKey) ? rawApiKey : "";
@@ -184,6 +188,23 @@ export default function FleetMapPage() {
     setMap(map);
   }, []);
 
+  const clearLocateTracking = useCallback(() => {
+    if (typeof navigator !== "undefined" && locateWatchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(locateWatchIdRef.current);
+      locateWatchIdRef.current = null;
+    }
+    if (locateTimeoutRef.current !== null) {
+      window.clearTimeout(locateTimeoutRef.current);
+      locateTimeoutRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      clearLocateTracking();
+    };
+  }, [clearLocateTracking]);
+
   const handleZoomIn = () => {
     if (map) {
       const currentZoom = map.getZoom() ?? 12;
@@ -203,27 +224,74 @@ export default function FleetMapPage() {
   };
 
   const handleLocateMe = () => {
-    if (!map || !navigator.geolocation || locating) return;
+    if (!map || locating) return;
+    if (!navigator.geolocation) {
+      setLocationError("Location is not available in this browser.");
+      return;
+    }
 
+    clearLocateTracking();
     setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
+    setLocationError("");
+
+    let bestPosition: GeolocationPosition | null = null;
+
+    const finalize = (withFallbackError = false) => {
+      if (bestPosition) {
         const point = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
+          lat: bestPosition.coords.latitude,
+          lng: bestPosition.coords.longitude,
         };
+        const accuracy = bestPosition.coords.accuracy;
 
         setCurrentLocation(point);
+        setCurrentLocationAccuracy(accuracy);
         map.panTo(point);
-        map.setZoom(Math.max(map.getZoom() ?? 12, 15));
-        setZoom(map.getZoom() ?? 15);
+
+        const targetZoom = accuracy <= 50 ? 17 : accuracy <= 150 ? 16 : 15;
+        map.setZoom(Math.max(map.getZoom() ?? 12, targetZoom));
+        setZoom(map.getZoom() ?? targetZoom);
+      } else if (withFallbackError) {
+        setLocationError("Could not get a reliable location. Enable GPS/high accuracy and try again.");
+      }
+
+      clearLocateTracking();
+      setLocating(false);
+    };
+
+    locateWatchIdRef.current = navigator.geolocation.watchPosition(
+      (position) => {
+        if (!bestPosition || position.coords.accuracy < bestPosition.coords.accuracy) {
+          bestPosition = position;
+        }
+
+        if (position.coords.accuracy <= 80) {
+          finalize();
+        }
+      },
+      (error) => {
+        if (bestPosition) {
+          finalize();
+          return;
+        }
+
+        if (error.code === error.PERMISSION_DENIED) {
+          setLocationError("Location permission denied.");
+        } else if (error.code === error.TIMEOUT) {
+          setLocationError("Location request timed out.");
+        } else {
+          setLocationError("Unable to determine your location.");
+        }
+
+        clearLocateTracking();
         setLocating(false);
       },
-      () => {
-        setLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 120000 },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
     );
+
+    locateTimeoutRef.current = window.setTimeout(() => {
+      finalize(true);
+    }, 10000);
   };
 
   const CurrentLocationMarker = ({ position }: { position: { lat: number; lng: number } }) => {
@@ -344,6 +412,22 @@ export default function FleetMapPage() {
               {filteredVehicles.map(vehicle => (
                 vehicle.location && <VehicleMarker key={vehicle.id} vehicle={vehicle} />
               ))}
+              {currentLocation && currentLocationAccuracy ? (
+                <Circle
+                  center={currentLocation}
+                  radius={Math.max(currentLocationAccuracy, 10)}
+                  options={{
+                    strokeColor: "#2563eb",
+                    strokeOpacity: 0.35,
+                    strokeWeight: 1,
+                    fillColor: "#3b82f6",
+                    fillOpacity: 0.12,
+                    clickable: false,
+                    draggable: false,
+                    editable: false,
+                  }}
+                />
+              ) : null}
               {currentLocation ? <CurrentLocationMarker position={currentLocation} /> : null}
             </GoogleMap>
           ) : (
@@ -380,6 +464,18 @@ export default function FleetMapPage() {
           <div className="absolute bottom-4 right-4 px-3 py-1.5 rounded-lg bg-white/90 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-600 shadow-sm text-xs text-slate-600 dark:text-slate-400 z-10">
             ZOOM {zoom}
           </div>
+
+          {currentLocation && currentLocationAccuracy ? (
+            <div className="absolute bottom-14 right-4 px-3 py-1.5 rounded-lg bg-white/90 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-600 shadow-sm text-xs text-blue-700 dark:text-blue-300 z-10">
+              GPS ±{Math.round(currentLocationAccuracy)}m
+            </div>
+          ) : null}
+
+          {locationError ? (
+            <div className="absolute top-36 right-4 max-w-[220px] px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700 shadow-sm z-10">
+              {locationError}
+            </div>
+          ) : null}
 
           {/* Alerts Panel */}
           {alerts.length > 0 && (
