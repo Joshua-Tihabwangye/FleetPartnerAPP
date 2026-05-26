@@ -6,7 +6,6 @@ import {
   backendResetPassword,
   isBackendAuthEnabled,
 } from "../services/api/authApi";
-import { ApiRequestError } from "../services/api/httpClient";
 import {
   clearFleetBackendTokens,
   saveFleetBackendTokens,
@@ -33,11 +32,56 @@ const defaultAuthState: AuthState = {
   user: null,
 };
 
+const DEV_REGISTERED_USERS_KEY = "fleet_partner_dev_registered_users";
+
+function shouldUseDevelopmentAuth(): boolean {
+  return import.meta.env.DEV || !isBackendAuthEnabled();
+}
+
 function mapFleetRole(roles?: string[]): User["role"] {
   if (roles?.includes("fleet_finance")) return "Finance";
   if (roles?.includes("fleet_dispatcher")) return "Dispatcher";
   if (roles?.includes("fleet_manager")) return "Manager";
   return "FleetOwner";
+}
+
+function createDevelopmentAuthState(email: string): AuthState {
+  return {
+    isAuthenticated: true,
+    hasFinishedOnboarding: true,
+    user: {
+      email,
+      role: "FleetOwner",
+      name: email.split("@")[0] || "fleet-user",
+    },
+  };
+}
+
+function saveDevelopmentRegistration(input: {
+  companyName: string;
+  email: string;
+  phone?: string;
+  fleetSize?: string;
+  services?: string[];
+  password: string;
+}): void {
+  if (typeof window === "undefined") return;
+  try {
+    const stored = window.localStorage.getItem(DEV_REGISTERED_USERS_KEY);
+    const existing = stored ? (JSON.parse(stored) as Array<Record<string, unknown>>) : [];
+    existing.unshift({
+      companyName: input.companyName,
+      email: input.email,
+      phone: input.phone ?? "",
+      fleetSize: input.fleetSize ?? "",
+      services: input.services ?? [],
+      password: input.password,
+      createdAt: new Date().toISOString(),
+    });
+    window.localStorage.setItem(DEV_REGISTERED_USERS_KEY, JSON.stringify(existing.slice(0, 100)));
+  } catch {
+    // No-op: local fallback only.
+  }
 }
 
 export const auth = {
@@ -61,9 +105,17 @@ export const auth = {
 
   async login(email: string, password: string): Promise<AuthState> {
     const normalizedEmail = email.trim().toLowerCase();
-    if (!isBackendAuthEnabled()) {
-      throw new Error("Authentication service is unavailable.");
+    if (!normalizedEmail || !password.trim()) {
+      throw new Error("Please enter both email and password.");
     }
+
+    if (shouldUseDevelopmentAuth()) {
+      const authData = createDevelopmentAuthState(normalizedEmail);
+      clearFleetBackendTokens();
+      auth.setAuth(authData);
+      return authData;
+    }
+
     try {
       const backend = await backendLogin({ email: normalizedEmail, password });
       saveFleetBackendTokens(backend.accessToken, backend.refreshToken);
@@ -93,18 +145,30 @@ export const auth = {
     phone?: string;
     fleetSize?: string;
     services?: string[];
+    password: string;
   }): Promise<void> {
-    if (!isBackendAuthEnabled()) {
-      throw new Error("Authentication service is unavailable.");
+    const normalizedEmail = input.email.trim().toLowerCase();
+    const password = input.password.trim();
+    if (!normalizedEmail || !password) {
+      throw new Error("Email and password are required.");
     }
+
+    if (shouldUseDevelopmentAuth()) {
+      saveDevelopmentRegistration({
+        ...input,
+        companyName: input.companyName.trim() || "Fleet Partner",
+        email: normalizedEmail,
+        password,
+      });
+      return;
+    }
+
     try {
-      const normalizedEmail = input.email.trim().toLowerCase();
-      const generatedPassword = `Fleet#${Date.now()}Aa1`;
       await backendRegister({
         fullName: input.companyName.trim() || "Fleet Partner",
         email: normalizedEmail,
         phone: input.phone?.trim(),
-        password: generatedPassword,
+        password,
       });
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Registration failed.";
