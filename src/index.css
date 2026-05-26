@@ -696,3 +696,54 @@ html:not(.dark) .text-slate-400 {
 .dark .modal-backdrop {
   background-color: rgba(0, 0, 0, 0.8);
 }
+
+/* ============================================
+   GLOBAL GRADIENT REMOVAL / GREEN NORMALIZATION
+   ============================================ */
+:root {
+  --company-green: #10b981;
+  --company-green-dark: #059669;
+}
+
+/* Replace Tailwind gradient backgrounds with company green */
+[class*="bg-gradient"] {
+  background-image: none !important;
+  background-color: var(--company-green) !important;
+}
+
+.dark [class*="bg-gradient"] {
+  background-color: var(--company-green-dark) !important;
+}
+
+/* Replace custom gradient utility classes with company green */
+[class*="card-gradient-"],
+[class*="alert-gradient-"],
+[class*="btn-gradient-"] {
+  background-image: none !important;
+  background-color: var(--company-green) !important;
+}
+
+.dark [class*="card-gradient-"],
+.dark [class*="alert-gradient-"],
+.dark [class*="btn-gradient-"] {
+  background-color: var(--company-green-dark) !important;
+}
+
+/* Replace inline linear gradients with company green */
+[style*="linear-gradient"] {
+  background-image: none !important;
+  background-color: var(--company-green) !important;
+}
+
+.dark [style*="linear-gradient"] {
+  background-color: var(--company-green-dark) !important;
+}
+
+/* Preserve readability for gradient text patterns */
+.gradient-text,
+.text-transparent.bg-clip-text[class*="bg-gradient"] {
+  background-image: none !important;
+  background-color: transparent !important;
+  color: var(--company-green) !important;
+  -webkit-text-fill-color: currentColor !important;
+}
