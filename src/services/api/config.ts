@@ -6,15 +6,40 @@ function parseBooleanFlag(value: string | undefined, fallback = false): boolean 
   return normalized === "true" || normalized === "1" || normalized === "yes";
 }
 
+function isLoopbackHostname(hostname: string): boolean {
+  const normalized = hostname.trim().toLowerCase();
+  return normalized === "localhost" || normalized === "127.0.0.1" || normalized === "::1";
+}
+
+function shouldIgnoreLoopbackUrl(raw: string): boolean {
+  if (typeof window === "undefined") return false;
+
+  const currentHost = window.location.hostname;
+  if (isLoopbackHostname(currentHost)) return false;
+
+  try {
+    const parsed = new URL(raw);
+    return isLoopbackHostname(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
 function normalizeBaseUrl(value: string | undefined): string {
   const raw = value?.trim();
   if (!raw) return "/api/v1";
+  if (shouldIgnoreLoopbackUrl(raw)) return "/api/v1";
   return raw.replace(/\/+$/, "");
 }
 
 function normalizeSocketBaseUrl(value: string | undefined, apiBaseUrl: string): string {
   const raw = value?.trim();
-  if (raw) return raw.replace(/\/+$/, "");
+  if (raw) {
+    if (shouldIgnoreLoopbackUrl(raw)) {
+      return apiBaseUrl.replace(/\/api(?:\/v\d+)?$/, "");
+    }
+    return raw.replace(/\/+$/, "");
+  }
   return apiBaseUrl.replace(/\/api(?:\/v\d+)?$/, "");
 }
 
