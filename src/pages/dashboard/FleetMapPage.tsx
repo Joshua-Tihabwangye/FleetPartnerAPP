@@ -113,6 +113,8 @@ export default function FleetMapPage() {
   const [hideAlerts, setHideAlerts] = useState(false);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [zoom, setZoom] = useState(12);
+  const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locating, setLocating] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
 
   const rawApiKey = (import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "").trim();
@@ -200,8 +202,47 @@ export default function FleetMapPage() {
     }
   };
 
-  const handleRotate = () => {
-    // placeholder for rotate
+  const handleLocateMe = () => {
+    if (!map || !navigator.geolocation || locating) return;
+
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const point = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+
+        setCurrentLocation(point);
+        map.panTo(point);
+        map.setZoom(Math.max(map.getZoom() ?? 12, 15));
+        setZoom(map.getZoom() ?? 15);
+        setLocating(false);
+      },
+      () => {
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 120000 },
+    );
+  };
+
+  const CurrentLocationMarker = ({ position }: { position: { lat: number; lng: number } }) => {
+    return (
+      <OverlayView
+        position={position}
+        mapPaneName="overlayMouseTarget"
+        getPixelPositionOffset={(width, height) => ({
+          x: -(width / 2),
+          y: -height,
+        })}
+      >
+        <div className="pointer-events-none relative flex flex-col items-center">
+          <div className="h-4 w-4 rounded-full bg-blue-600 border-2 border-white shadow" />
+          <div className="-mt-1 h-6 w-0.5 bg-blue-600/70" />
+          <div className="absolute -inset-2 rounded-full border-2 border-blue-500/40 animate-ping" />
+        </div>
+      </OverlayView>
+    );
   };
 
   // Custom Marker component using OverlayView for custom HTML
@@ -297,16 +338,13 @@ export default function FleetMapPage() {
                 mapTypeControl: false,
                 streetViewControl: false,
                 fullscreenControl: false,
-                styles: [
-                  { elementType: "geometry", stylers: [{ color: "#f5f5f5" }] },
-                  { elementType: "labels.text.fill", stylers: [{ color: "#616161" }] },
-                  { elementType: "labels.text.stroke", stylers: [{ color: "#f5f5f5" }] },
-                ],
+                mapTypeId: "roadmap",
               }}
             >
               {filteredVehicles.map(vehicle => (
                 vehicle.location && <VehicleMarker key={vehicle.id} vehicle={vehicle} />
               ))}
+              {currentLocation ? <CurrentLocationMarker position={currentLocation} /> : null}
             </GoogleMap>
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-slate-200 dark:bg-slate-800">
@@ -329,10 +367,12 @@ export default function FleetMapPage() {
               −
             </button>
             <button
-              onClick={handleRotate}
+              onClick={handleLocateMe}
               className="w-10 h-10 rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200"
+              title="Locate me"
+              aria-label="Locate my current location"
             >
-              🧭
+              {locating ? "…" : "📍"}
             </button>
           </div>
 
