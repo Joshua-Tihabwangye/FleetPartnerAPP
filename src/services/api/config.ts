@@ -43,8 +43,8 @@ function normalizeSocketBaseUrl(value: string | undefined, apiBaseUrl: string): 
   return apiBaseUrl.replace(/\/api(?:\/v\d+)?$/, "");
 }
 
-// Backend integration is opt-in; fallback to local auth unless explicitly enabled.
-export const USE_BACKEND = parseBooleanFlag(env.VITE_USE_BACKEND, false);
+export const USE_BACKEND = parseBooleanFlag(env.VITE_USE_BACKEND, true);
+export const ALLOW_DEV_AUTH_FALLBACK = parseBooleanFlag(env.VITE_ALLOW_DEV_AUTH_FALLBACK, false);
 export const API_BASE_URL = normalizeBaseUrl(env.VITE_API_BASE_URL);
 export const SOCKET_BASE_URL = normalizeSocketBaseUrl(env.VITE_SOCKET_BASE_URL, API_BASE_URL);
 export const SOCKET_PATH = (env.VITE_SOCKET_PATH || "/socket.io").trim() || "/socket.io";

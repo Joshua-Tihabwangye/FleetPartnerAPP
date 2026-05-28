@@ -1,6 +1,12 @@
 import React, { useState } from "react";
 import Modal from "../../components/ui/Modal";
 import { toastManager } from "../../utils/toastManager";
+import {
+  createFleetComplianceIncident,
+  isFleetBackendEnabled,
+  listFleetComplianceIncidents,
+  refreshFleetWorkspaceState,
+} from "../../services/api/fleetApi";
 
 interface Incident {
   id: number;
@@ -26,8 +32,34 @@ export default function IncidentsListPage() {
     description: ""
   });
 
+  async function syncIncidentsFromBackend() {
+    if (!isFleetBackendEnabled()) return;
+    await refreshFleetWorkspaceState();
+    const backend = await listFleetComplianceIncidents();
+    const mapped: Incident[] = backend.map((item, index) => ({
+      id: index + 1,
+      incidentId: item.id,
+      type: item.category,
+      vehicle: "Unassigned",
+      driver: "Unassigned",
+      date: new Date(item.createdAt).toISOString().split("T")[0] || "",
+      severity: item.severity,
+      status: item.status,
+      description: item.description,
+    }));
+    setIncidents(mapped);
+  }
+
   // Load incidents on mount
   React.useEffect(() => {
+    if (isFleetBackendEnabled()) {
+      void syncIncidentsFromBackend().catch((error) => {
+        console.warn("Failed to load incidents from backend.", error);
+        toastManager.show("Failed to load incidents from backend.", "error");
+      });
+      return;
+    }
+
     const storedIncidents: Incident[] = JSON.parse(localStorage.getItem("incidents") || "[]");
     if (storedIncidents.length === 0) {
       // Initialize with mock data if empty
@@ -43,8 +75,26 @@ export default function IncidentsListPage() {
     }
   }, []);
 
-  const handleReportSubmit = (e: React.FormEvent) => {
+  const handleReportSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isFleetBackendEnabled()) {
+      try {
+        await createFleetComplianceIncident({
+          category: reportForm.type || "General",
+          severity: (reportForm.severity || "medium") as "low" | "medium" | "high" | "critical",
+          description: reportForm.description || `${reportForm.type || "Incident"} reported from fleet console.`,
+        });
+        await syncIncidentsFromBackend();
+        toastManager.show("Incident reported successfully!", "success");
+        setShowReportModal(false);
+        setReportForm({ type: "", vehicle: "", driver: "", severity: "", description: "" });
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : "Incident submission failed.";
+        toastManager.show(msg, "error");
+      }
+      return;
+    }
+
     const newIncident = {
       id: Date.now(),
       incidentId: `INC-${String(incidents.length + 1).padStart(3, '0')}`,

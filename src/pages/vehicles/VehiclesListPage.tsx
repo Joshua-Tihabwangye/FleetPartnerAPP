@@ -64,6 +64,10 @@ export default function VehiclesListPage() {
         zone: v.zone || "Unknown",
         estimatedRange: v.estimatedRange ?? 200,
       }));
+      if (isFleetBackendEnabled()) {
+        setAllVehicles(storedVehicles);
+        return;
+      }
       setAllVehicles(storedVehicles.length > 0 ? storedVehicles : mockVehicles);
     };
 
