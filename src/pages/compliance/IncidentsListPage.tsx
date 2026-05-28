@@ -3,6 +3,8 @@ import Modal from "../../components/ui/Modal";
 import { toastManager } from "../../utils/toastManager";
 import {
   createFleetComplianceIncident,
+  getCachedFleetDrivers,
+  getCachedFleetVehicles,
   isFleetBackendEnabled,
   listFleetComplianceIncidents,
   refreshFleetWorkspaceState,
@@ -24,6 +26,8 @@ export default function IncidentsListPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showReportModal, setShowReportModal] = useState(false);
   const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [availableVehicles, setAvailableVehicles] = useState<string[]>([]);
+  const [availableDrivers, setAvailableDrivers] = useState<string[]>([]);
   const [reportForm, setReportForm] = useState({
     type: "",
     vehicle: "",
@@ -35,6 +39,16 @@ export default function IncidentsListPage() {
   async function syncIncidentsFromBackend() {
     if (!isFleetBackendEnabled()) return;
     await refreshFleetWorkspaceState();
+    setAvailableVehicles(
+      (getCachedFleetVehicles() as any[])
+        .map((item) => String(item.plate || item.vehiclePlate || "").trim())
+        .filter((item) => item.length > 0),
+    );
+    setAvailableDrivers(
+      (getCachedFleetDrivers() as any[])
+        .map((item) => String(item.name || item.fullName || "").trim())
+        .filter((item) => item.length > 0),
+    );
     const backend = await listFleetComplianceIncidents();
     const mapped: Incident[] = backend.map((item, index) => ({
       id: index + 1,
@@ -73,6 +87,25 @@ export default function IncidentsListPage() {
     } else {
       setIncidents(storedIncidents);
     }
+
+    setAvailableVehicles(
+      Array.from(
+        new Set(
+          ((JSON.parse(localStorage.getItem("vehicles") || "[]") as any[]) || [])
+            .map((item) => String(item.plate || item.vehiclePlate || "").trim())
+            .filter((item) => item.length > 0),
+        ),
+      ),
+    );
+    setAvailableDrivers(
+      Array.from(
+        new Set(
+          ((JSON.parse(localStorage.getItem("drivers") || "[]") as any[]) || [])
+            .map((item) => String(item.name || item.fullName || "").trim())
+            .filter((item) => item.length > 0),
+        ),
+      ),
+    );
   }, []);
 
   const handleReportSubmit = async (e: React.FormEvent) => {
@@ -292,9 +325,13 @@ export default function IncidentsListPage() {
                 required
               >
                 <option value="">Select vehicle...</option>
-                <option value="UAA 123A">UAA 123A - Tesla Model 3</option>
-                <option value="UAA 124B">UAA 124B - Nissan Leaf</option>
-                <option value="UAA 125C">UAA 125C - BYD E6</option>
+                {availableVehicles.length === 0 ? (
+                  <option value="Fleet Vehicle">Fleet Vehicle</option>
+                ) : (
+                  availableVehicles.map((vehicle) => (
+                    <option key={vehicle} value={vehicle}>{vehicle}</option>
+                  ))
+                )}
               </select>
             </label>
             <label className="block">
@@ -306,9 +343,13 @@ export default function IncidentsListPage() {
                 required
               >
                 <option value="">Select driver...</option>
-                <option value="John Doe">John Doe</option>
-                <option value="Jane Smith">Jane Smith</option>
-                <option value="Mike Johnson">Mike Johnson</option>
+                {availableDrivers.length === 0 ? (
+                  <option value="Fleet Driver">Fleet Driver</option>
+                ) : (
+                  availableDrivers.map((driver) => (
+                    <option key={driver} value={driver}>{driver}</option>
+                  ))
+                )}
               </select>
             </label>
           </div>

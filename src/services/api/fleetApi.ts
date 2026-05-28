@@ -420,6 +420,13 @@ export type FleetCreateDispatchInput = {
   vehicleId?: string;
 };
 
+export type FleetCreateServiceInput = {
+  customerName: string;
+  assetId?: string;
+  scheduledAt: number;
+  notes?: string;
+};
+
 export type FleetCreateComplianceIncidentInput = {
   category: string;
   severity: "low" | "medium" | "high" | "critical";
@@ -482,6 +489,19 @@ export async function createFleetDispatch(input: FleetCreateDispatchInput) {
   return created;
 }
 
+export async function listFleetRentals() {
+  return request<FleetServiceResponse[]>("/fleet/rentals", { method: "GET" });
+}
+
+export async function createFleetRental(input: FleetCreateServiceInput) {
+  const created = await request<FleetServiceResponse>("/fleet/rentals", {
+    method: "POST",
+    body: input,
+  });
+  await syncFleetWorkspaceState();
+  return created;
+}
+
 export async function listFleetComplianceIncidents() {
   return request<FleetIncidentResponse[]>("/fleet/compliance/incidents", { method: "GET" });
 }
@@ -523,4 +543,8 @@ export function getCachedFleetVehicles() {
 
 export function getCachedFleetDispatches() {
   return readStorage<any[]>("dispatches", []);
+}
+
+export function getCachedFleetRentals() {
+  return readStorage<any[]>("rentals", []);
 }

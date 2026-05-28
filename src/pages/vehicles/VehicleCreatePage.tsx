@@ -56,8 +56,9 @@ export default function VehicleCreatePage() {
           status: "active",
         });
       } catch (error) {
-        console.warn("Fleet backend create vehicle failed. Falling back to local mode.", error);
-        persistLocally();
+        const message = error instanceof Error ? error.message : "Failed to create vehicle from backend.";
+        toastManager.show(message, "error");
+        return;
       }
     } else {
       persistLocally();

@@ -83,7 +83,11 @@ export default function VehicleEditPage() {
         const index = vehicles.findIndex((v: Vehicle) => String(v.id) === String(vehicleId));
         const current = index >= 0 ? vehicles[index] : null;
 
-        if (isFleetBackendEnabled() && current?.backendId) {
+        if (isFleetBackendEnabled()) {
+            if (!current?.backendId) {
+                toastManager.show("Unable to resolve backend vehicle record for this page.", "error");
+                return;
+            }
             try {
                 await patchFleetVehicle(current.backendId, {
                     plate: formData.plate,
@@ -93,13 +97,15 @@ export default function VehicleEditPage() {
                     status: formData.status as "active" | "inactive" | "maintenance",
                 });
             } catch (error) {
-                console.warn("Fleet backend vehicle update failed. Falling back to local update.", error);
+                const message = error instanceof Error ? error.message : "Fleet backend vehicle update failed.";
+                toastManager.show(message, "error");
+                return;
             }
-        }
-
-        if (index !== -1) {
-            vehicles[index] = { ...vehicles[index], ...formData };
-            localStorage.setItem("vehicles", JSON.stringify(vehicles));
+        } else {
+            if (index !== -1) {
+                vehicles[index] = { ...vehicles[index], ...formData };
+                localStorage.setItem("vehicles", JSON.stringify(vehicles));
+            }
         }
 
         toastManager.show("Vehicle updated successfully!", "success");

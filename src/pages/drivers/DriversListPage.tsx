@@ -22,42 +22,37 @@ export default function DriversListPage() {
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [filter, setFilter] = useState({ status: "all", minRating: "0" });
   const [allDrivers, setAllDrivers] = useState<Driver[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [activeKpi, setActiveKpi] = useState<string | null>(null);
   const [showActionsMenu, setShowActionsMenu] = useState<number | null>(null);
+  const backendMode = isFleetBackendEnabled();
 
-  // Load drivers from localStorage on mount
   useEffect(() => {
-    const mockDrivers: Driver[] = [
-      { id: 1, name: "John Doe", phone: "+256 700 000 001", status: "available", trips: 142, rating: 4.8, cancelRate: 2, lastSeen: "2m ago", zone: "Kampala Central", vehicle: "UAA 123A", docsStatus: "ok" },
-      { id: 2, name: "Jane Smith", phone: "+256 700 000 002", status: "on-trip", trips: 98, rating: 4.9, cancelRate: 1, lastSeen: "now", zone: "Kololo", vehicle: "UAA 124B", docsStatus: "ok" },
-      { id: 3, name: "Mike Johnson", phone: "+256 700 000 003", status: "offline", trips: 203, rating: 4.7, cancelRate: 3, lastSeen: "4h ago", zone: "Ntinda", vehicle: "UAA 125C", docsStatus: "expiring" },
-      { id: 4, name: "Sarah Wilson", phone: "+256 700 000 004", status: "available", trips: 87, rating: 4.6, cancelRate: 5, lastSeen: "5m ago", zone: "Nakasero", vehicle: "UAA 126D", docsStatus: "ok" },
-      { id: 5, name: "David Brown", phone: "+256 700 000 005", status: "on-trip", trips: 156, rating: 4.5, cancelRate: 8, lastSeen: "now", zone: "Bugolobi", vehicle: "UAA 127E", docsStatus: "ok" },
-      { id: 6, name: "Emily Davis", phone: "+256 700 000 006", status: "suspended", trips: 45, rating: 3.8, cancelRate: 15, lastSeen: "2d ago", zone: "Muyenga", vehicle: "-", docsStatus: "missing" },
-      { id: 7, name: "Peter Okello", phone: "+256 700 000 007", status: "available", trips: 312, rating: 4.9, cancelRate: 1, lastSeen: "1m ago", zone: "Kisaasi", vehicle: "UAA 129G", docsStatus: "ok" },
-      { id: 8, name: "Grace Nakato", phone: "+256 700 000 008", status: "offline", trips: 67, rating: 4.4, cancelRate: 6, lastSeen: "8h ago", zone: "Naalya", vehicle: "UAA 130H", docsStatus: "expiring" },
-    ];
-
     const load = async () => {
-      if (isFleetBackendEnabled()) {
-        try {
-          await refreshFleetWorkspaceState();
-        } catch (error) {
-          console.warn("Fleet backend driver sync failed. Using cached/local data.", error);
-        }
-      }
-
-      const storedDrivers = getCachedFleetDrivers();
-      if (storedDrivers.length > 0) {
-        setAllDrivers(storedDrivers);
+      setLoading(true);
+      setLoadError(null);
+      if (!backendMode) {
+        setAllDrivers([]);
+        setLoadError("Backend session required. Sign in to view fleet drivers.");
+        setLoading(false);
         return;
       }
 
-      setAllDrivers(mockDrivers);
+      try {
+        await refreshFleetWorkspaceState();
+      } catch (error) {
+        console.warn("Fleet backend driver sync failed.", error);
+        setLoadError("Failed to refresh drivers from backend. Showing last synced cache if available.");
+      }
+
+      const storedDrivers = getCachedFleetDrivers();
+      setAllDrivers(storedDrivers);
+      setLoading(false);
     };
 
     void load();
-  }, []);
+  }, [backendMode]);
 
   // KPI calculations
   const kpis = [
@@ -197,6 +192,11 @@ export default function DriversListPage() {
 
       {/* Drivers Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        {loadError && !loading && drivers.length > 0 ? (
+          <div className="mx-4 mt-4 bg-amber-50 border border-amber-200 text-amber-700 rounded-lg px-3 py-2 text-sm">
+            {loadError}
+          </div>
+        ) : null}
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-slate-50 border-b border-slate-200">
@@ -215,7 +215,17 @@ export default function DriversListPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-slate-200">
-              {drivers.map((driver) => (
+              {drivers.length === 0 ? (
+                <tr>
+                  <td colSpan={11} className="px-4 py-8 text-center text-sm text-slate-500">
+                    {loading
+                      ? "Loading drivers..."
+                      : loadError
+                      ? loadError
+                      : "No drivers found from backend."}
+                  </td>
+                </tr>
+              ) : drivers.map((driver) => (
                 <tr key={driver.id} className="hover:bg-slate-50 transition-colors">
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div className="flex items-center">

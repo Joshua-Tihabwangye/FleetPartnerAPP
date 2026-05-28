@@ -1,9 +1,16 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toastManager } from "../../../utils/toastManager";
+import {
+  createFleetRental,
+  getCachedFleetVehicles,
+  isFleetBackendEnabled,
+  refreshFleetWorkspaceState,
+} from "../../../services/api/fleetApi";
 
 export default function RentalBookingCreatePage() {
   const navigate = useNavigate();
+  const [availableVehicles, setAvailableVehicles] = useState<Array<{ id: number; plate?: string; model?: string; backendId?: string }>>([]);
   const [formData, setFormData] = useState({
     customerName: "",
     customerEmail: "",
@@ -16,8 +23,51 @@ export default function RentalBookingCreatePage() {
     specialRequests: ""
   });
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  React.useEffect(() => {
+    const load = async () => {
+      if (isFleetBackendEnabled()) {
+        try {
+          await refreshFleetWorkspaceState();
+        } catch (error) {
+          console.warn("Fleet backend rentals bootstrap failed. Using cached vehicles.", error);
+        }
+      }
+      setAvailableVehicles(getCachedFleetVehicles());
+    };
+
+    void load();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (isFleetBackendEnabled()) {
+      try {
+        const selectedVehicle = availableVehicles.find((item) => String(item.id) === formData.vehicle);
+        const scheduledAt = new Date(`${formData.startDate || new Date().toISOString().slice(0, 10)}T09:00:00`).getTime();
+        await createFleetRental({
+          customerName: formData.customerName.trim(),
+          assetId: selectedVehicle?.backendId,
+          scheduledAt,
+          notes: [
+            `Customer: ${formData.customerName}`,
+            `Email: ${formData.customerEmail}`,
+            `Phone: ${formData.customerPhone}`,
+            `Pickup: ${formData.pickupLocation}`,
+            `Return: ${formData.returnLocation}`,
+            `End Date: ${formData.endDate}`,
+            formData.specialRequests ? `Notes: ${formData.specialRequests}` : "",
+          ].filter(Boolean).join(" | "),
+        });
+        toastManager.show("Rental booking created successfully!", "success");
+        navigate("/rentals");
+        return;
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : "Failed to create rental booking.";
+        toastManager.show(msg, "error");
+        return;
+      }
+    }
 
     // Save to localStorage
     const existingRentals = JSON.parse(localStorage.getItem("rentals") || "[]");
@@ -97,10 +147,11 @@ export default function RentalBookingCreatePage() {
                   required
                 >
                   <option value="">Select vehicle...</option>
-                  <option value="UAA 126D">UAA 126D - Tesla Model 3</option>
-                  <option value="UAA 127E">UAA 127E - Nissan Leaf</option>
-                  <option value="UAA 128F">UAA 128F - BYD E6</option>
-                  <option value="UAA 129G">UAA 129G - Toyota Prius</option>
+                  {availableVehicles.map((vehicle) => (
+                    <option key={vehicle.id} value={String(vehicle.id)}>
+                      {vehicle.plate || "-"} - {vehicle.model || "Vehicle"}
+                    </option>
+                  ))}
                 </select>
               </label>
 
@@ -182,4 +233,3 @@ export default function RentalBookingCreatePage() {
     </div>
   );
 }
-

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { BACKEND_FLAG_EVENT } from "../services/api/config";
+import { API_BASE_URL, BACKEND_FLAG_EVENT } from "../services/api/config";
 import { auth } from "../utils/auth";
 import {
   createFleetSocket,
@@ -43,24 +43,62 @@ export default function FleetBackendBootstrap() {
     }
 
     const socket = createFleetSocket();
-    socket.connect();
     const syncFromRealtime = () => {
       void syncFleetWorkspaceState().catch(() => undefined);
     };
+    const fleetEventAliases: Record<string, string[]> = {
+      "dispatch.created": ["dispatch.create"],
+      "dispatch.updated": ["dispatch.update"],
+      "fleet.alert": ["notification.new"],
+    };
+    const normalizeFleetEvents = (events: string[]) => {
+      const normalized = new Set<string>();
+      events.forEach((eventName) => {
+        if (!eventName) return;
+        normalized.add(eventName);
+        (fleetEventAliases[eventName] || []).forEach((alias) => normalized.add(alias));
+      });
+      return Array.from(normalized);
+    };
 
-    const syncEvents = [
+    const defaultSyncEvents = normalizeFleetEvents([
       "dispatch.created",
       "dispatch.updated",
       "dispatch.completed",
       "fleet.alert",
       "notification.new",
-    ];
+    ]);
+    let syncEvents = [...defaultSyncEvents];
+    let cancelled = false;
 
-    syncEvents.forEach((eventName) => {
-      socket.on(eventName, syncFromRealtime);
-    });
+    const bootstrapRealtime = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/compat/realtime/events`);
+        if (response.ok) {
+          const payload = await response.json();
+          const data = (payload?.data || payload) as { fleet?: { server?: Record<string, string> } };
+          const backendEvents = Object.values(data?.fleet?.server || {}).filter(
+            (value): value is string => typeof value === "string" && value.length > 0,
+          );
+          if (backendEvents.length > 0) {
+            syncEvents = normalizeFleetEvents([...defaultSyncEvents, ...backendEvents]);
+          }
+        }
+      } catch {
+        // Fallback to default event list.
+      }
+
+      if (cancelled) return;
+      syncEvents.forEach((eventName) => {
+        socket.on(eventName, syncFromRealtime);
+      });
+      socket.connect();
+    };
+
+    void bootstrapRealtime();
 
     return () => {
+      cancelled = true;
       syncEvents.forEach((eventName) => {
         socket.off(eventName, syncFromRealtime);
       });

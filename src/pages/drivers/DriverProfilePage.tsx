@@ -26,47 +26,52 @@ interface DriverProfile {
 export default function DriverProfilePage() {
   const { driverId } = useParams();
   const [driver, setDriver] = React.useState<DriverProfile | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [loadError, setLoadError] = React.useState<string | null>(null);
   const [isEditing, setIsEditing] = React.useState(false);
   const [editForm, setEditForm] = React.useState<Partial<DriverProfile>>({});
+  const backendMode = isFleetBackendEnabled();
 
   React.useEffect(() => {
     const load = async () => {
-      if (isFleetBackendEnabled()) {
-        try {
-          await refreshFleetWorkspaceState();
-        } catch (error) {
-          console.warn("Fleet backend driver profile sync failed. Using cached/local data.", error);
-        }
+      setLoadError(null);
+      setLoading(true);
+      if (!backendMode) {
+        setDriver(null);
+        setEditForm({});
+        setLoadError("Backend session required. Sign in to access driver profiles.");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        await refreshFleetWorkspaceState();
+      } catch (error) {
+        console.warn("Fleet backend driver profile sync failed.", error);
+        setLoadError("Failed to refresh driver profile from backend.");
       }
 
       const storedDrivers = getCachedFleetDrivers() as DriverProfile[];
-      const foundDriver = storedDrivers.find((d: DriverProfile) => d.id.toString() === driverId);
+      const foundDriver = storedDrivers.find(
+        (d: DriverProfile) =>
+          d.id.toString() === driverId || (d.backendId && d.backendId.toString() === driverId),
+      );
 
       if (foundDriver) {
         setDriver(foundDriver);
         setEditForm(foundDriver);
+        setLoading(false);
         return;
       }
 
-      const demoDriver: DriverProfile = {
-        id: driverId || "",
-        name: "John Doe",
-        email: "john.doe@example.com",
-        phone: "+256 700 000 001",
-        status: "active",
-        trips: 142,
-        rating: 4.8,
-        earnings: "UGX 2.4M",
-        license: "DL-123456",
-        expiry: "2025-12-31",
-        address: "Kampala, Uganda"
-      };
-      setDriver(demoDriver);
-      setEditForm(demoDriver);
+      setDriver(null);
+      setEditForm({});
+      setLoadError("Driver record was not found in backend-synced fleet data.");
+      setLoading(false);
     };
 
     void load();
-  }, [driverId]);
+  }, [backendMode, driverId]);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -82,34 +87,36 @@ export default function DriverProfilePage() {
     const currentDriver = driver;
     if (!currentDriver) return;
 
-    if (isFleetBackendEnabled() && currentDriver.backendId) {
-      try {
-        await patchFleetDriver(currentDriver.backendId, {
-          fullName: editForm.name,
-          email: editForm.email,
-          phone: editForm.phone,
-          city: editForm.address,
-          status: editForm.status as "invited" | "active" | "suspended" | undefined,
-        });
-      } catch (error) {
-        console.warn("Fleet backend driver update failed. Falling back to local update.", error);
-      }
+    if (!backendMode) {
+      toastManager.show("Backend session required to update driver profile.", "error");
+      return;
     }
 
-    const storedDrivers = getCachedFleetDrivers() as DriverProfile[];
-    const driverIndex = storedDrivers.findIndex((d: DriverProfile) => d.id.toString() === driverId);
-    if (driverIndex >= 0) {
-      storedDrivers[driverIndex] = { ...storedDrivers[driverIndex], ...(editForm as DriverProfile) };
-    } else {
-      storedDrivers.push(editForm as DriverProfile);
+    if (!currentDriver.backendId) {
+      toastManager.show("Unable to resolve backend driver record for this page.", "error");
+      return;
     }
-    localStorage.setItem("drivers", JSON.stringify(storedDrivers));
+
+    try {
+      await patchFleetDriver(currentDriver.backendId, {
+        fullName: editForm.name,
+        email: editForm.email,
+        phone: editForm.phone,
+        city: editForm.address,
+        status: editForm.status as "invited" | "active" | "suspended" | undefined,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Fleet backend driver update failed.";
+      toastManager.show(message, "error");
+      return;
+    }
     setDriver(editForm as DriverProfile);
     setIsEditing(false);
     toastManager.show("Driver profile updated successfully!", "success");
   };
 
-  if (!driver) return <div className="p-6">Loading...</div>;
+  if (loading) return <div className="p-6">Loading...</div>;
+  if (!driver) return <div className="p-6 text-sm text-red-600">{loadError || "Driver not found."}</div>;
 
   return (
     <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50">

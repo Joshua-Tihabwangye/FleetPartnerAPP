@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { GoogleMap, useJsApiLoader, OverlayView, Circle } from "@react-google-maps/api";
-import { isFleetBackendEnabled } from "../../services/api/fleetApi";
+import { isFleetBackendEnabled, refreshFleetWorkspaceState } from "../../services/api/fleetApi";
 
 // Types from localStorage (augmented)
 interface StoredVehicle {
@@ -130,16 +130,28 @@ export default function FleetMapPage() {
     libraries: ["places"],
   });
 
-  // Load vehicles from localStorage on mount
+  // Load vehicles from backend/cache on mount
   useEffect(() => {
-    const storedVehicles = JSON.parse(localStorage.getItem("vehicles") || "[]") as StoredVehicle[];
-    if (storedVehicles.length > 0) {
-      setVehicles(transformVehicles(storedVehicles));
-    } else {
+    const load = async () => {
+      if (isFleetBackendEnabled()) {
+        try {
+          await refreshFleetWorkspaceState();
+        } catch (error) {
+          console.warn("Fleet backend map sync failed. Using cached vehicles.", error);
+        }
+      }
+
+      const storedVehicles = JSON.parse(localStorage.getItem("vehicles") || "[]") as StoredVehicle[];
+      if (storedVehicles.length > 0) {
+        setVehicles(transformVehicles(storedVehicles));
+        return;
+      }
+
       if (isFleetBackendEnabled()) {
         setVehicles([]);
         return;
       }
+
       // Offline/local showcase fallback data
       const mock: Vehicle[] = [
         { id: 1, plate: "UAA 123A", model: "Tesla Model 3", status: "available", opsStatus: "ready", driver: "John Doe", soc: 78, lastSeen: "20s ago", zone: "Kampala Central", location: { lat: 0.3136, lng: 32.5811 }, estimatedRange: 280, displayStatus: "active" },
@@ -148,7 +160,9 @@ export default function FleetMapPage() {
         { id: 4, plate: "UAA 126D", model: "Tesla Model Y", status: "maintenance", opsStatus: "unavailable", driver: "Sarah Wilson", soc: 0, lastSeen: "2d ago", zone: "Service Center", location: { lat: 0.3056, lng: 32.5681 }, estimatedRange: 0, displayStatus: "maintenance" },
       ];
       setVehicles(mock);
-    }
+    };
+
+    void load();
   }, []);
 
   const alerts = generateAlerts(vehicles);

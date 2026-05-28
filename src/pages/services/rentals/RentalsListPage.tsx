@@ -1,8 +1,15 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import {
+  getCachedFleetRentals,
+  isFleetBackendEnabled,
+  listFleetRentals,
+  refreshFleetWorkspaceState,
+} from "../../../services/api/fleetApi";
 
 interface Rental {
-  id: number;
+  id: number | string;
+  backendId?: string;
   bookingId: string;
   customerName: string;
   vehicleName?: string;
@@ -16,21 +23,48 @@ export default function RentalsListPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [rentals, setRentals] = useState<Rental[]>([]);
 
-  // Load rentals from localStorage
+  // Load rentals from backend/cache
   React.useEffect(() => {
-    const storedRentals = JSON.parse(localStorage.getItem("rentals") || "[]");
-    if (storedRentals.length === 0) {
-      // Initialize with mock data if empty
-      const mockRentals: Rental[] = [
-        { id: 1, bookingId: "RNT-001", customerName: "John Customer", vehicleName: "Tesla Model 3", vehiclePlate: "UAA 123A", status: "active", startDate: "2024-01-15", endDate: "2024-01-20" },
-        { id: 2, bookingId: "RNT-002", customerName: "Jane Client", vehicleName: "Nissan Leaf", vehiclePlate: "UAA 124B", status: "upcoming", startDate: "2024-01-18", endDate: "2024-01-25" },
-        { id: 3, bookingId: "RNT-003", customerName: "Mike User", vehicleName: "BYD E6", vehiclePlate: "UAA 125C", status: "completed", startDate: "2024-01-10", endDate: "2024-01-14" }
-      ];
-      localStorage.setItem("rentals", JSON.stringify(mockRentals));
-      setRentals(mockRentals);
-    } else {
-      setRentals(storedRentals);
-    }
+    const load = async () => {
+      if (isFleetBackendEnabled()) {
+        try {
+          await refreshFleetWorkspaceState();
+          const backendRentals = await listFleetRentals();
+          const mapped: Rental[] = backendRentals.map((item, index) => ({
+            id: index + 1,
+            backendId: item.id,
+            bookingId: item.id,
+            customerName: item.customerName,
+            vehicleName: item.assetId || "Fleet vehicle",
+            vehiclePlate: item.assetId || "-",
+            status: item.status,
+            startDate: new Date(item.scheduledAt).toISOString().slice(0, 10),
+            endDate: new Date(item.scheduledAt).toISOString().slice(0, 10),
+          }));
+          setRentals(mapped);
+          return;
+        } catch (error) {
+          console.warn("Fleet backend rentals fetch failed. Using cached rentals.", error);
+          setRentals(getCachedFleetRentals() as Rental[]);
+          return;
+        }
+      }
+
+      const storedRentals = JSON.parse(localStorage.getItem("rentals") || "[]");
+      if (storedRentals.length === 0) {
+        // Initialize with mock data if empty
+        const mockRentals: Rental[] = [
+          { id: 1, bookingId: "RNT-001", customerName: "John Customer", vehicleName: "Tesla Model 3", vehiclePlate: "UAA 123A", status: "active", startDate: "2024-01-15", endDate: "2024-01-20" },
+          { id: 2, bookingId: "RNT-002", customerName: "Jane Client", vehicleName: "Nissan Leaf", vehiclePlate: "UAA 124B", status: "upcoming", startDate: "2024-01-18", endDate: "2024-01-25" },
+          { id: 3, bookingId: "RNT-003", customerName: "Mike User", vehicleName: "BYD E6", vehiclePlate: "UAA 125C", status: "completed", startDate: "2024-01-10", endDate: "2024-01-14" }
+        ];
+        localStorage.setItem("rentals", JSON.stringify(mockRentals));
+        setRentals(mockRentals);
+      } else {
+        setRentals(storedRentals);
+      }
+    };
+    void load();
   }, []);
 
   const filteredRentals = rentals.filter(rental => {
@@ -93,7 +127,7 @@ export default function RentalsListPage() {
           filteredRentals.map((rental) => (
             <Link
               key={rental.id}
-              to={`/rentals/${rental.id}`}
+              to={`/rentals/${rental.backendId || rental.id}`}
               className="bg-white rounded-xl border border-slate-200 p-6 hover:border-ev-green hover:shadow-md transition-all"
             >
               <div className="flex items-start justify-between mb-4">
