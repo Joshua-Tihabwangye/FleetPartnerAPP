@@ -1,30 +1,23 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { getFleetRoles, patchFleetRoles } from "../../services/api/fleetApi";
 import { toastManager } from "../../utils/toastManager";
 
-interface RolePermissions {
-  dashboard: boolean;
-  vehicles: { view: boolean; create: boolean; edit: boolean; delete: boolean };
-  drivers: { view: boolean; create: boolean; edit: boolean; delete: boolean };
-  trips: { view: boolean; create: boolean; edit: boolean; delete: boolean };
-  earnings: { view: boolean; export: boolean; manage: boolean };
-  settings: { view: boolean; edit: boolean };
-  reports: { view: boolean; export: boolean };
-}
+type RolePermissions = Record<string, boolean | Record<string, boolean>>;
 
-interface Role {
-  id: number;
+type Role = {
+  id: string;
   name: string;
   description: string;
   color: string;
   isSystem: boolean;
   permissions: RolePermissions;
-}
+};
 
 const DEFAULT_ROLES: Role[] = [
   {
-    id: 1,
+    id: "fleet-owner",
     name: "Fleet Owner",
-    description: "Full access to all features and settings",
+    description: "Full access",
     color: "emerald",
     isSystem: true,
     permissions: {
@@ -34,29 +27,13 @@ const DEFAULT_ROLES: Role[] = [
       trips: { view: true, create: true, edit: true, delete: true },
       earnings: { view: true, export: true, manage: true },
       settings: { view: true, edit: true },
-      reports: { view: true, export: true }
-    }
+      reports: { view: true, export: true },
+    },
   },
   {
-    id: 2,
-    name: "Manager",
-    description: "Manage operations and staff",
-    color: "blue",
-    isSystem: true,
-    permissions: {
-      dashboard: true,
-      vehicles: { view: true, create: true, edit: true, delete: false },
-      drivers: { view: true, create: true, edit: true, delete: false },
-      trips: { view: true, create: true, edit: true, delete: false },
-      earnings: { view: true, export: true, manage: false },
-      settings: { view: true, edit: false },
-      reports: { view: true, export: true }
-    }
-  },
-  {
-    id: 3,
+    id: "dispatcher",
     name: "Dispatcher",
-    description: "Handle trip assignments and tracking",
+    description: "Dispatch operations",
     color: "purple",
     isSystem: true,
     permissions: {
@@ -66,135 +43,111 @@ const DEFAULT_ROLES: Role[] = [
       trips: { view: true, create: true, edit: true, delete: false },
       earnings: { view: false, export: false, manage: false },
       settings: { view: false, edit: false },
-      reports: { view: false, export: false }
-    }
+      reports: { view: false, export: false },
+    },
   },
-  {
-    id: 4,
-    name: "Finance",
-    description: "Manage financial operations",
-    color: "amber",
-    isSystem: true,
-    permissions: {
-      dashboard: true,
-      vehicles: { view: true, create: false, edit: false, delete: false },
-      drivers: { view: true, create: false, edit: false, delete: false },
-      trips: { view: true, create: false, edit: false, delete: false },
-      earnings: { view: true, export: true, manage: true },
-      settings: { view: false, edit: false },
-      reports: { view: true, export: true }
-    }
-  },
-  {
-    id: 5,
-    name: "Driver",
-    description: "Basic driver access",
-    color: "slate",
-    isSystem: true,
-    permissions: {
-      dashboard: false,
-      vehicles: { view: true, create: false, edit: false, delete: false },
-      drivers: { view: false, create: false, edit: false, delete: false },
-      trips: { view: true, create: false, edit: false, delete: false },
-      earnings: { view: true, export: false, manage: false },
-      settings: { view: false, edit: false },
-      reports: { view: false, export: false }
-    }
-  }
 ];
 
-const PERMISSION_LABELS = {
+const PERMISSION_LABELS: Record<string, string> = {
   dashboard: "Dashboard Access",
   vehicles: "Vehicles",
   drivers: "Drivers",
   trips: "Trips & Dispatch",
-  earnings: "Earnings & Payouts",
+  earnings: "Earnings",
   settings: "Settings",
-  reports: "Reports"
+  reports: "Reports",
 };
+
+function normalizeRoles(rawRoles: Array<Record<string, unknown>>): Role[] {
+  return rawRoles.map((entry, index) => ({
+    id: String(entry.id ?? `role-${index + 1}`),
+    name: String(entry.name ?? "Custom Role"),
+    description: String(entry.description ?? ""),
+    color: String(entry.color ?? "slate"),
+    isSystem: Boolean(entry.isSystem),
+    permissions: (entry.permissions && typeof entry.permissions === "object" && !Array.isArray(entry.permissions)
+      ? entry.permissions
+      : {}) as RolePermissions,
+  }));
+}
 
 export default function RolesAndPermissionsPage() {
   const [roles, setRoles] = useState<Role[]>([]);
-  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+  const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newRoleName, setNewRoleName] = useState("");
   const [newRoleDescription, setNewRoleDescription] = useState("");
-  const [editingRole, setEditingRole] = useState<{ name: string; description: string } | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("roles") || "null");
-    if (stored) {
-      setRoles(stored);
-    } else {
+  const selectedRole = useMemo(() => roles.find((entry) => entry.id === selectedRoleId) || null, [roles, selectedRoleId]);
+
+  const loadRoles = async () => {
+    setLoading(true);
+    try {
+      const response = await getFleetRoles();
+      const fromBackend = Array.isArray(response.roles) ? normalizeRoles(response.roles) : [];
+      const rows = fromBackend.length > 0 ? fromBackend : DEFAULT_ROLES;
+      setRoles(rows);
+      setSelectedRoleId((prev) => prev ?? rows[0]?.id ?? null);
+    } catch (error) {
+      console.error("Failed to load roles", error);
       setRoles(DEFAULT_ROLES);
-      localStorage.setItem("roles", JSON.stringify(DEFAULT_ROLES));
+      setSelectedRoleId(DEFAULT_ROLES[0]?.id ?? null);
+      toastManager.show("Failed to load roles from backend", "error");
+    } finally {
+      setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    if (roles.length > 0 && !selectedRole) {
-      setSelectedRole(roles[0]);
-    }
-  }, [roles, selectedRole]);
-
-  useEffect(() => {
-    if (selectedRole) {
-      setEditingRole({
-        name: selectedRole.name,
-        description: selectedRole.description
-      });
-    }
-  }, [selectedRole]);
-
-  const handlePermissionToggle = (category: keyof typeof PERMISSION_LABELS, permission: string | null) => {
-    if (!selectedRole) return;
-
-    const updatedRoles = roles.map(role => {
-      if (role.id === selectedRole.id) {
-        const newPermissions = { ...role.permissions };
-
-        if (category === 'dashboard') {
-          // Explicitly handle the boolean case
-          newPermissions.dashboard = !newPermissions.dashboard;
-        } else if (permission) {
-          // Handle object permissions (all non-dashboard permissions)
-          // We know if category is not dashboard, it's one of the objects
-          const currentSection = newPermissions[category];
-
-          // Type guard to ensure we are working with an object property and not the boolean dashboard
-          if (typeof currentSection !== 'boolean' && currentSection && typeof currentSection === 'object') {
-            // Create a copy of the section to avoid mutating state directly
-            const updatedSection = { ...currentSection } as Record<string, boolean>;
-
-            // Update the specific permission
-            if (permission in updatedSection) {
-              updatedSection[permission] = !updatedSection[permission];
-
-              // Assign back to newPermissions. We cast to any here ONLY for the assignment 
-              // because TS has trouble verifying the intersection type of the key and value 
-              // in this specific union structure, but we've verified the types above.
-              (newPermissions as any)[category] = updatedSection;
-            }
-          }
-        }
-        return { ...role, permissions: newPermissions };
-      }
-      return role;
-    });
-
-    setRoles(updatedRoles);
-    setSelectedRole(updatedRoles.find(r => r.id === selectedRole.id) || null);
-    localStorage.setItem("roles", JSON.stringify(updatedRoles));
   };
 
-  const handleAddRole = () => {
+  useEffect(() => {
+    void loadRoles();
+  }, []);
+
+  const persistRoles = async (nextRoles: Role[], successMessage: string) => {
+    setSaving(true);
+    try {
+      await patchFleetRoles({ roles: nextRoles });
+      setRoles(nextRoles);
+      toastManager.show(successMessage, "success");
+    } catch (error) {
+      console.error("Failed to save roles", error);
+      toastManager.show("Failed to save role changes", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const togglePermission = async (category: string, permission: string | null) => {
+    if (!selectedRole) return;
+    const nextRoles = roles.map((role) => {
+      if (role.id !== selectedRole.id) return role;
+      const permissions = { ...role.permissions };
+      const section = permissions[category];
+
+      if (typeof section === "boolean") {
+        permissions[category] = !section;
+      } else if (section && permission) {
+        permissions[category] = {
+          ...section,
+          [permission]: !Boolean((section as Record<string, boolean>)[permission]),
+        };
+      }
+
+      return { ...role, permissions };
+    });
+
+    await persistRoles(nextRoles, "Permissions updated");
+  };
+
+  const handleAddRole = async () => {
     if (!newRoleName.trim()) {
       toastManager.show("Please enter a role name", "error");
       return;
     }
 
-    const newRole = {
-      id: Date.now(),
+    const newRole: Role = {
+      id: `custom-${Date.now()}`,
       name: newRoleName.trim(),
       description: newRoleDescription.trim() || "Custom role",
       color: "cyan",
@@ -206,303 +159,141 @@ export default function RolesAndPermissionsPage() {
         trips: { view: false, create: false, edit: false, delete: false },
         earnings: { view: false, export: false, manage: false },
         settings: { view: false, edit: false },
-        reports: { view: false, export: false }
-      }
+        reports: { view: false, export: false },
+      },
     };
 
-    const updatedRoles = [...roles, newRole];
-    setRoles(updatedRoles);
-    localStorage.setItem("roles", JSON.stringify(updatedRoles));
-    setSelectedRole(newRole);
+    const nextRoles = [...roles, newRole];
+    await persistRoles(nextRoles, `Role "${newRole.name}" created`);
+    setSelectedRoleId(newRole.id);
     setShowAddModal(false);
     setNewRoleName("");
     setNewRoleDescription("");
-    toastManager.show(`Role "${newRole.name}" created successfully`, "success");
   };
 
-  const handleDeleteRole = (roleId: number) => {
-    const role = roles.find(r => r.id === roleId);
-    if (!role) return;
-    
-    if (role.isSystem) {
-      toastManager.show("Cannot delete system roles", "error");
+  const handleDeleteRole = async (roleId: string) => {
+    const role = roles.find((entry) => entry.id === roleId);
+    if (!role || role.isSystem) {
+      toastManager.show("Cannot delete system role", "error");
       return;
     }
 
-    const updatedRoles = roles.filter(r => r.id !== roleId);
-    setRoles(updatedRoles);
-    localStorage.setItem("roles", JSON.stringify(updatedRoles));
-    if (selectedRole?.id === roleId) {
-      setSelectedRole(updatedRoles[0] || null);
+    const nextRoles = roles.filter((entry) => entry.id !== roleId);
+    await persistRoles(nextRoles, `Role "${role.name}" deleted`);
+    if (selectedRoleId === roleId) {
+      setSelectedRoleId(nextRoles[0]?.id ?? null);
     }
-    toastManager.show(`Role "${role.name}" deleted successfully`, "success");
-  };
-
-  const getColorClasses = (color: string) => {
-    const colors: Record<string, string> = {
-      emerald: "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800",
-      blue: "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800",
-      purple: "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800",
-      amber: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800",
-      slate: "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700",
-      cyan: "bg-cyan-100 text-cyan-700 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-400 dark:border-cyan-800"
-    };
-    return colors[color] || colors.slate;
   };
 
   return (
     <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50">
       <div className="w-full">
-        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-semibold text-slate-900 mb-1">Roles & Permissions</h1>
-            <p className="text-sm text-slate-600">Manage access levels for your team members</p>
+            <p className="text-sm text-slate-600">Manage role-based access with backend-authoritative state</p>
           </div>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 rounded-lg bg-gradient-to-r from-ev-green to-emerald-600 text-white text-sm font-medium hover:opacity-90 transition shadow-sm"
-          >
+          <button onClick={() => setShowAddModal(true)} className="px-4 py-2 rounded-lg bg-gradient-to-r from-ev-green to-emerald-600 text-white text-sm font-medium hover:opacity-90 transition shadow-sm">
             + Add Custom Role
           </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Roles List */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-              <h2 className="text-sm font-semibold text-slate-900 mb-3">Available Roles</h2>
-              <div className="space-y-2">
-                {roles.map((role) => (
-                  <button
-                    key={role.id}
-                    onClick={() => setSelectedRole(role)}
-                    className={`w-full text-left p-3 rounded-lg border transition ${selectedRole?.id === role.id
-                      ? "border-ev-green bg-emerald-50"
-                      : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
-                      }`}
-                  >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${getColorClasses(role.color)}`}>
-                            {role.name}
-                          </span>
-                          {role.isSystem && (
-                            <span className="text-[10px] text-slate-400">System</span>
-                          )}
-                        </div>
+        {loading ? (
+          <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-600">Loading roles...</div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                <h2 className="text-sm font-semibold text-slate-900 mb-3">Available Roles</h2>
+                <div className="space-y-2">
+                  {roles.map((role) => (
+                    <button
+                      key={role.id}
+                      onClick={() => setSelectedRoleId(role.id)}
+                      className={`w-full text-left p-3 rounded-lg border transition ${selectedRoleId === role.id ? "border-ev-green bg-emerald-50" : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"}`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-semibold text-slate-900">{role.name}</span>
                         {!role.isSystem && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (window.confirm(`Are you sure you want to delete the "${role.name}" role?`)) {
-                                handleDeleteRole(role.id);
-                              }
+                              void handleDeleteRole(role.id);
                             }}
-                            className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                            title="Delete role"
+                            className="text-red-500 text-xs"
                           >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
+                            Delete
                           </button>
                         )}
                       </div>
-                    <p className="text-[11px] text-slate-500 mt-1">{role.description}</p>
-                  </button>
-                ))}
+                      <p className="text-[11px] text-slate-500 mt-1">{role.description}</p>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Permissions Editor */}
-          <div className="lg:col-span-2">
-            {selectedRole && (
-              <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex-1">
-                    {editingRole && !selectedRole.isSystem ? (
-                      <div className="space-y-2">
-                        <input
-                          type="text"
-                          value={editingRole.name}
-                          onChange={(e) => setEditingRole({ ...editingRole, name: e.target.value })}
-                          className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-lg font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-ev-green"
-                          placeholder="Role name"
-                        />
-                        <input
-                          type="text"
-                          value={editingRole.description}
-                          onChange={(e) => setEditingRole({ ...editingRole, description: e.target.value })}
-                          className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm text-slate-500 focus:outline-none focus:ring-2 focus:ring-ev-green"
-                          placeholder="Role description"
-                        />
-                      </div>
-                    ) : (
-                      <div>
-                        <h2 className="text-lg font-semibold text-slate-900">{selectedRole.name}</h2>
-                        <p className="text-sm text-slate-500">{selectedRole.description}</p>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 ml-4">
-                    {selectedRole.isSystem && (
-                      <span className="px-2 py-1 rounded bg-amber-100 text-amber-700 text-xs font-medium">
-                        🔒 System Role
-                      </span>
-                    )}
-                    {!selectedRole.isSystem && (
-                      <button
-                        onClick={() => {
-                          if (editingRole) {
-                            const updatedRoles = roles.map(r => 
-                              r.id === selectedRole.id 
-                                ? { ...r, name: editingRole.name, description: editingRole.description }
-                                : r
-                            );
-                            setRoles(updatedRoles);
-                            setSelectedRole(updatedRoles.find(r => r.id === selectedRole.id) || null);
-                            localStorage.setItem("roles", JSON.stringify(updatedRoles));
-                            toastManager.show("Role updated successfully", "success");
-                          }
-                        }}
-                        className="px-3 py-1.5 rounded-lg bg-blue-500 text-white text-xs font-medium hover:bg-blue-600 transition"
-                      >
-                        Save Name
-                      </button>
-                    )}
-                  </div>
-                </div>
+            <div className="lg:col-span-2">
+              {selectedRole && (
+                <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+                  <h2 className="text-lg font-semibold text-slate-900">{selectedRole.name}</h2>
+                  <p className="text-sm text-slate-500 mb-4">{selectedRole.description}</p>
 
-                <div className="space-y-4">
-                  {Object.entries(PERMISSION_LABELS).map(([k, label]) => {
-                    const key = k as keyof RolePermissions;
-                    const perm = selectedRole.permissions[key];
-                    const isBoolean = typeof perm === "boolean";
-
-                    return (
-                      <div key={key} className="border border-slate-200 rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-slate-900">{label}</span>
-                          {isBoolean && (
-                            <label className="relative inline-flex items-center cursor-pointer">
+                  <div className="space-y-4">
+                    {Object.entries(PERMISSION_LABELS).map(([category, label]) => {
+                      const section = selectedRole.permissions[category];
+                      const isBoolean = typeof section === "boolean";
+                      return (
+                        <div key={category} className="border border-slate-200 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-slate-900">{label}</span>
+                            {isBoolean && (
                               <input
                                 type="checkbox"
-                                checked={perm as boolean}
-                                onChange={() => handlePermissionToggle(key, null)}
-                                className="sr-only peer"
+                                checked={Boolean(section)}
+                                onChange={() => void togglePermission(category, null)}
+                                disabled={saving}
+                                className="w-4 h-4"
                               />
-                              <div className="w-9 h-5 rounded-full peer peer-checked:bg-ev-green bg-slate-300 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
-                            </label>
+                            )}
+                          </div>
+                          {!isBoolean && section && (
+                            <div className="flex flex-wrap gap-2">
+                              {Object.entries(section as Record<string, boolean>).map(([permission, value]) => (
+                                <label key={permission} className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs cursor-pointer ${value ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
+                                  <input
+                                    type="checkbox"
+                                    checked={value}
+                                    disabled={saving}
+                                    onChange={() => void togglePermission(category, permission)}
+                                    className="w-3 h-3"
+                                  />
+                                  {permission}
+                                </label>
+                              ))}
+                            </div>
                           )}
                         </div>
-                        {!isBoolean && (
-                          <div className="flex flex-wrap gap-2">
-                            {Object.entries(perm as Record<string, boolean>).map(([subKey, value]) => (
-                              <label
-                                key={subKey}
-                                className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs cursor-pointer transition ${value ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400" : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
-                                  } hover:opacity-80`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={value}
-                                  onChange={() => handlePermissionToggle(key, subKey)}
-                                  className="w-3 h-3 rounded text-ev-green focus:ring-ev-green"
-                                />
-                                {subKey.charAt(0).toUpperCase() + subKey.slice(1)}
-                              </label>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-
-                <div className="mt-6 flex justify-end">
-                  <button
-                    onClick={() => {
-                      localStorage.setItem("roles", JSON.stringify(roles));
-                      toastManager.show("Permissions saved!", "success");
-                    }}
-                    className="px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark"
-                  >
-                    Save Changes
-                  </button>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Add Role Modal */}
         {showAddModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 w-full max-w-sm shadow-xl">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Add Custom Role</h2>
-                <button
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setNewRoleName("");
-                    setNewRoleDescription("");
-                  }}
-                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                >
-                  ×
-                </button>
-              </div>
-              <div className="space-y-4">
-                <label className="block">
-                  <span className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1 block">Role Name *</span>
-                  <input
-                    type="text"
-                    value={newRoleName}
-                    onChange={(e) => setNewRoleName(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-ev-green focus:outline-none"
-                    placeholder="e.g., Supervisor"
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        handleAddRole();
-                      }
-                    }}
-                  />
-                </label>
-                <label className="block">
-                  <span className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-1 block">Description</span>
-                  <input
-                    type="text"
-                    value={newRoleDescription}
-                    onChange={(e) => setNewRoleDescription(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-ev-green focus:outline-none"
-                    placeholder="e.g., Manages daily operations"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        handleAddRole();
-                      }
-                    }}
-                  />
-                </label>
+            <div className="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl">
+              <h2 className="text-lg font-semibold text-slate-900 mb-4">Add Custom Role</h2>
+              <div className="space-y-3">
+                <input type="text" value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-300" placeholder="Role Name" />
+                <input type="text" value={newRoleDescription} onChange={(e) => setNewRoleDescription(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-300" placeholder="Description" />
               </div>
               <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setNewRoleName("");
-                    setNewRoleDescription("");
-                  }}
-                  className="flex-1 px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAddRole}
-                  className="flex-1 px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark"
-                >
-                  Create Role
-                </button>
+                <button onClick={() => setShowAddModal(false)} className="flex-1 px-4 py-2 rounded-lg border border-slate-300 text-sm">Cancel</button>
+                <button onClick={() => void handleAddRole()} disabled={saving} className="flex-1 px-4 py-2 rounded-lg bg-ev-green text-white text-sm disabled:opacity-60">Create</button>
               </div>
             </div>
           </div>
