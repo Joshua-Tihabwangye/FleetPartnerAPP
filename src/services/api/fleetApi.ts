@@ -11,14 +11,19 @@ type FleetProfileResponse = {
   companyName: string;
   contactEmail: string;
   contactPhone: string;
+  registrationNumber?: string;
+  taxId?: string;
 };
 
 type FleetBranchResponse = {
   id: string;
   name: string;
   address?: string;
+  city?: string;
+  country?: string;
   phone?: string;
   managerName?: string;
+  operatingHours?: Record<string, unknown>;
 };
 
 type FleetDriverResponse = {
@@ -487,6 +492,71 @@ export async function createFleetDispatch(input: FleetCreateDispatchInput) {
   });
   await syncFleetWorkspaceState();
   return created;
+}
+
+export type FleetUpsertBranchInput = {
+  name: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  phone?: string;
+  managerName?: string;
+  operatingHours?: Record<string, unknown>;
+};
+
+export type FleetPatchBranchInput = Partial<FleetUpsertBranchInput>;
+
+export async function getFleetProfile() {
+  return request<FleetProfileResponse>("/fleet/me/profile", { method: "GET" });
+}
+
+export async function patchFleetProfile(input: Partial<{
+  companyName: string;
+  contactEmail: string;
+  contactPhone: string;
+  registrationNumber: string;
+  taxId: string;
+}>) {
+  const updated = await request<FleetProfileResponse>("/fleet/me/profile", {
+    method: "PATCH",
+    body: input,
+  });
+  await syncFleetWorkspaceState();
+  return updated;
+}
+
+export async function listFleetBranches() {
+  return request<FleetBranchResponse[]>("/fleet/me/branches", { method: "GET" });
+}
+
+export async function getFleetBranch(branchId: string) {
+  return request<FleetBranchResponse>(`/fleet/me/branches/${branchId}`, { method: "GET" });
+}
+
+export async function createFleetBranch(input: FleetUpsertBranchInput) {
+  const created = await request<FleetBranchResponse>("/fleet/me/branches", {
+    method: "POST",
+    body: input,
+  });
+  await syncFleetWorkspaceState();
+  return created;
+}
+
+export async function patchFleetBranch(branchId: string, patch: FleetPatchBranchInput) {
+  const updated = await request<FleetBranchResponse>(`/fleet/me/branches/${branchId}`, {
+    method: "PATCH",
+    body: patch,
+  });
+  await syncFleetWorkspaceState();
+  return updated;
+}
+
+export async function deleteFleetBranch(branchId: string) {
+  const deleted = await request<{ deleted: boolean }>(`/fleet/me/branches/${branchId}`, {
+    method: "DELETE",
+  });
+  await syncFleetWorkspaceState();
+  return deleted;
 }
 
 export async function listFleetRentals() {

@@ -1,106 +1,166 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import {
+  createFleetBranch,
+  deleteFleetBranch,
+  listFleetBranches,
+  patchFleetBranch,
+  type FleetUpsertBranchInput,
+} from "../../services/api/fleetApi";
 import { toastManager } from "../../utils/toastManager";
 
-interface Branch {
-  id: number;
+type Branch = {
+  id: string;
   name: string;
   address: string;
+  city: string;
+  country: string;
   phone: string;
-  manager: string;
-  email: string;
-  isActive: boolean;
+  managerName: string;
+};
+
+const EMPTY_FORM: FleetUpsertBranchInput = {
+  name: "",
+  address: "",
+  city: "",
+  country: "",
+  phone: "",
+  managerName: "",
+};
+
+function toBranch(item: any): Branch {
+  return {
+    id: String(item.id),
+    name: item.name ?? "Unnamed branch",
+    address: item.address ?? "",
+    city: item.city ?? "",
+    country: item.country ?? "",
+    phone: item.phone ?? "",
+    managerName: item.managerName ?? "",
+  };
 }
 
 export default function BranchesSettingsPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [branches, setBranches] = useState<Branch[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
-  const [formData, setFormData] = useState<Omit<Branch, "id">>({
-    name: "",
-    address: "",
-    phone: "",
-    manager: "",
-    email: "",
-    isActive: true
-  });
+  const [formData, setFormData] = useState<FleetUpsertBranchInput>(EMPTY_FORM);
+
+  const editBranchId = searchParams.get("edit");
+
+  const loadBranches = async () => {
+    setLoading(true);
+    try {
+      const response = await listFleetBranches();
+      setBranches(response.map(toBranch));
+    } catch (error) {
+      console.error("Failed to load fleet branches", error);
+      toastManager.show("Failed to load branches from backend", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("branches") || "[]");
-    if (stored.length === 0) {
-      // Default branches
-      const defaultBranches = [
-        { id: 1, name: "Headquarters", address: "Plot 45, Kampala Road, Kampala", phone: "+256 700 123 456", manager: "John Mukasa", email: "hq@evzone.com", isActive: true },
-        { id: 2, name: "Entebbe Branch", address: "123 Airport Road, Entebbe", phone: "+256 700 234 567", manager: "Sarah Namatovu", email: "entebbe@evzone.com", isActive: true },
-        { id: 3, name: "Jinja Branch", address: "56 Nile Avenue, Jinja", phone: "+256 700 345 678", manager: "Peter Ochieng", email: "jinja@evzone.com", isActive: false }
-      ];
-      setBranches(defaultBranches);
-      localStorage.setItem("branches", JSON.stringify(defaultBranches));
-    } else {
-      setBranches(stored);
-    }
+    void loadBranches();
   }, []);
 
-  const handleSave = () => {
-    if (!formData.name || !formData.address) {
-      toastManager.show("Please fill in required fields", "error");
+  useEffect(() => {
+    if (!editBranchId || branches.length === 0) return;
+    const branch = branches.find((entry) => entry.id === editBranchId);
+    if (!branch) return;
+    setEditingBranch(branch);
+    setFormData({
+      name: branch.name,
+      address: branch.address,
+      city: branch.city,
+      country: branch.country,
+      phone: branch.phone,
+      managerName: branch.managerName,
+    });
+    setShowAddModal(true);
+  }, [editBranchId, branches]);
+
+  const sortedBranches = useMemo(
+    () => [...branches].sort((a, b) => a.name.localeCompare(b.name)),
+    [branches],
+  );
+
+  const closeModal = () => {
+    setShowAddModal(false);
+    setEditingBranch(null);
+    setFormData(EMPTY_FORM);
+    if (searchParams.has("edit")) {
+      setSearchParams((prev) => {
+        prev.delete("edit");
+        return prev;
+      });
+    }
+  };
+
+  const handleSave = async () => {
+    if (!formData.name?.trim()) {
+      toastManager.show("Branch name is required", "error");
       return;
     }
 
-    let updatedBranches;
-    if (editingBranch) {
-      updatedBranches = branches.map(b =>
-        b.id === editingBranch.id ? { ...formData, id: b.id } : b
-      );
-      toastManager.show("Branch updated successfully", "success");
-    } else {
-      const newBranch = { ...formData, id: Date.now() };
-      updatedBranches = [...branches, newBranch];
-      toastManager.show("Branch added successfully", "success");
+    setSaving(true);
+    try {
+      if (editingBranch) {
+        await patchFleetBranch(editingBranch.id, {
+          ...formData,
+          name: formData.name.trim(),
+        });
+        toastManager.show("Branch updated", "success");
+      } else {
+        await createFleetBranch({
+          ...formData,
+          name: formData.name.trim(),
+        });
+        toastManager.show("Branch created", "success");
+      }
+      closeModal();
+      await loadBranches();
+    } catch (error) {
+      console.error("Failed to save branch", error);
+      toastManager.show("Failed to save branch", "error");
+    } finally {
+      setSaving(false);
     }
-
-    setBranches(updatedBranches);
-    localStorage.setItem("branches", JSON.stringify(updatedBranches));
-    setShowAddModal(false);
-    setEditingBranch(null);
-    setFormData({ name: "", address: "", phone: "", manager: "", email: "", isActive: true });
   };
 
-  const handleEdit = (branch: Branch) => {
-    setEditingBranch(branch);
-    setFormData(branch);
-    setShowAddModal(true);
-  };
-
-  const handleDelete = (id: number) => {
-    const updatedBranches = branches.filter(b => b.id !== id);
-    setBranches(updatedBranches);
-    localStorage.setItem("branches", JSON.stringify(updatedBranches));
-    toastManager.show("Branch deleted", "success");
-  };
-
-  const handleToggleStatus = (id: number) => {
-    const updatedBranches = branches.map(b =>
-      b.id === id ? { ...b, isActive: !b.isActive } : b
-    );
-    setBranches(updatedBranches);
-    localStorage.setItem("branches", JSON.stringify(updatedBranches));
+  const handleDelete = async (id: string) => {
+    setDeletingId(id);
+    try {
+      await deleteFleetBranch(id);
+      setBranches((prev) => prev.filter((entry) => entry.id !== id));
+      toastManager.show("Branch deleted", "success");
+    } catch (error) {
+      console.error("Failed to delete branch", error);
+      toastManager.show("Failed to delete branch", "error");
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   return (
     <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50">
       <div className="w-full">
-        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-semibold text-slate-900 mb-1">Branches</h1>
-            <p className="text-sm text-slate-600">Manage your fleet partner branch locations</p>
+            <p className="text-sm text-slate-600">Manage your fleet branch locations from backend data</p>
           </div>
           <button
             onClick={() => {
               setEditingBranch(null);
-              setFormData({ name: "", address: "", phone: "", manager: "", email: "", isActive: true });
+              setFormData(EMPTY_FORM);
               setShowAddModal(true);
             }}
             className="px-4 py-2 rounded-lg bg-gradient-to-r from-ev-green to-emerald-600 text-white text-sm font-medium hover:opacity-90 transition shadow-sm"
@@ -109,167 +169,165 @@ export default function BranchesSettingsPage() {
           </button>
         </div>
 
-        {/* Branches Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {branches.map((branch) => (
-            <div
-              key={branch.id}
-              className={`bg-white rounded-xl border p-5 shadow-sm hover:shadow-md transition ${branch.isActive ? "border-slate-200" : "border-slate-300 opacity-60"
-                }`}
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center text-xl">
-                    🏢
+        {loading ? (
+          <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-600">Loading branches...</div>
+        ) : sortedBranches.length === 0 ? (
+          <div className="bg-white rounded-xl border border-slate-200 p-8 text-center">
+            <p className="text-slate-700 font-medium">No branches yet</p>
+            <p className="text-sm text-slate-500 mt-1">Create your first branch to get started.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {sortedBranches.map((branch) => (
+              <div key={branch.id} className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center text-xl">🏢</div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-900">{branch.name}</h3>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-slate-900">{branch.name}</h3>
-                    <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-medium ${branch.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600"
-                      }`}>
-                      {branch.isActive ? "Active" : "Inactive"}
-                    </span>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => {
+                        setEditingBranch(branch);
+                        setFormData({
+                          name: branch.name,
+                          address: branch.address,
+                          city: branch.city,
+                          country: branch.country,
+                          phone: branch.phone,
+                          managerName: branch.managerName,
+                        });
+                        setShowAddModal(true);
+                      }}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                      title="Edit"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={() => void handleDelete(branch.id)}
+                      disabled={deletingId === branch.id}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 disabled:opacity-50"
+                      title="Delete"
+                    >
+                      🗑️
+                    </button>
                   </div>
                 </div>
-                <div className="flex gap-1">
+
+                <div className="space-y-2 text-xs text-slate-600">
+                  <div className="flex items-start gap-2">
+                    <span className="text-slate-400">📍</span>
+                    <span>{branch.address || "No address"}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-400">🌍</span>
+                    <span>{[branch.city, branch.country].filter(Boolean).join(", ") || "No city/country"}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-400">📞</span>
+                    <span>{branch.phone || "No phone"}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-400">👤</span>
+                    <span>{branch.managerName || "No manager"}</span>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-end">
                   <button
-                    onClick={() => handleEdit(branch)}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-                    title="Edit"
+                    onClick={() => navigate(`/settings/branches/${branch.id}`)}
+                    className="text-xs text-ev-green hover:text-ev-green-dark font-medium"
                   >
-                    ✏️
-                  </button>
-                  <button
-                    onClick={() => handleDelete(branch.id)}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50"
-                    title="Delete"
-                  >
-                    🗑️
+                    View Details →
                   </button>
                 </div>
               </div>
+            ))}
+          </div>
+        )}
 
-              <div className="space-y-2 text-xs text-slate-600">
-                <div className="flex items-start gap-2">
-                  <span className="text-slate-400">📍</span>
-                  <span>{branch.address}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-400">📞</span>
-                  <span>{branch.phone}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-400">👤</span>
-                  <span>{branch.manager}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-400">📧</span>
-                  <span>{branch.email}</span>
-                </div>
-              </div>
-
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={branch.isActive}
-                    onChange={() => handleToggleStatus(branch.id)}
-                    className="w-4 h-4 rounded text-ev-green focus:ring-ev-green"
-                  />
-                  <span className="text-xs text-slate-600">Active</span>
-                </label>
-                <button
-                  onClick={() => navigate(`/settings/branches/${branch.id}`)}
-                  className="text-xs text-ev-green hover:text-ev-green-dark font-medium"
-                >
-                  View Details →
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Add/Edit Modal */}
         {showAddModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
-              <h2 className="text-lg font-semibold text-slate-900 mb-4">
-                {editingBranch ? "Edit Branch" : "Add New Branch"}
-              </h2>
+              <h2 className="text-lg font-semibold text-slate-900 mb-4">{editingBranch ? "Edit Branch" : "Add New Branch"}</h2>
               <div className="space-y-3">
                 <label className="block">
                   <span className="text-xs font-medium text-slate-700">Branch Name *</span>
                   <input
                     type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    value={formData.name ?? ""}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                     className="w-full mt-1 px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-ev-green focus:outline-none"
                     placeholder="e.g., Kampala Branch"
                   />
                 </label>
                 <label className="block">
-                  <span className="text-xs font-medium text-slate-700">Address *</span>
+                  <span className="text-xs font-medium text-slate-700">Address</span>
                   <input
                     type="text"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    value={formData.address ?? ""}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, address: e.target.value }))}
                     className="w-full mt-1 px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-ev-green focus:outline-none"
-                    placeholder="Full address"
                   />
                 </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="block">
+                    <span className="text-xs font-medium text-slate-700">City</span>
+                    <input
+                      type="text"
+                      value={formData.city ?? ""}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, city: e.target.value }))}
+                      className="w-full mt-1 px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-ev-green focus:outline-none"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-xs font-medium text-slate-700">Country</span>
+                    <input
+                      type="text"
+                      value={formData.country ?? ""}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, country: e.target.value }))}
+                      className="w-full mt-1 px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-ev-green focus:outline-none"
+                    />
+                  </label>
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <label className="block">
                     <span className="text-xs font-medium text-slate-700">Phone</span>
                     <input
                       type="tel"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      value={formData.phone ?? ""}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
                       className="w-full mt-1 px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-ev-green focus:outline-none"
                     />
                   </label>
                   <label className="block">
-                    <span className="text-xs font-medium text-slate-700">Email</span>
+                    <span className="text-xs font-medium text-slate-700">Manager</span>
                     <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      type="text"
+                      value={formData.managerName ?? ""}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, managerName: e.target.value }))}
                       className="w-full mt-1 px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-ev-green focus:outline-none"
                     />
                   </label>
                 </div>
-                <label className="block">
-                  <span className="text-xs font-medium text-slate-700">Branch Manager</span>
-                  <input
-                    type="text"
-                    value={formData.manager}
-                    onChange={(e) => setFormData({ ...formData, manager: e.target.value })}
-                    className="w-full mt-1 px-3 py-2 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-ev-green focus:outline-none"
-                  />
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.isActive}
-                    onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                    className="w-4 h-4 rounded text-ev-green focus:ring-ev-green"
-                  />
-                  <span className="text-sm text-slate-600">Branch is active</span>
-                </label>
               </div>
+
               <div className="flex gap-3 mt-6">
                 <button
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setEditingBranch(null);
-                  }}
+                  onClick={closeModal}
                   className="flex-1 px-4 py-2 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={handleSave}
-                  className="flex-1 px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark"
+                  onClick={() => void handleSave()}
+                  disabled={saving}
+                  className="flex-1 px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark disabled:opacity-60"
                 >
-                  {editingBranch ? "Update" : "Add Branch"}
+                  {saving ? "Saving..." : editingBranch ? "Update" : "Add Branch"}
                 </button>
               </div>
             </div>
