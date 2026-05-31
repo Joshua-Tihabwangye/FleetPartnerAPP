@@ -17,40 +17,51 @@ export default function SupportMessagesPage() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [filter, setFilter] = useState<"all" | "sent" | "pending" | "resolved">("all");
     const [searchQuery, setSearchQuery] = useState<string>("");
+    const [loading, setLoading] = useState<boolean>(true);
+    const [loadError, setLoadError] = useState<string | null>(null);
 
     useEffect(() => {
         const hydrate = async () => {
-            if (isFleetBackendEnabled()) {
-                try {
-                    const incidents = await listFleetComplianceIncidents();
-                    const supportIncidents = incidents
-                        .filter((incident) => incident.category.toLowerCase() === "support")
-                        .map((incident) => {
-                            const subjectMatch = incident.description.match(/^\[(.*?)\]\s*/);
-                            const subject = subjectMatch?.[1] || "Support request";
-                            const message = incident.description.replace(/^\[(.*?)\]\s*/, "");
-                            const mappedStatus =
-                                incident.status === "resolved"
-                                    ? "resolved"
-                                    : "pending";
-                            return {
-                                id: incident.id,
-                                subject,
-                                message,
-                                status: mappedStatus,
-                                createdAt: new Date(incident.createdAt).toISOString(),
-                                email: "n/a",
-                                name: "Fleet support",
-                            } as Message;
-                        });
-                    setMessages(supportIncidents);
-                    return;
-                } catch (error) {
-                    console.warn("Failed to load backend support incidents. Falling back to local messages.", error);
-                }
+            setLoading(true);
+            setLoadError(null);
+
+            if (!isFleetBackendEnabled()) {
+                setMessages([]);
+                setLoadError("Backend session required. Sign in to load support messages.");
+                setLoading(false);
+                return;
             }
-            const storedMessages = JSON.parse(localStorage.getItem("support_messages") || "[]");
-            setMessages(storedMessages);
+
+            try {
+                const incidents = await listFleetComplianceIncidents();
+                const supportIncidents = incidents
+                    .filter((incident) => incident.category.toLowerCase() === "support")
+                    .map((incident) => {
+                        const subjectMatch = incident.description.match(/^\[(.*?)\]\s*/);
+                        const subject = subjectMatch?.[1] || "Support request";
+                        const message = incident.description.replace(/^\[(.*?)\]\s*/, "");
+                        const mappedStatus =
+                            incident.status === "resolved"
+                                ? "resolved"
+                                : "pending";
+                        return {
+                            id: incident.id,
+                            subject,
+                            message,
+                            status: mappedStatus,
+                            createdAt: new Date(incident.createdAt).toISOString(),
+                            email: "n/a",
+                            name: "Fleet support",
+                        } as Message;
+                    });
+                setMessages(supportIncidents);
+            } catch (error) {
+                console.warn("Failed to load backend support incidents.", error);
+                setMessages([]);
+                setLoadError(error instanceof Error ? error.message : "Failed to load support messages.");
+            } finally {
+                setLoading(false);
+            }
         };
         void hydrate();
     }, []);
@@ -62,15 +73,8 @@ export default function SupportMessagesPage() {
         return matchesFilter && matchesSearch;
     });
 
-    const handleDeleteMessage = (id: number | string) => {
-        if (isFleetBackendEnabled()) {
-            toastManager.show("Delete is not available for backend support incidents yet.", "info");
-            return;
-        }
-        const updatedMessages = messages.filter(msg => msg.id !== id);
-        setMessages(updatedMessages);
-        localStorage.setItem("support_messages", JSON.stringify(updatedMessages));
-        toastManager.show("Message deleted", "success");
+    const handleDeleteMessage = (_id: number | string) => {
+        toastManager.show("Delete is not available for backend support incidents yet.", "info");
     };
 
     const getStatusBadge = (status: string) => {
@@ -129,7 +133,15 @@ export default function SupportMessagesPage() {
             </div>
 
             {/* Messages List */}
-            {filteredMessages.length === 0 ? (
+            {loading ? (
+                <div className="bg-white rounded-xl border border-slate-200 p-12 text-center text-sm text-slate-600">
+                    Loading support messages...
+                </div>
+            ) : loadError ? (
+                <div className="bg-white rounded-xl border border-red-200 p-12 text-center text-sm text-red-600">
+                    {loadError}
+                </div>
+            ) : filteredMessages.length === 0 ? (
                 <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
                     <div className="text-4xl mb-4">📭</div>
                     <h3 className="text-lg font-semibold text-slate-900 mb-2">No messages yet</h3>

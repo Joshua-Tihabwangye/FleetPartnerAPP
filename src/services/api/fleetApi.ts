@@ -11,14 +11,19 @@ type FleetProfileResponse = {
   companyName: string;
   contactEmail: string;
   contactPhone: string;
+  registrationNumber?: string;
+  taxId?: string;
 };
 
 type FleetBranchResponse = {
   id: string;
   name: string;
   address?: string;
+  city?: string;
+  country?: string;
   phone?: string;
   managerName?: string;
+  operatingHours?: Record<string, unknown>;
 };
 
 type FleetDriverResponse = {
@@ -56,6 +61,7 @@ type FleetServiceResponse = {
   customerName: string;
   assetId?: string;
   scheduledAt: number;
+  notes?: string;
 };
 
 export type FleetIncidentResponse = {
@@ -420,6 +426,13 @@ export type FleetCreateDispatchInput = {
   vehicleId?: string;
 };
 
+export type FleetCreateServiceInput = {
+  customerName: string;
+  assetId?: string;
+  scheduledAt: number;
+  notes?: string;
+};
+
 export type FleetCreateComplianceIncidentInput = {
   category: string;
   severity: "low" | "medium" | "high" | "critical";
@@ -435,6 +448,28 @@ export type FleetRiderServiceResponse = {
   payload: Record<string, unknown>;
   createdAt: number;
   updatedAt: number;
+};
+
+export type FleetPortalSettingsResponse = {
+  language: string;
+  notifications: {
+    email: boolean;
+    sms: boolean;
+    portal: boolean;
+  };
+};
+
+export type FleetSecuritySettingsResponse = {
+  twoFactorEnabled: boolean;
+  sessions: Array<Record<string, unknown>>;
+};
+
+export type FleetIntegrationsResponse = {
+  integrations: Array<Record<string, unknown>>;
+};
+
+export type FleetRolesResponse = {
+  roles: Array<Record<string, unknown>>;
 };
 
 export async function createFleetDriver(input: FleetCreateDriverInput) {
@@ -482,6 +517,264 @@ export async function createFleetDispatch(input: FleetCreateDispatchInput) {
   return created;
 }
 
+export type FleetUpsertBranchInput = {
+  name: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  phone?: string;
+  managerName?: string;
+  operatingHours?: Record<string, unknown>;
+};
+
+export type FleetPatchBranchInput = Partial<FleetUpsertBranchInput>;
+
+export async function getFleetProfile() {
+  return request<FleetProfileResponse>("/fleet/me/profile", { method: "GET" });
+}
+
+export async function patchFleetProfile(input: Partial<{
+  companyName: string;
+  contactEmail: string;
+  contactPhone: string;
+  registrationNumber: string;
+  taxId: string;
+}>) {
+  const updated = await request<FleetProfileResponse>("/fleet/me/profile", {
+    method: "PATCH",
+    body: input,
+  });
+  await syncFleetWorkspaceState();
+  return updated;
+}
+
+export async function listFleetBranches() {
+  return request<FleetBranchResponse[]>("/fleet/me/branches", { method: "GET" });
+}
+
+export async function getFleetBranch(branchId: string) {
+  return request<FleetBranchResponse>(`/fleet/me/branches/${branchId}`, { method: "GET" });
+}
+
+export async function createFleetBranch(input: FleetUpsertBranchInput) {
+  const created = await request<FleetBranchResponse>("/fleet/me/branches", {
+    method: "POST",
+    body: input,
+  });
+  await syncFleetWorkspaceState();
+  return created;
+}
+
+export async function patchFleetBranch(branchId: string, patch: FleetPatchBranchInput) {
+  const updated = await request<FleetBranchResponse>(`/fleet/me/branches/${branchId}`, {
+    method: "PATCH",
+    body: patch,
+  });
+  await syncFleetWorkspaceState();
+  return updated;
+}
+
+export async function deleteFleetBranch(branchId: string) {
+  const deleted = await request<{ deleted: boolean }>(`/fleet/me/branches/${branchId}`, {
+    method: "DELETE",
+  });
+  await syncFleetWorkspaceState();
+  return deleted;
+}
+
+export async function getFleetPortalSettings() {
+  return request<FleetPortalSettingsResponse>("/fleet/me/settings", { method: "GET" });
+}
+
+export async function patchFleetPortalSettings(input: Partial<FleetPortalSettingsResponse>) {
+  return request<FleetPortalSettingsResponse>("/fleet/me/settings", {
+    method: "PATCH",
+    body: input,
+  });
+}
+
+export async function getFleetSecuritySettings() {
+  return request<FleetSecuritySettingsResponse>("/fleet/me/security", { method: "GET" });
+}
+
+export async function patchFleetSecuritySettings(input: Partial<FleetSecuritySettingsResponse>) {
+  return request<FleetSecuritySettingsResponse>("/fleet/me/security", {
+    method: "PATCH",
+    body: input,
+  });
+}
+
+export async function getFleetIntegrations() {
+  return request<FleetIntegrationsResponse>("/fleet/me/integrations", { method: "GET" });
+}
+
+export async function patchFleetIntegrations(input: Partial<FleetIntegrationsResponse>) {
+  return request<FleetIntegrationsResponse>("/fleet/me/integrations", {
+    method: "PATCH",
+    body: input,
+  });
+}
+
+export async function getFleetRoles() {
+  return request<FleetRolesResponse>("/fleet/me/roles", { method: "GET" });
+}
+
+export async function patchFleetRoles(input: Partial<FleetRolesResponse>) {
+  return request<FleetRolesResponse>("/fleet/me/roles", {
+    method: "PATCH",
+    body: input,
+  });
+}
+
+export async function listFleetRentals() {
+  return request<FleetServiceResponse[]>("/fleet/rentals", { method: "GET" });
+}
+
+export async function createFleetRental(input: FleetCreateServiceInput) {
+  const created = await request<FleetServiceResponse>("/fleet/rentals", {
+    method: "POST",
+    body: input,
+  });
+  await syncFleetWorkspaceState();
+  return created;
+}
+
+export async function listFleetTours() {
+  return request<FleetServiceResponse[]>("/fleet/tours", { method: "GET" });
+}
+
+export async function createFleetTour(input: FleetCreateServiceInput) {
+  const created = await request<FleetServiceResponse>("/fleet/tours", {
+    method: "POST",
+    body: input,
+  });
+  await syncFleetWorkspaceState();
+  return created;
+}
+
+export async function patchFleetTour(
+  tourId: string,
+  patch: Partial<{ customerName: string; assetId: string; scheduledAt: number; notes: string; status: string }>
+) {
+  const updated = await request<FleetServiceResponse>(`/fleet/tours/${tourId}`, {
+    method: "PATCH",
+    body: patch,
+  });
+  await syncFleetWorkspaceState();
+  return updated;
+}
+
+export async function listFleetSchoolShuttles() {
+  return request<FleetServiceResponse[]>("/fleet/school-shuttles", { method: "GET" });
+}
+
+export async function createFleetSchoolShuttle(input: FleetCreateServiceInput) {
+  const created = await request<FleetServiceResponse>("/fleet/school-shuttles", {
+    method: "POST",
+    body: input,
+  });
+  await syncFleetWorkspaceState();
+  return created;
+}
+
+export async function listFleetShuttleRoutes() {
+  return request<Array<Record<string, unknown>>>("/fleet/school-shuttles/routes", { method: "GET" });
+}
+
+export async function createFleetShuttleRoute(input: Record<string, unknown>) {
+  return request<Record<string, unknown>>("/fleet/school-shuttles/routes", {
+    method: "POST",
+    body: input,
+  });
+}
+
+export async function listFleetShuttleStudents() {
+  return request<Array<Record<string, unknown>>>("/fleet/school-shuttles/students", { method: "GET" });
+}
+
+export async function createFleetShuttleStudent(input: Record<string, unknown>) {
+  return request<Record<string, unknown>>("/fleet/school-shuttles/students", {
+    method: "POST",
+    body: input,
+  });
+}
+
+export async function getFleetShuttleStudent(studentId: string) {
+  return request<Record<string, unknown>>(`/fleet/school-shuttles/students/${studentId}`, { method: "GET" });
+}
+
+export async function patchFleetShuttleStudent(studentId: string, input: Record<string, unknown>) {
+  return request<Record<string, unknown>>(`/fleet/school-shuttles/students/${studentId}`, {
+    method: "PATCH",
+    body: input,
+  });
+}
+
+export async function listFleetShuttleAttendance(studentId?: string) {
+  const search = new URLSearchParams();
+  if (studentId) search.set("studentId", studentId);
+  const suffix = search.toString() ? `?${search.toString()}` : "";
+  return request<Array<Record<string, unknown>>>(`/fleet/school-shuttles/attendance${suffix}`, { method: "GET" });
+}
+
+export async function listFleetShuttleFeedback() {
+  return request<Array<Record<string, unknown>>>("/fleet/school-shuttles/feedback", { method: "GET" });
+}
+
+export async function createFleetShuttleFeedback(input: Record<string, unknown>) {
+  return request<Record<string, unknown>>("/fleet/school-shuttles/feedback", {
+    method: "POST",
+    body: input,
+  });
+}
+
+export async function getFleetTourById(tourId: string) {
+  return request<FleetServiceResponse>(`/fleet/tours/${tourId}`, { method: "GET" });
+}
+
+export async function listFleetTourMessages(tourId: string) {
+  return request<Array<Record<string, unknown>>>(`/fleet/tours/${tourId}/messages`, { method: "GET" });
+}
+
+export async function createFleetTourMessage(
+  tourId: string,
+  input: Partial<{ sender: string; text: string; isOwn: boolean }>
+) {
+  return request<Record<string, unknown>>(`/fleet/tours/${tourId}/messages`, {
+    method: "POST",
+    body: input,
+  });
+}
+
+export async function listFleetShuttleTrips() {
+  return request<Array<Record<string, unknown>>>("/fleet/school-shuttles/trips", { method: "GET" });
+}
+
+export async function createFleetShuttleTrip(input: Record<string, unknown>) {
+  return request<Record<string, unknown>>("/fleet/school-shuttles/trips", {
+    method: "POST",
+    body: input,
+  });
+}
+
+export async function listFleetShuttleAttendants() {
+  return request<Array<Record<string, unknown>>>("/fleet/school-shuttles/attendants", { method: "GET" });
+}
+
+export async function createFleetShuttleAttendant(input: Record<string, unknown>) {
+  return request<Record<string, unknown>>("/fleet/school-shuttles/attendants", {
+    method: "POST",
+    body: input,
+  });
+}
+
+export async function createFleetShuttleAttendance(input: Record<string, unknown>) {
+  return request<Record<string, unknown>>("/fleet/school-shuttles/attendance", {
+    method: "POST",
+    body: input,
+  });
+}
+
 export async function listFleetComplianceIncidents() {
   return request<FleetIncidentResponse[]>("/fleet/compliance/incidents", { method: "GET" });
 }
@@ -523,4 +816,8 @@ export function getCachedFleetVehicles() {
 
 export function getCachedFleetDispatches() {
   return readStorage<any[]>("dispatches", []);
+}
+
+export function getCachedFleetRentals() {
+  return readStorage<any[]>("rentals", []);
 }

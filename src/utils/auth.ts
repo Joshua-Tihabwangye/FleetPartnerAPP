@@ -6,6 +6,7 @@ import {
   backendResetPassword,
   isBackendAuthEnabled,
 } from "../services/api/authApi";
+import { ALLOW_DEV_AUTH_FALLBACK } from "../services/api/config";
 import {
   clearFleetBackendTokens,
   saveFleetBackendTokens,
@@ -35,7 +36,7 @@ const defaultAuthState: AuthState = {
 const DEV_REGISTERED_USERS_KEY = "fleet_partner_dev_registered_users";
 
 function shouldUseDevelopmentAuth(): boolean {
-  return import.meta.env.DEV || !isBackendAuthEnabled();
+  return !isBackendAuthEnabled() || (import.meta.env.DEV && ALLOW_DEV_AUTH_FALLBACK);
 }
 
 function mapFleetRole(roles?: string[]): User["role"] {
@@ -134,11 +135,8 @@ export const auth = {
       });
       return authData;
     } catch (error) {
-      // Never block sign-in in testing/demo mode: any backend auth failure falls back to local auth.
-      const authData = createDevelopmentAuthState(normalizedEmail);
-      clearFleetBackendTokens();
-      auth.setAuth(authData);
-      return authData;
+      const msg = error instanceof Error ? error.message : "Fleet sign in failed.";
+      throw new Error(msg);
     }
   },
 

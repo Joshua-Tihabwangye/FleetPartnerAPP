@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import Modal from "../../components/ui/Modal";
 import { toastManager } from "../../utils/toastManager";
+import { isFleetBackendEnabled } from "../../services/api/fleetApi";
 
 interface MaintenanceRecord {
   id: string;
@@ -21,6 +22,10 @@ export default function VehicleMaintenanceHistoryPage() {
   const [newRecord, setNewRecord] = useState({ type: "service", date: "", notes: "", cost: "" });
 
   useEffect(() => {
+    if (isFleetBackendEnabled()) {
+      setMaintenance([]);
+      return;
+    }
     const allRecords: MaintenanceRecord[] = JSON.parse(localStorage.getItem("vehicle_maintenance") || "[]");
     const vehicleRecords = allRecords.filter((r: MaintenanceRecord) => r.vehicleId === vehicleId);
     setMaintenance(vehicleRecords);
@@ -28,6 +33,13 @@ export default function VehicleMaintenanceHistoryPage() {
 
   const handleSchedule = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (isFleetBackendEnabled()) {
+      toastManager.show("Vehicle maintenance endpoint is pending integration.", "info");
+      setShowScheduleModal(false);
+      setEditingRecord(null);
+      setNewRecord({ type: "service", date: "", notes: "", cost: "" });
+      return;
+    }
 
     if (editingRecord) {
       const updatedRecord: MaintenanceRecord = {
@@ -81,7 +93,7 @@ export default function VehicleMaintenanceHistoryPage() {
             onClick={() => setShowScheduleModal(true)}
             className="px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark"
           >
-            + Schedule Maintenance
+            {isFleetBackendEnabled() ? "Schedule (API Pending)" : "+ Schedule Maintenance"}
           </button>
         </div>
 

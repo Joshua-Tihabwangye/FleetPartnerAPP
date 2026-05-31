@@ -1,6 +1,14 @@
 import React, { useState } from "react";
 import Modal from "../../components/ui/Modal";
 import { toastManager } from "../../utils/toastManager";
+import {
+  createFleetComplianceIncident,
+  getCachedFleetDrivers,
+  getCachedFleetVehicles,
+  isFleetBackendEnabled,
+  listFleetComplianceIncidents,
+  refreshFleetWorkspaceState,
+} from "../../services/api/fleetApi";
 
 interface Incident {
   id: number;
@@ -18,6 +26,8 @@ export default function IncidentsListPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showReportModal, setShowReportModal] = useState(false);
   const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [availableVehicles, setAvailableVehicles] = useState<string[]>([]);
+  const [availableDrivers, setAvailableDrivers] = useState<string[]>([]);
   const [reportForm, setReportForm] = useState({
     type: "",
     vehicle: "",
@@ -26,8 +36,44 @@ export default function IncidentsListPage() {
     description: ""
   });
 
+  async function syncIncidentsFromBackend() {
+    if (!isFleetBackendEnabled()) return;
+    await refreshFleetWorkspaceState();
+    setAvailableVehicles(
+      (getCachedFleetVehicles() as any[])
+        .map((item) => String(item.plate || item.vehiclePlate || "").trim())
+        .filter((item) => item.length > 0),
+    );
+    setAvailableDrivers(
+      (getCachedFleetDrivers() as any[])
+        .map((item) => String(item.name || item.fullName || "").trim())
+        .filter((item) => item.length > 0),
+    );
+    const backend = await listFleetComplianceIncidents();
+    const mapped: Incident[] = backend.map((item, index) => ({
+      id: index + 1,
+      incidentId: item.id,
+      type: item.category,
+      vehicle: "Unassigned",
+      driver: "Unassigned",
+      date: new Date(item.createdAt).toISOString().split("T")[0] || "",
+      severity: item.severity,
+      status: item.status,
+      description: item.description,
+    }));
+    setIncidents(mapped);
+  }
+
   // Load incidents on mount
   React.useEffect(() => {
+    if (isFleetBackendEnabled()) {
+      void syncIncidentsFromBackend().catch((error) => {
+        console.warn("Failed to load incidents from backend.", error);
+        toastManager.show("Failed to load incidents from backend.", "error");
+      });
+      return;
+    }
+
     const storedIncidents: Incident[] = JSON.parse(localStorage.getItem("incidents") || "[]");
     if (storedIncidents.length === 0) {
       // Initialize with mock data if empty
@@ -41,10 +87,47 @@ export default function IncidentsListPage() {
     } else {
       setIncidents(storedIncidents);
     }
+
+    setAvailableVehicles(
+      Array.from(
+        new Set(
+          ((JSON.parse(localStorage.getItem("vehicles") || "[]") as any[]) || [])
+            .map((item) => String(item.plate || item.vehiclePlate || "").trim())
+            .filter((item) => item.length > 0),
+        ),
+      ),
+    );
+    setAvailableDrivers(
+      Array.from(
+        new Set(
+          ((JSON.parse(localStorage.getItem("drivers") || "[]") as any[]) || [])
+            .map((item) => String(item.name || item.fullName || "").trim())
+            .filter((item) => item.length > 0),
+        ),
+      ),
+    );
   }, []);
 
-  const handleReportSubmit = (e: React.FormEvent) => {
+  const handleReportSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isFleetBackendEnabled()) {
+      try {
+        await createFleetComplianceIncident({
+          category: reportForm.type || "General",
+          severity: (reportForm.severity || "medium") as "low" | "medium" | "high" | "critical",
+          description: reportForm.description || `${reportForm.type || "Incident"} reported from fleet console.`,
+        });
+        await syncIncidentsFromBackend();
+        toastManager.show("Incident reported successfully!", "success");
+        setShowReportModal(false);
+        setReportForm({ type: "", vehicle: "", driver: "", severity: "", description: "" });
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : "Incident submission failed.";
+        toastManager.show(msg, "error");
+      }
+      return;
+    }
+
     const newIncident = {
       id: Date.now(),
       incidentId: `INC-${String(incidents.length + 1).padStart(3, '0')}`,
@@ -242,9 +325,13 @@ export default function IncidentsListPage() {
                 required
               >
                 <option value="">Select vehicle...</option>
-                <option value="UAA 123A">UAA 123A - Tesla Model 3</option>
-                <option value="UAA 124B">UAA 124B - Nissan Leaf</option>
-                <option value="UAA 125C">UAA 125C - BYD E6</option>
+                {availableVehicles.length === 0 ? (
+                  <option value="Fleet Vehicle">Fleet Vehicle</option>
+                ) : (
+                  availableVehicles.map((vehicle) => (
+                    <option key={vehicle} value={vehicle}>{vehicle}</option>
+                  ))
+                )}
               </select>
             </label>
             <label className="block">
@@ -256,9 +343,13 @@ export default function IncidentsListPage() {
                 required
               >
                 <option value="">Select driver...</option>
-                <option value="John Doe">John Doe</option>
-                <option value="Jane Smith">Jane Smith</option>
-                <option value="Mike Johnson">Mike Johnson</option>
+                {availableDrivers.length === 0 ? (
+                  <option value="Fleet Driver">Fleet Driver</option>
+                ) : (
+                  availableDrivers.map((driver) => (
+                    <option key={driver} value={driver}>{driver}</option>
+                  ))
+                )}
               </select>
             </label>
           </div>

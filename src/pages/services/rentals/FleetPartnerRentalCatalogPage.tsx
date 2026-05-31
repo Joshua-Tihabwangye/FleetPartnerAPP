@@ -1,14 +1,21 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Modal from "../../../components/ui/Modal";
 import { toastManager } from "../../../utils/toastManager";
+import {
+  createFleetRental,
+  getCachedFleetVehicles,
+  isFleetBackendEnabled,
+  refreshFleetWorkspaceState,
+} from "../../../services/api/fleetApi";
 
 interface Vehicle {
-  id: number;
+  id: number | string;
+  backendId?: string;
   name: string;
   type: string;
   plate: string;
-  pricePerDay: string;
+  pricePerDay: number;
   seats: number;
   range: string;
   features: string[];
@@ -19,6 +26,7 @@ interface Vehicle {
 export default function FleetPartnerRentalCatalogPage() {
   const [showRentalModal, setShowRentalModal] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [rentalForm, setRentalForm] = useState({
     customerName: "",
     customerEmail: "",
@@ -28,13 +36,13 @@ export default function FleetPartnerRentalCatalogPage() {
     purpose: ""
   });
 
-  const vehicles: Vehicle[] = [
+  const seedVehicles: Vehicle[] = [
     {
       id: 1,
       name: "Tesla Model 3",
       type: "Sedan",
       plate: "UAA 123A",
-      pricePerDay: "UGX 150,000",
+      pricePerDay: 150000,
       seats: 5,
       range: "350 km",
       features: ["Auto-pilot", "Premium sound", "Climate control"],
@@ -46,7 +54,7 @@ export default function FleetPartnerRentalCatalogPage() {
       name: "Nissan Leaf",
       type: "Hatchback",
       plate: "UAA 124B",
-      pricePerDay: "UGX 120,000",
+      pricePerDay: 120000,
       seats: 5,
       range: "240 km",
       features: ["Eco mode", "Bluetooth", "Backup camera"],
@@ -58,7 +66,7 @@ export default function FleetPartnerRentalCatalogPage() {
       name: "BYD E6",
       type: "SUV",
       plate: "UAA 125C",
-      pricePerDay: "UGX 180,000",
+      pricePerDay: 180000,
       seats: 7,
       range: "400 km",
       features: ["Spacious interior", "4WD", "Premium seats"],
@@ -70,7 +78,7 @@ export default function FleetPartnerRentalCatalogPage() {
       name: "Toyota Coaster Bus",
       type: "Bus",
       plate: "UAA 300K",
-      pricePerDay: "UGX 250,000",
+      pricePerDay: 250000,
       seats: 30,
       range: "300 km",
       features: ["AC", "Audio system", "Comfortable seating"],
@@ -79,15 +87,78 @@ export default function FleetPartnerRentalCatalogPage() {
     }
   ];
 
+  useEffect(() => {
+    const load = async () => {
+      if (isFleetBackendEnabled()) {
+        try {
+          await refreshFleetWorkspaceState();
+        } catch (error) {
+          console.warn("Fleet backend rental catalog sync failed.", error);
+        }
+        const cachedVehicles = getCachedFleetVehicles() as any[];
+        const mapped: Vehicle[] = cachedVehicles.map((vehicle, index) => ({
+          id: vehicle.id ?? index + 1,
+          backendId: vehicle.backendId,
+          name: vehicle.model || "Fleet vehicle",
+          type: vehicle.vehicleType || "Vehicle",
+          plate: vehicle.plate || "-",
+          pricePerDay: 150000,
+          seats: 5,
+          range: `${vehicle.estimatedRange ?? 200} km`,
+          features: ["Fleet managed", "EV verified"],
+          available: vehicle.status === "available",
+          image: vehicle.vehicleType === "bus" ? "🚌" : vehicle.vehicleType === "suv" ? "🚙" : "🚗",
+        }));
+        setVehicles(mapped);
+        return;
+      }
+
+      setVehicles(seedVehicles);
+    };
+
+    void load();
+  }, []);
+
   const handleRentNow = (vehicle: Vehicle) => {
     setSelectedVehicle(vehicle);
     setShowRentalModal(true);
   };
 
-  const handleRentalSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleRentalSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!selectedVehicle) return;
+
+    if (isFleetBackendEnabled()) {
+      if (!selectedVehicle.backendId) {
+        toastManager.show("Cannot create backend rental without mapped vehicle id.", "error");
+        return;
+      }
+      try {
+        await createFleetRental({
+          customerName: rentalForm.customerName,
+          assetId: selectedVehicle.backendId,
+          scheduledAt: new Date(rentalForm.startDate || new Date().toISOString()).getTime(),
+          notes: `Rental request from catalog. End: ${rentalForm.endDate || "N/A"} | Purpose: ${rentalForm.purpose || "N/A"}`,
+        });
+        toastManager.show("Vehicle rented successfully!", "success");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to create backend rental.";
+        toastManager.show(message, "error");
+        return;
+      }
+      setShowRentalModal(false);
+      setSelectedVehicle(null);
+      setRentalForm({
+        customerName: "",
+        customerEmail: "",
+        customerPhone: "",
+        startDate: "",
+        endDate: "",
+        purpose: ""
+      });
+      return;
+    }
 
     const newRental = {
       id: Date.now(),
@@ -161,7 +232,7 @@ export default function FleetPartnerRentalCatalogPage() {
               </div>
 
               <div className="mb-4">
-                <div className="text-2xl font-bold text-ev-green mb-1">{vehicle.pricePerDay}</div>
+                <div className="text-2xl font-bold text-ev-green mb-1">UGX {vehicle.pricePerDay.toLocaleString()}</div>
                 <div className="text-xs text-slate-500">per day</div>
               </div>
 
@@ -228,7 +299,9 @@ export default function FleetPartnerRentalCatalogPage() {
             <div className="text-sm text-slate-600 mb-1">Selected Vehicle</div>
             <div className="font-semibold text-slate-900">{selectedVehicle?.name}</div>
             <div className="text-sm text-slate-500">{selectedVehicle?.plate}</div>
-            <div className="text-lg font-bold text-ev-green mt-2">{selectedVehicle?.pricePerDay}/day</div>
+            <div className="text-lg font-bold text-ev-green mt-2">
+              UGX {selectedVehicle?.pricePerDay.toLocaleString()}/day
+            </div>
           </div>
 
           <label className="block">

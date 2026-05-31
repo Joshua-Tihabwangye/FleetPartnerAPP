@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import Modal from "../../components/ui/Modal";
 import { toastManager } from "../../utils/toastManager";
+import { getCachedFleetVehicles, isFleetBackendEnabled, refreshFleetWorkspaceState } from "../../services/api/fleetApi";
 
 interface VehicleDocument {
   id: string;
@@ -19,14 +20,64 @@ export default function VehicleDocumentsPage() {
   const [newDoc, setNewDoc] = useState({ name: "", type: "insurance", date: "" });
 
   useEffect(() => {
-    // Load documents from localStorage
-    const allDocs: VehicleDocument[] = JSON.parse(localStorage.getItem("vehicle_documents") || "[]");
-    const vehicleDocs = allDocs.filter(d => d.vehicleId === vehicleId);
-    setDocuments(vehicleDocs);
+    const load = async () => {
+      if (isFleetBackendEnabled()) {
+        try {
+          await refreshFleetWorkspaceState();
+        } catch (error) {
+          console.warn("Fleet backend vehicle documents sync failed.", error);
+        }
+
+        const vehicles = getCachedFleetVehicles() as any[];
+        const current = vehicles.find(
+          (item) => String(item.id) === String(vehicleId) || String(item.backendId) === String(vehicleId),
+        );
+        if (!current) {
+          setDocuments([]);
+          return;
+        }
+
+        const normalizedDocs: VehicleDocument[] = [];
+        if (current.compliance?.insurance) {
+          normalizedDocs.push({
+            id: `insurance-${current.id}`,
+            vehicleId: String(vehicleId || ""),
+            name: "Insurance Certificate",
+            type: "insurance",
+            date: current.compliance.insurance.expiry || "",
+            uploadDate: "",
+          });
+        }
+        if (current.compliance?.inspection) {
+          normalizedDocs.push({
+            id: `inspection-${current.id}`,
+            vehicleId: String(vehicleId || ""),
+            name: "Inspection Record",
+            type: "inspection",
+            date: current.compliance.inspection.expiry || "",
+            uploadDate: "",
+          });
+        }
+        setDocuments(normalizedDocs);
+        return;
+      }
+
+      const allDocs: VehicleDocument[] = JSON.parse(localStorage.getItem("vehicle_documents") || "[]");
+      const vehicleDocs = allDocs.filter(d => d.vehicleId === vehicleId);
+      setDocuments(vehicleDocs);
+    };
+
+    void load();
   }, [vehicleId]);
 
   const handleUpload = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (isFleetBackendEnabled()) {
+      toastManager.show("Vehicle document upload endpoint is pending integration.", "info");
+      setShowUploadModal(false);
+      return;
+    }
+
     if (!vehicleId) {
       toastManager.show("Error: No vehicle ID found", "error");
       return;
@@ -66,7 +117,7 @@ export default function VehicleDocumentsPage() {
             onClick={() => setShowUploadModal(true)}
             className="px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark"
           >
-            + Upload Document
+            {isFleetBackendEnabled() ? "Upload (API Pending)" : "+ Upload Document"}
           </button>
         </div>
 

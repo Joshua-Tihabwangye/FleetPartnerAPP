@@ -30,28 +30,27 @@ export default function VehiclesListPage() {
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [filter, setFilter] = useState({ status: "all", type: "all" });
   const [allVehicles, setAllVehicles] = useState<Vehicle[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [activeKpi, setActiveKpi] = useState<string | null>(null);
+  const backendMode = isFleetBackendEnabled();
 
-  // Load vehicles from localStorage on mount
   useEffect(() => {
-    const mockVehicles: Vehicle[] = [
-      { id: 1, plate: "UAA 123A", model: "Tesla Model 3", status: "available", opsStatus: "ready", driver: "John Doe", mileage: 12500, vehicleType: "sedan", soc: 85, estimatedRange: 280, lastSeen: "20s ago", zone: "Kampala Central", condition: "excellent", compliance: { insurance: { status: "ok", expiry: "2025-06-15" }, inspection: { status: "ok", expiry: "2025-03-20" } } },
-      { id: 2, plate: "UAA 124B", model: "Nissan Leaf", status: "offline", opsStatus: "unavailable", driver: "Jane Smith", mileage: 8900, vehicleType: "sedan", soc: 45, estimatedRange: 140, lastSeen: "4h ago", zone: "Ntinda", condition: "good", compliance: { insurance: { status: "ok", expiry: "2025-08-10" }, inspection: { status: "expiring", expiry: "2025-01-25" } } },
-      { id: 3, plate: "UAA 125C", model: "BYD E6", status: "available", opsStatus: "busy", driver: "Mike Johnson", mileage: 15200, vehicleType: "suv", soc: 12, estimatedRange: 35, lastSeen: "2m ago", zone: "Kololo", condition: "good", compliance: { insurance: { status: "expiring", expiry: "2025-01-30" }, inspection: { status: "ok", expiry: "2025-04-15" } } },
-      { id: 4, plate: "UAA 126D", model: "Tesla Model Y", status: "maintenance", opsStatus: "unavailable", driver: "Sarah Wilson", mileage: 22100, vehicleType: "suv", soc: 0, estimatedRange: 0, lastSeen: "2d ago", zone: "Service Center", condition: "fair", compliance: { insurance: { status: "ok", expiry: "2025-09-01" }, inspection: { status: "ok", expiry: "2025-05-10" } } },
-      { id: 5, plate: "UAA 127E", model: "Hyundai Ioniq", status: "available", opsStatus: "ready", driver: "David Brown", mileage: 9800, vehicleType: "sedan", soc: 92, estimatedRange: 310, lastSeen: "1m ago", zone: "Nakasero", condition: "excellent", compliance: { insurance: { status: "ok", expiry: "2025-07-20" }, inspection: { status: "ok", expiry: "2025-06-01" } } },
-      { id: 6, plate: "UAA 128F", model: "Kia EV6", status: "out-of-service", opsStatus: "unavailable", driver: "-", mileage: 31500, vehicleType: "suv", soc: 0, estimatedRange: 0, lastSeen: "1w ago", zone: "Unknown", condition: "poor", compliance: { insurance: { status: "expired", expiry: "2024-12-01" }, inspection: { status: "expired", expiry: "2024-11-15" } } },
-      { id: 7, plate: "UAA 129G", model: "Tesla Model 3", status: "available", opsStatus: "ready", driver: "Peter Okello", mileage: 5600, vehicleType: "sedan", soc: 78, estimatedRange: 250, lastSeen: "30s ago", zone: "Bugolobi", condition: "excellent", compliance: { insurance: { status: "ok", expiry: "2025-10-01" }, inspection: { status: "ok", expiry: "2025-08-15" } } },
-      { id: 8, plate: "UAA 130H", model: "BYD Han", status: "offline", opsStatus: "unavailable", driver: "Grace Nakato", mileage: 18200, vehicleType: "sedan", soc: 8, estimatedRange: 25, lastSeen: "6h ago", zone: "Muyenga", condition: "good", compliance: { insurance: { status: "ok", expiry: "2025-05-20" }, inspection: { status: "expiring", expiry: "2025-01-28" } } },
-    ];
-
     const load = async () => {
-      if (isFleetBackendEnabled()) {
-        try {
-          await refreshFleetWorkspaceState();
-        } catch (error) {
-          console.warn("Fleet backend vehicle sync failed. Using cached/local data.", error);
-        }
+      setLoading(true);
+      setLoadError(null);
+      if (!backendMode) {
+        setAllVehicles([]);
+        setLoadError("Backend session required. Sign in to view fleet vehicles.");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        await refreshFleetWorkspaceState();
+      } catch (error) {
+        console.warn("Fleet backend vehicle sync failed.", error);
+        setLoadError("Failed to refresh vehicles from backend. Showing last synced cache if available.");
       }
 
       const storedVehicles = (getCachedFleetVehicles() as any[]).map(v => ({
@@ -64,11 +63,13 @@ export default function VehiclesListPage() {
         zone: v.zone || "Unknown",
         estimatedRange: v.estimatedRange ?? 200,
       }));
-      setAllVehicles(storedVehicles.length > 0 ? storedVehicles : mockVehicles);
+
+      setAllVehicles(storedVehicles);
+      setLoading(false);
     };
 
     void load();
-  }, []);
+  }, [backendMode]);
 
   // KPI calculations
   const kpis = [
@@ -225,6 +226,25 @@ export default function VehiclesListPage() {
       </div>
 
       {/* Vehicles Grid */}
+      {loading ? (
+        <div className="bg-white rounded-xl border border-slate-200 p-8 text-sm text-slate-600">
+          Loading vehicles...
+        </div>
+      ) : loadError && allVehicles.length === 0 ? (
+        <div className="bg-white rounded-xl border border-red-200 p-8 text-sm text-red-600">
+          {loadError}
+        </div>
+      ) : vehicles.length === 0 ? (
+        <div className="bg-white rounded-xl border border-slate-200 p-8 text-sm text-slate-600">
+          No vehicles found from backend.
+        </div>
+      ) : (
+      <>
+      {loadError ? (
+        <div className="mb-4 bg-amber-50 border border-amber-200 text-amber-700 rounded-xl p-3 text-sm">
+          {loadError}
+        </div>
+      ) : null}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {vehicles.map((vehicle) => (
           <div
@@ -345,6 +365,8 @@ export default function VehiclesListPage() {
           </div>
         ))}
       </div>
+      </>
+      )}
 
       {/* Filter Modal */}
       <Modal

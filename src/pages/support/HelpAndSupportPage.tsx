@@ -48,35 +48,25 @@ export default function HelpAndSupportPage() {
   const handleEmailSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const supportRequest = {
-      id: Date.now(),
-      ...emailForm,
-      createdAt: new Date().toISOString(),
-      status: "sent"
-    };
-
-    if (isFleetBackendEnabled()) {
-      try {
-        await createFleetComplianceIncident({
-          category: "support",
-          severity: "low",
-          description: `[${emailForm.subject}] ${emailForm.message}`,
-        });
-      } catch (error) {
-        console.warn("Fleet support request sync failed. Storing local fallback copy.", error);
-        const storedRequests = JSON.parse(localStorage.getItem("support_messages") || "[]");
-        const updatedRequests = [supportRequest, ...storedRequests];
-        localStorage.setItem("support_messages", JSON.stringify(updatedRequests));
-      }
-    } else {
-      const storedRequests = JSON.parse(localStorage.getItem("support_messages") || "[]");
-      const updatedRequests = [supportRequest, ...storedRequests];
-      localStorage.setItem("support_messages", JSON.stringify(updatedRequests));
+    if (!isFleetBackendEnabled()) {
+      toastManager.show("Backend session required. Sign in to submit support requests.", "error");
+      return;
     }
 
-    toastManager.show("Support request submitted successfully! We'll get back to you soon.", "success");
-    setShowEmailModal(false);
-    setEmailForm({ name: "", email: "", subject: "", message: "" });
+    try {
+      await createFleetComplianceIncident({
+        category: "support",
+        severity: "low",
+        description: `[${emailForm.subject}] ${emailForm.message}`,
+      });
+      toastManager.show("Support request submitted successfully! We'll get back to you soon.", "success");
+      setShowEmailModal(false);
+      setEmailForm({ name: "", email: "", subject: "", message: "" });
+    } catch (error) {
+      console.warn("Fleet support request sync failed.", error);
+      const message = error instanceof Error ? error.message : "Failed to submit support request.";
+      toastManager.show(message, "error");
+    }
   };
 
   return (

@@ -40,8 +40,9 @@ export default function DriverCreatePage() {
           serviceModes: ["ride"],
         });
       } catch (error) {
-        console.warn("Fleet backend create driver failed. Falling back to local mode.", error);
-        persistLocally();
+        const msg = error instanceof Error ? error.message : "Failed to create driver from backend.";
+        toastManager.show(msg, "error");
+        return;
       }
     } else {
       persistLocally();

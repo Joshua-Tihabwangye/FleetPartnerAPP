@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import Modal from "../../../components/ui/Modal";
+import { createFleetShuttleStudent, listFleetShuttleStudents } from "../../../services/api/fleetApi";
 import { toastManager } from "../../../utils/toastManager";
 
-interface Student {
-  id: number;
+type Student = {
+  id: string;
   name: string;
   grade: string;
   route: string;
@@ -14,12 +14,29 @@ interface Student {
   status: string;
   attendanceRate: number;
   paymentDestination?: "school" | "fleet-owner";
+};
+
+function normalizeStudent(raw: Record<string, unknown>, index: number): Student {
+  return {
+    id: String(raw.id ?? `student-${index + 1}`),
+    name: String(raw.name ?? "Unknown student"),
+    grade: String(raw.grade ?? "N/A"),
+    route: String(raw.route ?? "Unassigned"),
+    parent: String(raw.parent ?? "Unknown parent"),
+    parentPhone: String(raw.parentPhone ?? "N/A"),
+    address: String(raw.address ?? "N/A"),
+    status: String(raw.status ?? "active"),
+    attendanceRate: Number(raw.attendanceRate ?? 0),
+    paymentDestination: raw.paymentDestination === "school" ? "school" : "fleet-owner",
+  };
 }
 
 export default function ShuttleStudentsListPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [students, setStudents] = useState<Student[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [studentForm, setStudentForm] = useState({
     name: "",
     grade: "",
@@ -27,335 +44,140 @@ export default function ShuttleStudentsListPage() {
     parent: "",
     parentPhone: "",
     address: "",
-    paymentDestination: "fleet-owner" as "school" | "fleet-owner"
+    paymentDestination: "fleet-owner" as "school" | "fleet-owner",
   });
 
-  // Load students from localStorage on mount
-  React.useEffect(() => {
-    const storedStudents = JSON.parse(localStorage.getItem("shuttleStudents") || "[]");
-    if (storedStudents.length === 0) {
-      // Initialize with mock data if empty
-      const mockStudents: Student[] = [
-        {
-          id: 1,
-          name: "Emily Nakato",
-          grade: "Grade 5",
-          route: "Morning Route A",
-          parent: "Mary Nakato",
-          parentPhone: "+256 700 111 222",
-          address: "Kololo, Kampala",
-          status: "active",
-          attendanceRate: 95,
-          paymentDestination: "school"
-        },
-        {
-          id: 2,
-          name: "Daniel Okello",
-          grade: "Grade 7",
-          route: "Morning Route B",
-          parent: "James Okello",
-          parentPhone: "+256 700 222 333",
-          address: "Nakasero, Kampala",
-          status: "active",
-          attendanceRate: 92,
-          paymentDestination: "fleet-owner"
-        },
-        {
-          id: 3,
-          name: "Sarah Nambi",
-          grade: "Grade 6",
-          route: "Morning Route A",
-          parent: "Grace Nambi",
-          parentPhone: "+256 700 333 444",
-          address: "Bugolobi, Kampala",
-          status: "active",
-          attendanceRate: 98,
-          paymentDestination: "fleet-owner"
-        }
-      ];
-      localStorage.setItem("shuttleStudents", JSON.stringify(mockStudents));
-      setStudents(mockStudents);
-    } else {
-      setStudents(storedStudents);
+  const loadStudents = async () => {
+    setLoading(true);
+    try {
+      const rows = await listFleetShuttleStudents();
+      setStudents(rows.map((entry, index) => normalizeStudent(entry, index)));
+    } catch (error) {
+      console.error("Failed to load shuttle students", error);
+      toastManager.show("Failed to load students from backend", "error");
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    void loadStudents();
   }, []);
 
-  const filteredStudents = students.filter(s =>
-    s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    s.parent.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredStudents = useMemo(
+    () => students.filter((s) => s.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.parent.toLowerCase().includes(searchQuery.toLowerCase())),
+    [searchQuery, students],
   );
+
+  const handleAddStudent = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await createFleetShuttleStudent({
+        name: studentForm.name,
+        grade: studentForm.grade,
+        route: studentForm.route,
+        parent: studentForm.parent,
+        parentPhone: studentForm.parentPhone,
+        address: studentForm.address,
+        paymentDestination: studentForm.paymentDestination,
+        status: "active",
+        attendanceRate: 100,
+      });
+      toastManager.show("Student added successfully", "success");
+      setShowAddStudentModal(false);
+      setStudentForm({ name: "", grade: "", route: "", parent: "", parentPhone: "", address: "", paymentDestination: "fleet-owner" });
+      await loadStudents();
+    } catch (error) {
+      console.error("Failed to create student", error);
+      toastManager.show("Failed to create student", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50">
-      {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <Link
-            to="/school-shuttles"
-            className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 mb-2 inline-block"
-          >
-            ← Back to Dashboard
-          </Link>
+          <Link to="/school-shuttles" className="text-sm text-slate-600 hover:text-slate-900 mb-2 inline-block">← Back to Dashboard</Link>
           <h1 className="text-2xl font-semibold text-slate-900 mb-2">Shuttle Students</h1>
           <p className="text-sm text-slate-600">Manage student roster and route assignments</p>
         </div>
-        <button
-          onClick={() => setShowAddStudentModal(true)}
-          className="px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark"
-        >
-          + Add student
-        </button>
+        <button onClick={() => setShowAddStudentModal(true)} className="px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark">+ Add student</button>
       </div>
 
-      {/* Search */}
       <div className="mb-6">
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search by student or parent name..."
-          className="w-full px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green focus:border-transparent"
-        />
+        <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search by student or parent name..." className="w-full px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm" />
       </div>
 
-      {/* Students Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-slate-50 border-b border-slate-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Student
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Grade
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Route
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Parent Contact
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Attendance
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-slate-200">
-              {filteredStudents.map((student) => (
-                <tr key={student.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-sm font-medium text-blue-700">
-                        {student.name.split(' ').map(n => n[0]).join('')}
-                      </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-slate-900">{student.name}</div>
-                        <div className="text-xs text-slate-500">{student.address}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                    {student.grade}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <Link
-                      to="/school-shuttles/routes/1"
-                      className="text-sm text-ev-green hover:text-ev-green-dark font-medium"
-                    >
-                      {student.route}
-                    </Link>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-slate-900">{student.parent}</div>
-                    <div className="text-xs text-slate-500">{student.parentPhone}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <span className="text-sm font-medium text-slate-900 mr-2">{student.attendanceRate}%</span>
-                      <div className="w-16 bg-slate-200 rounded-full h-1.5">
-                        <div
-                          className="bg-emerald-500 rounded-full h-1.5"
-                          style={{ width: `${student.attendanceRate}%` }}
-                        />
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700">
-                      {student.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <Link
-                      to={`/school-shuttles/students/${student.id}`}
-                      className="text-ev-green hover:text-ev-green-dark mr-3"
-                    >
-                      View
-                    </Link>
-                    <Link
-                      to={`/school-shuttles/students/${student.id}/attendance`}
-                      className="text-blue-600 hover:text-blue-800"
-                    >
-                      Attendance
-                    </Link>
-                  </td>
+      {loading ? (
+        <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-600">Loading students...</div>
+      ) : (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Student</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Grade</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Route</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Parent Contact</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Attendance</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-slate-200">
+                {filteredStudents.map((student) => (
+                  <tr key={student.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-sm font-medium text-blue-700">{student.name.split(" ").map((n) => n[0]).join("")}</div>
+                        <div className="ml-4"><div className="text-sm font-medium text-slate-900">{student.name}</div><div className="text-xs text-slate-500">{student.address}</div></div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{student.grade}</td>
+                    <td className="px-6 py-4 whitespace-nowrap"><span className="text-sm text-ev-green font-medium">{student.route}</span></td>
+                    <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm text-slate-900">{student.parent}</div><div className="text-xs text-slate-500">{student.parentPhone}</div></td>
+                    <td className="px-6 py-4 whitespace-nowrap"><span className="text-sm font-medium text-slate-900">{student.attendanceRate}%</span></td>
+                    <td className="px-6 py-4 whitespace-nowrap"><span className="px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700">{student.status}</span></td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"><Link to={`/school-shuttles/students/${student.id}`} className="text-ev-green hover:text-ev-green-dark mr-3">View</Link></td>
+                  </tr>
+                ))}
+                {filteredStudents.length === 0 && (
+                  <tr><td colSpan={7} className="px-6 py-8 text-center text-sm text-slate-500">No students found.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Add Student Modal */}
-      <Modal
-        isOpen={showAddStudentModal}
-        onClose={() => {
-          setShowAddStudentModal(false);
-          setStudentForm({ name: "", grade: "", route: "", parent: "", parentPhone: "", address: "", paymentDestination: "fleet-owner" });
-        }}
-        title="Add New Student"
-        size="square"
-      >
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const newStudent = {
-              id: Date.now(),
-              ...studentForm,
-              status: "active",
-              attendanceRate: 100
-            };
-
-            const updatedStudents = [newStudent, ...students];
-            setStudents(updatedStudents);
-            localStorage.setItem("shuttleStudents", JSON.stringify(updatedStudents));
-
-            toastManager.show("Student added successfully!", "success");
-            setShowAddStudentModal(false);
-            setStudentForm({ name: "", grade: "", route: "", parent: "", parentPhone: "", address: "", paymentDestination: "fleet-owner" });
-          }}
-          className="space-y-3 flex-1 flex flex-col"
-        >
-          <div className="grid grid-cols-2 gap-4">
-            <label className="block">
-              <span className="text-sm font-medium text-slate-700 mb-1 block">Student Name *</span>
-              <input
-                type="text"
-                value={studentForm.name}
-                onChange={(e) => setStudentForm({ ...studentForm, name: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green"
-                placeholder="e.g., John Doe"
-                required
-              />
-            </label>
-            <label className="block">
-              <span className="text-sm font-medium text-slate-700 mb-1 block">Grade *</span>
-              <select
-                value={studentForm.grade}
-                onChange={(e) => setStudentForm({ ...studentForm, grade: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green"
-                required
-              >
-                <option value="">Select grade...</option>
-                <option value="Grade 1">Grade 1</option>
-                <option value="Grade 2">Grade 2</option>
-                <option value="Grade 3">Grade 3</option>
-                <option value="Grade 4">Grade 4</option>
-                <option value="Grade 5">Grade 5</option>
-                <option value="Grade 6">Grade 6</option>
-                <option value="Grade 7">Grade 7</option>
-              </select>
-            </label>
+      {showAddStudentModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl border border-slate-200 p-6 max-w-2xl w-full">
+            <h2 className="text-xl font-semibold text-slate-900 mb-4">Add New Student</h2>
+            <form onSubmit={handleAddStudent} className="space-y-3">
+              <div className="grid grid-cols-2 gap-4">
+                <label className="block"><span className="text-sm font-medium text-slate-700 mb-1 block">Student Name *</span><input type="text" value={studentForm.name} onChange={(e) => setStudentForm({ ...studentForm, name: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" required /></label>
+                <label className="block"><span className="text-sm font-medium text-slate-700 mb-1 block">Grade *</span><input type="text" value={studentForm.grade} onChange={(e) => setStudentForm({ ...studentForm, grade: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" required /></label>
+              </div>
+              <label className="block"><span className="text-sm font-medium text-slate-700 mb-1 block">Route *</span><input type="text" value={studentForm.route} onChange={(e) => setStudentForm({ ...studentForm, route: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" required /></label>
+              <label className="block"><span className="text-sm font-medium text-slate-700 mb-1 block">Address *</span><input type="text" value={studentForm.address} onChange={(e) => setStudentForm({ ...studentForm, address: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" required /></label>
+              <div className="grid grid-cols-2 gap-4">
+                <label className="block"><span className="text-sm font-medium text-slate-700 mb-1 block">Parent Name *</span><input type="text" value={studentForm.parent} onChange={(e) => setStudentForm({ ...studentForm, parent: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" required /></label>
+                <label className="block"><span className="text-sm font-medium text-slate-700 mb-1 block">Parent Phone *</span><input type="tel" value={studentForm.parentPhone} onChange={(e) => setStudentForm({ ...studentForm, parentPhone: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" required /></label>
+              </div>
+              <label className="block"><span className="text-sm font-medium text-slate-700 mb-1 block">Payment Destination *</span><select value={studentForm.paymentDestination} onChange={(e) => setStudentForm({ ...studentForm, paymentDestination: e.target.value as "school" | "fleet-owner" })} className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm" required><option value="fleet-owner">Fleet Owner</option><option value="school">School</option></select></label>
+              <div className="flex gap-2 pt-2">
+                <button type="button" onClick={() => setShowAddStudentModal(false)} className="flex-1 px-4 py-2 rounded-lg border border-slate-300 text-sm">Cancel</button>
+                <button type="submit" disabled={saving} className="flex-1 px-4 py-2 rounded-lg bg-ev-green text-white text-sm disabled:opacity-60">{saving ? "Saving..." : "Add Student"}</button>
+              </div>
+            </form>
           </div>
-          <label className="block">
-            <span className="text-sm font-medium text-slate-700 mb-1 block">Assign Route *</span>
-            <select
-              value={studentForm.route}
-              onChange={(e) => setStudentForm({ ...studentForm, route: e.target.value })}
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green"
-              required
-            >
-              <option value="">Select route...</option>
-              <option value="Morning Route A">Morning Route A</option>
-              <option value="Morning Route B">Morning Route B</option>
-              <option value="Afternoon Route A">Afternoon Route A</option>
-            </select>
-          </label>
-          <label className="block">
-            <span className="text-sm font-medium text-slate-700 mb-1 block">Home Address *</span>
-            <input
-              type="text"
-              value={studentForm.address}
-              onChange={(e) => setStudentForm({ ...studentForm, address: e.target.value })}
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green"
-              placeholder="e.g., Kololo, Kampala"
-              required
-            />
-          </label>
-          <div className="grid grid-cols-2 gap-4">
-            <label className="block">
-              <span className="text-sm font-medium text-slate-700 mb-1 block">Parent/Guardian Name *</span>
-              <input
-                type="text"
-                value={studentForm.parent}
-                onChange={(e) => setStudentForm({ ...studentForm, parent: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green"
-                placeholder="e.g., Jane Doe"
-                required
-              />
-            </label>
-            <label className="block">
-              <span className="text-sm font-medium text-slate-700 mb-1 block">Parent Phone *</span>
-              <input
-                type="tel"
-                value={studentForm.parentPhone}
-                onChange={(e) => setStudentForm({ ...studentForm, parentPhone: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green"
-                placeholder="+256 700 000 000"
-                required
-              />
-            </label>
-          </div>
-          <label className="block">
-            <span className="text-sm font-medium text-slate-700 mb-1 block">Payment Destination *</span>
-            <select
-              value={studentForm.paymentDestination}
-              onChange={(e) => setStudentForm({ ...studentForm, paymentDestination: e.target.value as "school" | "fleet-owner" })}
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green"
-              required
-            >
-              <option value="fleet-owner">Fleet Owner (Direct Payment)</option>
-              <option value="school">School (Payment via School)</option>
-            </select>
-            <p className="text-xs text-slate-500 mt-1">Select where parents should make payments</p>
-          </label>
-          <div className="flex gap-2 pt-2 mt-auto">
-            <button
-              type="button"
-              onClick={() => {
-                setShowAddStudentModal(false);
-                setStudentForm({ name: "", grade: "", route: "", parent: "", parentPhone: "", address: "", paymentDestination: "fleet-owner" });
-              }}
-              className="flex-1 px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark"
-            >
-              Add Student
-            </button>
-          </div>
-        </form>
-      </Modal>
+        </div>
+      )}
     </div>
   );
 }
