@@ -213,6 +213,29 @@
   box-sizing: border-box;
 }
 
+.fleet-register-password-field {
+  position: relative;
+}
+
+.fleet-register-password-field .form-control {
+  padding-right: 40px;
+}
+
+.fleet-register-password-toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  cursor: pointer;
+}
+
 .fleet-register-right .form-control:focus,
 .fleet-register-right input:focus,
 .fleet-register-right select:focus {
