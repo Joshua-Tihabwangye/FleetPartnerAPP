@@ -18,16 +18,51 @@ function normalizeSocketBaseUrl(value: string | undefined, apiBaseUrl: string): 
   return apiBaseUrl.replace(/\/api(?:\/v\d+)?$/, "");
 }
 
+const backendBaseUrlEnv = env.VITE_BACKEND_BASE_URL ?? env.VITE_API_BASE_URL;
+const backendEnabledEnv = env.VITE_BACKEND_ENABLED ?? env.VITE_USE_BACKEND;
 const IS_NON_PROD = (env.MODE?.trim().toLowerCase() ?? "development") !== "production";
 
-export const USE_BACKEND = parseBooleanFlag(env.VITE_USE_BACKEND, true);
-export const BACKEND_FLAG_EVENT = "evzone:backend_flag_changed";
-export const API_BASE_URL = normalizeBaseUrl(env.VITE_API_BASE_URL);
+export const FRONTEND_ONLY_MODE = parseBooleanFlag(env.VITE_FRONTEND_ONLY_MODE, false);
+export const USE_BACKEND = parseBooleanFlag(backendEnabledEnv, true) && !FRONTEND_ONLY_MODE;
+export const BACKEND_FLAG_EVENT = "evzone:backend-flag";
+export const API_BASE_URL = normalizeBaseUrl(backendBaseUrlEnv);
 export const SOCKET_BASE_URL = normalizeSocketBaseUrl(env.VITE_SOCKET_BASE_URL, API_BASE_URL);
 export const SOCKET_PATH = (env.VITE_SOCKET_PATH || "/socket.io").trim() || "/socket.io";
 export const APP_ID = (env.VITE_APP_ID || "fleet").trim() || "fleet";
 export const ALLOW_DEV_AUTH_FALLBACK = parseBooleanFlag(env.VITE_ALLOW_DEV_AUTH_FALLBACK, false) && IS_NON_PROD;
+const BACKEND_FLAG_STORAGE_KEY = `evzone_backend_flag_${APP_ID}`;
+
+function readStoredBackendFlag(): boolean | undefined {
+  if (typeof window === "undefined") return undefined;
+  if (FRONTEND_ONLY_MODE) return false;
+  const raw = window.localStorage.getItem(BACKEND_FLAG_STORAGE_KEY);
+  if (!raw) return undefined;
+
+  try {
+    const parsed = JSON.parse(raw) as { enabled?: boolean };
+    return typeof parsed.enabled === "boolean" ? parsed.enabled : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+let runtimeBackendEnabled: boolean | undefined = readStoredBackendFlag();
 
 export function getBackendEnabled(): boolean {
-  return USE_BACKEND;
+  if (FRONTEND_ONLY_MODE) return false;
+  return USE_BACKEND && (runtimeBackendEnabled ?? true);
+}
+
+export function setBackendEnabled(enabled: boolean): void {
+  if (FRONTEND_ONLY_MODE) {
+    runtimeBackendEnabled = false;
+    return;
+  }
+  runtimeBackendEnabled = enabled;
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(
+    BACKEND_FLAG_STORAGE_KEY,
+    JSON.stringify({ enabled, updatedAt: Date.now() }),
+  );
+  window.dispatchEvent(new CustomEvent(BACKEND_FLAG_EVENT, { detail: { appId: APP_ID, enabled } }));
 }

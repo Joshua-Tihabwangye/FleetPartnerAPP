@@ -9,15 +9,28 @@ import {
 import { ALLOW_DEV_AUTH_FALLBACK } from "../services/api/config";
 import {
   clearFleetBackendTokens,
+  readFleetBackendAccessToken,
   saveFleetBackendTokens,
   syncFleetWorkspaceState,
 } from "../services/api/fleetApi";
 
 const AUTH_KEY = "fleet_partner_auth";
 
+export const FLEET_BACKEND_ROLE_ENUMS = [
+  "fleet_owner",
+  "fleet_manager",
+  "fleet_dispatcher",
+  "fleet_finance",
+] as const;
+
+export type FleetBackendRole = (typeof FLEET_BACKEND_ROLE_ENUMS)[number];
+
+const FLEET_ROLE_SET = new Set<string>(FLEET_BACKEND_ROLE_ENUMS);
+
 export interface User {
   email: string;
-  role: "FleetOwner" | "Manager" | "Dispatcher" | "Finance";
+  role: FleetBackendRole;
+  roles: FleetBackendRole[];
   name: string;
 }
 
@@ -39,11 +52,53 @@ function shouldUseDevelopmentAuth(): boolean {
   return ALLOW_DEV_AUTH_FALLBACK && !isBackendAuthEnabled();
 }
 
-function mapFleetRole(roles?: string[]): User["role"] {
-  if (roles?.includes("fleet_finance")) return "Finance";
-  if (roles?.includes("fleet_dispatcher")) return "Dispatcher";
-  if (roles?.includes("fleet_manager")) return "Manager";
-  return "FleetOwner";
+function parseJwtPayload(token: string): { exp?: number; roles?: unknown } | null {
+  const parts = token.split(".");
+  if (parts.length < 2) return null;
+
+  try {
+    const normalized = parts[1]!.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+    const json = atob(padded);
+    return JSON.parse(json) as { exp?: number; roles?: unknown };
+  } catch {
+    return null;
+  }
+}
+
+function sanitizeFleetRoles(input?: unknown): FleetBackendRole[] {
+  if (!Array.isArray(input)) return [];
+
+  const normalized = input
+    .filter((role): role is string => typeof role === "string")
+    .map((role) => role.trim().toLowerCase())
+    .filter((role): role is FleetBackendRole => FLEET_ROLE_SET.has(role));
+
+  return Array.from(new Set(normalized));
+}
+
+function getClaimRolesFromToken(token: string): FleetBackendRole[] {
+  const payload = parseJwtPayload(token);
+  return sanitizeFleetRoles(payload?.roles);
+}
+
+function isAccessTokenExpired(token: string): boolean {
+  const payload = parseJwtPayload(token);
+  if (!payload?.exp) return false;
+  return payload.exp * 1000 <= Date.now();
+}
+
+function mapFleetPrimaryRole(roles: FleetBackendRole[]): FleetBackendRole {
+  if (roles.includes("fleet_finance")) return "fleet_finance";
+  if (roles.includes("fleet_dispatcher")) return "fleet_dispatcher";
+  if (roles.includes("fleet_manager")) return "fleet_manager";
+  return "fleet_owner";
+}
+
+function resolveCurrentBackendRoles(): FleetBackendRole[] {
+  const token = readFleetBackendAccessToken();
+  if (!token) return [];
+  return getClaimRolesFromToken(token);
 }
 
 function createDevelopmentAuthState(email: string): AuthState {
@@ -52,7 +107,8 @@ function createDevelopmentAuthState(email: string): AuthState {
     hasFinishedOnboarding: true,
     user: {
       email,
-      role: "FleetOwner",
+      role: "fleet_owner",
+      roles: ["fleet_owner"],
       name: email.split("@")[0] || "fleet-user",
     },
   };
@@ -96,12 +152,42 @@ export const auth = {
     if (typeof window === "undefined") {
       return defaultAuthState;
     }
+
+    let storedAuth: AuthState;
     try {
-      const stored = localStorage.getItem(AUTH_KEY);
-      return stored ? JSON.parse(stored) : defaultAuthState;
+      const raw = localStorage.getItem(AUTH_KEY);
+      storedAuth = raw ? (JSON.parse(raw) as AuthState) : defaultAuthState;
     } catch {
       return defaultAuthState;
     }
+
+    if (!storedAuth.isAuthenticated || !storedAuth.user) {
+      return storedAuth;
+    }
+
+    if (!isBackendAuthEnabled()) {
+      return storedAuth;
+    }
+
+    const accessToken = readFleetBackendAccessToken();
+    if (!accessToken || isAccessTokenExpired(accessToken)) {
+      auth.logout();
+      return defaultAuthState;
+    }
+
+    const claimRoles = resolveCurrentBackendRoles();
+    if (claimRoles.length > 0) {
+      const nextUser: User = {
+        ...storedAuth.user,
+        roles: claimRoles,
+        role: mapFleetPrimaryRole(claimRoles),
+      };
+      const nextAuth = { ...storedAuth, user: nextUser };
+      auth.setAuth(nextAuth);
+      return nextAuth;
+    }
+
+    return storedAuth;
   },
 
   setAuth(authData: AuthState): void {
@@ -125,19 +211,25 @@ export const auth = {
 
     if (!isBackendAuthEnabled()) {
       throw new Error(
-        "Fleet backend authentication is disabled. Enable VITE_USE_BACKEND=true or VITE_ALLOW_DEV_AUTH_FALLBACK=true in non-production.",
+        "Fleet backend authentication is disabled. Enable VITE_BACKEND_ENABLED=true or VITE_ALLOW_DEV_AUTH_FALLBACK=true in non-production.",
       );
     }
 
     try {
       const backend = await backendLogin({ email: normalizedEmail, password });
       saveFleetBackendTokens(backend.accessToken, backend.refreshToken);
+
+      const claimRoles = resolveCurrentBackendRoles();
+      const roles = claimRoles.length > 0 ? claimRoles : sanitizeFleetRoles(backend.user.roles);
+      const resolvedRoles: FleetBackendRole[] = roles.length > 0 ? roles : ["fleet_owner"];
+
       const authData: AuthState = {
         isAuthenticated: true,
         hasFinishedOnboarding: true,
         user: {
           email: backend.user.email,
-          role: mapFleetRole(backend.user.roles),
+          roles: resolvedRoles,
+          role: mapFleetPrimaryRole(resolvedRoles),
           name: backend.user.email.split("@")[0] || "fleet-user",
         },
       };
@@ -177,13 +269,13 @@ export const auth = {
         password,
         registrationNumber: input.registrationNumber?.trim(),
         taxId: input.taxId?.trim(),
-        });
+      });
       return;
     }
 
     if (!isBackendAuthEnabled()) {
       throw new Error(
-        "Fleet backend authentication is disabled. Enable VITE_USE_BACKEND=true or VITE_ALLOW_DEV_AUTH_FALLBACK=true in non-production.",
+        "Fleet backend authentication is disabled. Enable VITE_BACKEND_ENABLED=true or VITE_ALLOW_DEV_AUTH_FALLBACK=true in non-production.",
       );
     }
 
@@ -254,7 +346,8 @@ export const auth = {
   },
 
   isAuthenticated(): boolean {
-    return auth.getAuth().isAuthenticated;
+    const state = auth.getAuth();
+    return state.isAuthenticated && !!state.user;
   },
 
   hasFinishedOnboarding(): boolean {
@@ -263,5 +356,10 @@ export const auth = {
 
   getUser(): User | null {
     return auth.getAuth().user;
+  },
+
+  getUserRoles(): FleetBackendRole[] {
+    const user = auth.getUser();
+    return user?.roles ?? [];
   },
 };
