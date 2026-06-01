@@ -205,6 +205,29 @@
   box-sizing: border-box;
 }
 
+.fleet-password-field {
+  position: relative;
+}
+
+.fleet-password-field .fleet-login-control {
+  padding-right: 40px;
+}
+
+.fleet-password-toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  cursor: pointer;
+}
+
 .fleet-login-control:focus {
   border-color: #16a34a;
   box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
