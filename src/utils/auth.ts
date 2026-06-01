@@ -36,7 +36,7 @@ const defaultAuthState: AuthState = {
 const DEV_REGISTERED_USERS_KEY = "fleet_partner_dev_registered_users";
 
 function shouldUseDevelopmentAuth(): boolean {
-  return !isBackendAuthEnabled() || (import.meta.env.DEV && ALLOW_DEV_AUTH_FALLBACK);
+  return ALLOW_DEV_AUTH_FALLBACK && !isBackendAuthEnabled();
 }
 
 function mapFleetRole(roles?: string[]): User["role"] {
@@ -117,6 +117,12 @@ export const auth = {
       return authData;
     }
 
+    if (!isBackendAuthEnabled()) {
+      throw new Error(
+        "Fleet backend authentication is disabled. Enable VITE_USE_BACKEND=true or VITE_ALLOW_DEV_AUTH_FALLBACK=true in non-production.",
+      );
+    }
+
     try {
       const backend = await backendLogin({ email: normalizedEmail, password });
       saveFleetBackendTokens(backend.accessToken, backend.refreshToken);
@@ -162,6 +168,12 @@ export const auth = {
         password,
       });
       return;
+    }
+
+    if (!isBackendAuthEnabled()) {
+      throw new Error(
+        "Fleet backend authentication is disabled. Enable VITE_USE_BACKEND=true or VITE_ALLOW_DEV_AUTH_FALLBACK=true in non-production.",
+      );
     }
 
     try {
