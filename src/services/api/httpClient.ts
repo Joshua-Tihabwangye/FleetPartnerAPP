@@ -1,6 +1,4 @@
-
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001/api/v1";
-const APP_ID = import.meta.env.VITE_APP_ID || "fleet-partner-app";
+import { API_BASE_URL, APP_ID } from "./config";
 
 interface ApiEnvelope<T> {
   code?: string;
@@ -9,6 +7,8 @@ interface ApiEnvelope<T> {
   requestId?: string;
   data?: T;
 }
+
+type QueryValue = string | number | boolean | null | undefined;
 
 export interface TokenRefreshResult {
   accessToken: string;
@@ -28,6 +28,7 @@ interface RequestOptions {
   method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
   body?: unknown;
   headers?: Record<string, string>;
+  query?: Record<string, QueryValue>;
   retryOnUnauthorized?: boolean;
 }
 
@@ -96,8 +97,23 @@ function handleUnauthorized() {
   authAdapter?.onUnauthorized?.();
 }
 
+function buildRequestUrl(path: string, query?: Record<string, QueryValue>): string {
+  if (!query) {
+    return `${API_BASE_URL}${path}`;
+  }
+
+  const search = new URLSearchParams();
+  Object.entries(query).forEach(([key, value]) => {
+    if (value === undefined || value === null) return;
+    search.set(key, String(value));
+  });
+
+  const suffix = search.toString();
+  return suffix ? `${API_BASE_URL}${path}?${suffix}` : `${API_BASE_URL}${path}`;
+}
+
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(buildRequestUrl(path, options.query), {
     method: options.method || "GET",
     headers: buildHeaders(options),
     body: options.body === undefined ? undefined : JSON.stringify(options.body),

@@ -1,14 +1,68 @@
-// Previously re-exported from "@shared/config" which does not exist.
-// Backend feature flag is controlled by the VITE_BACKEND_ENABLED env var.
+const env = import.meta.env as Record<string, string | undefined>;
 
-export function getBackendEnabled(): boolean {
-  const val = import.meta.env.VITE_BACKEND_ENABLED as string | undefined;
-  if (!val) return true; // default on when not set
-  return val !== "false" && val !== "0";
+function parseBooleanFlag(value: string | undefined, fallback = false): boolean {
+  if (!value) return fallback;
+  const normalized = value.trim().toLowerCase();
+  return normalized === "true" || normalized === "1" || normalized === "yes";
 }
 
-export const BACKEND_FLAG_EVENT = "evzone:backend_flag_changed";
-export const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001/api/v1";
-export const SOCKET_BASE_URL = import.meta.env.VITE_SOCKET_BASE_URL || API_BASE_URL.replace(/\/api\/v1\/?$/, "");
-export const SOCKET_PATH = import.meta.env.VITE_SOCKET_PATH || "/socket.io";
-export const ALLOW_DEV_AUTH_FALLBACK = import.meta.env.VITE_ALLOW_DEV_AUTH_FALLBACK !== "false";
+function normalizeBaseUrl(value: string | undefined): string {
+  const raw = value?.trim();
+  if (!raw) return "http://localhost:3001/api/v1";
+  return raw.replace(/\/+$/, "");
+}
+
+function normalizeSocketBaseUrl(value: string | undefined, apiBaseUrl: string): string {
+  const raw = value?.trim();
+  if (raw) return raw.replace(/\/+$/, "");
+  return apiBaseUrl.replace(/\/api(?:\/v\d+)?$/, "");
+}
+
+const backendBaseUrlEnv = env.VITE_BACKEND_BASE_URL ?? env.VITE_API_BASE_URL;
+const backendEnabledEnv = env.VITE_BACKEND_ENABLED ?? env.VITE_USE_BACKEND;
+const IS_NON_PROD = (env.MODE?.trim().toLowerCase() ?? "development") !== "production";
+
+export const FRONTEND_ONLY_MODE = parseBooleanFlag(env.VITE_FRONTEND_ONLY_MODE, false);
+export const USE_BACKEND = parseBooleanFlag(backendEnabledEnv, true) && !FRONTEND_ONLY_MODE;
+export const BACKEND_FLAG_EVENT = "evzone:backend-flag";
+export const API_BASE_URL = normalizeBaseUrl(backendBaseUrlEnv);
+export const SOCKET_BASE_URL = normalizeSocketBaseUrl(env.VITE_SOCKET_BASE_URL, API_BASE_URL);
+export const SOCKET_PATH = (env.VITE_SOCKET_PATH || "/socket.io").trim() || "/socket.io";
+export const APP_ID = (env.VITE_APP_ID || "fleet").trim() || "fleet";
+export const ALLOW_DEV_AUTH_FALLBACK = parseBooleanFlag(env.VITE_ALLOW_DEV_AUTH_FALLBACK, false) && IS_NON_PROD;
+const BACKEND_FLAG_STORAGE_KEY = `evzone_backend_flag_${APP_ID}`;
+
+function readStoredBackendFlag(): boolean | undefined {
+  if (typeof window === "undefined") return undefined;
+  if (FRONTEND_ONLY_MODE) return false;
+  const raw = window.localStorage.getItem(BACKEND_FLAG_STORAGE_KEY);
+  if (!raw) return undefined;
+
+  try {
+    const parsed = JSON.parse(raw) as { enabled?: boolean };
+    return typeof parsed.enabled === "boolean" ? parsed.enabled : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+let runtimeBackendEnabled: boolean | undefined = readStoredBackendFlag();
+
+export function getBackendEnabled(): boolean {
+  if (FRONTEND_ONLY_MODE) return false;
+  return USE_BACKEND && (runtimeBackendEnabled ?? true);
+}
+
+export function setBackendEnabled(enabled: boolean): void {
+  if (FRONTEND_ONLY_MODE) {
+    runtimeBackendEnabled = false;
+    return;
+  }
+  runtimeBackendEnabled = enabled;
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(
+    BACKEND_FLAG_STORAGE_KEY,
+    JSON.stringify({ enabled, updatedAt: Date.now() }),
+  );
+  window.dispatchEvent(new CustomEvent(BACKEND_FLAG_EVENT, { detail: { appId: APP_ID, enabled } }));
+}
