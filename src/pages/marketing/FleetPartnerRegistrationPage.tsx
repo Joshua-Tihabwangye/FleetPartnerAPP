@@ -11,6 +11,8 @@ export default function FleetPartnerRegistrationPage() {
     companyName: "",
     email: "",
     phone: "",
+    registrationNumber: "",
+    taxId: "",
     fleetSize: "",
     password: "",
     services: [] as string[]
@@ -24,8 +26,13 @@ export default function FleetPartnerRegistrationPage() {
         companyName: formData.companyName,
         email: formData.email,
         phone: formData.phone,
+        registrationNumber: formData.registrationNumber,
+        taxId: formData.taxId,
         fleetSize: formData.fleetSize,
         services: formData.services,
+        metadata: {
+          source: "fleet-partner-registration-page",
+        },
         password: formData.password,
       });
     } catch (registrationError) {
@@ -170,6 +177,30 @@ export default function FleetPartnerRegistrationPage() {
                 <option value="100+">100+ vehicles</option>
               </select>
             </label>
+
+            <div className="form-row">
+              <label className="form-group">
+                <span>Registration number</span>
+                <input
+                  type="text"
+                  value={formData.registrationNumber}
+                  onChange={(e) => setFormData({ ...formData, registrationNumber: e.target.value })}
+                  className="form-control"
+                  placeholder="Company registration no."
+                />
+              </label>
+
+              <label className="form-group">
+                <span>Tax ID</span>
+                <input
+                  type="text"
+                  value={formData.taxId}
+                  onChange={(e) => setFormData({ ...formData, taxId: e.target.value })}
+                  className="form-control"
+                  placeholder="Tax identification no."
+                />
+              </label>
+            </div>
 
             <label className="form-group">
               <span>Password</span>

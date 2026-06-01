@@ -62,8 +62,11 @@ function saveDevelopmentRegistration(input: {
   companyName: string;
   email: string;
   phone?: string;
+  registrationNumber?: string;
+  taxId?: string;
   fleetSize?: string;
   services?: string[];
+  metadata?: Record<string, unknown>;
   password: string;
 }): void {
   if (typeof window === "undefined") return;
@@ -74,8 +77,11 @@ function saveDevelopmentRegistration(input: {
       companyName: input.companyName,
       email: input.email,
       phone: input.phone ?? "",
+      registrationNumber: input.registrationNumber ?? "",
+      taxId: input.taxId ?? "",
       fleetSize: input.fleetSize ?? "",
       services: input.services ?? [],
+      metadata: input.metadata ?? {},
       password: input.password,
       createdAt: new Date().toISOString(),
     });
@@ -150,8 +156,11 @@ export const auth = {
     companyName: string;
     email: string;
     phone?: string;
+    registrationNumber?: string;
+    taxId?: string;
     fleetSize?: string;
     services?: string[];
+    metadata?: Record<string, unknown>;
     password: string;
   }): Promise<void> {
     const normalizedEmail = input.email.trim().toLowerCase();
@@ -166,7 +175,9 @@ export const auth = {
         companyName: input.companyName.trim() || "Fleet Partner",
         email: normalizedEmail,
         password,
-      });
+        registrationNumber: input.registrationNumber?.trim(),
+        taxId: input.taxId?.trim(),
+        });
       return;
     }
 
@@ -182,6 +193,16 @@ export const auth = {
         email: normalizedEmail,
         phone: input.phone?.trim(),
         password,
+        fleetProfile: {
+          companyName: input.companyName.trim() || "Fleet Partner",
+          contactEmail: normalizedEmail,
+          contactPhone: input.phone?.trim(),
+          registrationNumber: input.registrationNumber?.trim(),
+          taxId: input.taxId?.trim(),
+          fleetSize: input.fleetSize?.trim(),
+          services: input.services ?? [],
+          metadata: input.metadata ?? {},
+        },
       });
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Registration failed.";

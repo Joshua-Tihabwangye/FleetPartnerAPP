@@ -25,6 +25,16 @@ export interface BackendRegisterInput {
   email: string;
   phone?: string;
   password: string;
+  fleetProfile?: {
+    companyName?: string;
+    contactEmail?: string;
+    contactPhone?: string;
+    registrationNumber?: string;
+    taxId?: string;
+    fleetSize?: string;
+    services?: string[];
+    metadata?: Record<string, unknown>;
+  };
 }
 
 export interface BackendForgotPasswordInput {

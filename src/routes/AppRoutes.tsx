@@ -208,13 +208,12 @@ export default function AppRoutes() {
         <Route
           path="/ambulance/dispatch"
           element={
-            <RoleGuard allowedRoles={["FleetOwner", "EMSDispatcher"]}>
+            <RoleGuard allowedRoles={["FleetOwner", "Dispatcher"]}>
               <AmbulanceDispatchBoardPage />
             </RoleGuard>
           }
         />
         <Route path="/ambulance" element={<AmbulanceDashboardPage />} />
-        <Route path="/ambulance/dispatch" element={<AmbulanceDispatchBoardPage />} />
         <Route path="/ambulance/cases" element={<AmbulanceCasesListPage />} />
         <Route path="/ambulance/cases/:caseId" element={<AmbulanceCaseDetailPage />} />
 
