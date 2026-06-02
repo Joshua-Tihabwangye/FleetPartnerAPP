@@ -28,8 +28,51 @@ export const FLEET_BACKEND_ROLE_ENUMS = [
 ] as const;
 
 export type FleetBackendRole = (typeof FLEET_BACKEND_ROLE_ENUMS)[number];
+export type FleetPermission =
+  | "drivers:view"
+  | "drivers:write"
+  | "drivers:export"
+  | "vehicles:view"
+  | "vehicles:write"
+  | "vehicles:export"
+  | "dispatch:view"
+  | "dispatch:write"
+  | "settings:roles:view"
+  | "settings:roles:write";
+
+type FleetRoleClaimStatus = {
+  roles: FleetBackendRole[];
+  hasUnknownRoles: boolean;
+};
 
 const FLEET_ROLE_SET = new Set<string>(FLEET_BACKEND_ROLE_ENUMS);
+const FLEET_ROLE_PERMISSIONS: Record<FleetBackendRole, readonly FleetPermission[]> = {
+  fleet_owner: [
+    "drivers:view",
+    "drivers:write",
+    "drivers:export",
+    "vehicles:view",
+    "vehicles:write",
+    "vehicles:export",
+    "dispatch:view",
+    "dispatch:write",
+    "settings:roles:view",
+    "settings:roles:write",
+  ],
+  fleet_manager: [
+    "drivers:view",
+    "drivers:write",
+    "drivers:export",
+    "vehicles:view",
+    "vehicles:write",
+    "vehicles:export",
+    "dispatch:view",
+    "settings:roles:view",
+    "settings:roles:write",
+  ],
+  fleet_dispatcher: ["drivers:view", "vehicles:view", "dispatch:view", "dispatch:write"],
+  fleet_finance: ["dispatch:view"],
+};
 
 export interface User {
   email: string;
@@ -70,20 +113,38 @@ function parseJwtPayload(token: string): { exp?: number; roles?: unknown } | nul
   }
 }
 
-function sanitizeFleetRoles(input?: unknown): FleetBackendRole[] {
-  if (!Array.isArray(input)) return [];
+function parseFleetRoleClaims(input?: unknown): FleetRoleClaimStatus {
+  if (!Array.isArray(input)) return { roles: [], hasUnknownRoles: false };
 
-  const normalized = input
-    .filter((role): role is string => typeof role === "string")
-    .map((role) => role.trim().toLowerCase())
-    .filter((role): role is FleetBackendRole => FLEET_ROLE_SET.has(role));
+  const normalized = new Set<FleetBackendRole>();
+  let hasUnknownRoles = false;
 
-  return Array.from(new Set(normalized));
+  for (const value of input) {
+    if (typeof value !== "string") {
+      hasUnknownRoles = true;
+      continue;
+    }
+
+    const role = value.trim().toLowerCase();
+    if (!role) continue;
+
+    if (FLEET_ROLE_SET.has(role)) {
+      normalized.add(role as FleetBackendRole);
+    } else {
+      hasUnknownRoles = true;
+    }
+  }
+
+  return { roles: Array.from(normalized), hasUnknownRoles };
 }
 
-function getClaimRolesFromToken(token: string): FleetBackendRole[] {
+function sanitizeFleetRoles(input?: unknown): FleetBackendRole[] {
+  return parseFleetRoleClaims(input).roles;
+}
+
+function getClaimRolesFromToken(token: string): FleetRoleClaimStatus {
   const payload = parseJwtPayload(token);
-  return sanitizeFleetRoles(payload?.roles);
+  return parseFleetRoleClaims(payload?.roles);
 }
 
 function isAccessTokenExpired(token: string): boolean {
@@ -99,10 +160,19 @@ function mapFleetPrimaryRole(roles: FleetBackendRole[]): FleetBackendRole {
   return "fleet_owner";
 }
 
-function resolveCurrentBackendRoles(): FleetBackendRole[] {
+function resolveCurrentBackendRoles(): FleetRoleClaimStatus {
   const token = readFleetBackendAccessToken();
-  if (!token) return [];
+  if (!token) return { roles: [], hasUnknownRoles: false };
   return getClaimRolesFromToken(token);
+}
+
+function hasAnyFleetPermissionByRoles(roles: FleetBackendRole[], required: readonly FleetPermission[]): boolean {
+  if (required.length === 0) return true;
+  const granted = new Set<FleetPermission>();
+  roles.forEach((role) => {
+    FLEET_ROLE_PERMISSIONS[role].forEach((permission) => granted.add(permission));
+  });
+  return required.some((permission) => granted.has(permission));
 }
 
 function createDevelopmentAuthState(email: string): AuthState {
@@ -180,11 +250,16 @@ export const auth = {
     }
 
     const claimRoles = resolveCurrentBackendRoles();
-    if (claimRoles.length > 0) {
+    if (claimRoles.hasUnknownRoles) {
+      auth.logout();
+      return defaultAuthState;
+    }
+
+    if (claimRoles.roles.length > 0) {
       const nextUser: User = {
         ...storedAuth.user,
-        roles: claimRoles,
-        role: mapFleetPrimaryRole(claimRoles),
+        roles: claimRoles.roles,
+        role: mapFleetPrimaryRole(claimRoles.roles),
       };
       const nextAuth = { ...storedAuth, user: nextUser };
       auth.setAuth(nextAuth);
@@ -222,8 +297,17 @@ export const auth = {
       saveFleetBackendTokens(backend.accessToken, backend.refreshToken);
 
       const claimRoles = resolveCurrentBackendRoles();
-      const roles = claimRoles.length > 0 ? claimRoles : sanitizeFleetRoles(backend.user.roles);
-      const resolvedRoles: FleetBackendRole[] = roles.length > 0 ? roles : ["fleet_owner"];
+      if (claimRoles.hasUnknownRoles) {
+        auth.logout();
+        throw new Error("Received unsupported fleet role claims.");
+      }
+
+      const roles = claimRoles.roles.length > 0 ? claimRoles.roles : sanitizeFleetRoles(backend.user.roles);
+      if (roles.length === 0) {
+        auth.logout();
+        throw new Error("Fleet account has no supported backend role.");
+      }
+      const resolvedRoles: FleetBackendRole[] = roles;
 
       const authData: AuthState = {
         isAuthenticated: true,
@@ -352,5 +436,13 @@ export const auth = {
   getUserRoles(): FleetBackendRole[] {
     const user = auth.getUser();
     return user?.roles ?? [];
+  },
+
+  hasPermission(permission: FleetPermission): boolean {
+    return hasAnyFleetPermissionByRoles(auth.getUserRoles(), [permission]);
+  },
+
+  hasAnyPermission(required: FleetPermission[]): boolean {
+    return hasAnyFleetPermissionByRoles(auth.getUserRoles(), required);
   },
 };

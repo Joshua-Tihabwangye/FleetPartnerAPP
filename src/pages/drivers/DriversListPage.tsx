@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Modal from "../../components/ui/Modal";
+import { auth } from "../../utils/auth";
 import { getCachedFleetDrivers, isFleetBackendEnabled, refreshFleetWorkspaceState } from "../../services/api/fleetApi";
 
 interface Driver {
@@ -27,6 +28,8 @@ export default function DriversListPage() {
   const [activeKpi, setActiveKpi] = useState<string | null>(null);
   const [showActionsMenu, setShowActionsMenu] = useState<number | null>(null);
   const backendMode = isFleetBackendEnabled();
+  const canManageDrivers = auth.hasPermission("drivers:write");
+  const canExportDrivers = auth.hasPermission("drivers:export");
 
   useEffect(() => {
     const load = async () => {
@@ -131,7 +134,9 @@ export default function DriversListPage() {
           </div>
           <Link
             to="/drivers/new"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-ev-green text-white text-sm font-medium shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition"
+            aria-disabled={!canManageDrivers}
+            onClick={(event) => { if (!canManageDrivers) event.preventDefault(); }}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium shadow-lg shadow-emerald-500/20 transition ${canManageDrivers ? "bg-ev-green text-white hover:bg-emerald-600" : "bg-slate-200 text-slate-500 cursor-not-allowed shadow-none"}` }
           >
             + Add Driver
           </Link>
@@ -183,7 +188,8 @@ export default function DriversListPage() {
           </button>
           <button
             onClick={handleExport}
-            className="flex-1 sm:flex-none px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
+            disabled={!canExportDrivers}
+            className="flex-1 sm:flex-none px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
           >
             Export
           </button>
