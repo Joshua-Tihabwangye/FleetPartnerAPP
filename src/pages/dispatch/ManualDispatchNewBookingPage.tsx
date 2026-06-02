@@ -8,6 +8,7 @@ import {
   isFleetBackendEnabled,
   refreshFleetWorkspaceState,
 } from "../../services/api/fleetApi";
+import { ALLOW_CACHE_FALLBACK } from "../../services/api/config";
 
 // Mock address suggestions for autocomplete simulation
 const mockAddresses = [
@@ -115,6 +116,11 @@ export default function ManualDispatchNewBookingPage() {
   });
 
   const persistLocally = () => {
+    if (!ALLOW_CACHE_FALLBACK) {
+      toastManager.show("Local dispatch fallback is disabled in production.", "error");
+      return;
+    }
+
     const newDispatch = {
       id: Date.now(),
       pickup: formData.pickupLocation,

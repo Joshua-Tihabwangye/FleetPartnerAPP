@@ -1,5 +1,5 @@
 import { request, configureHttpClientAuth, type TokenRefreshResult } from "./httpClient";
-import { SOCKET_BASE_URL, SOCKET_PATH, getBackendEnabled } from "./config";
+import { ALLOW_CACHE_FALLBACK, SOCKET_BASE_URL, SOCKET_PATH, getBackendEnabled } from "./config";
 import { io, type Socket } from "socket.io-client";
 
 export const FLEET_BACKEND_ACCESS_TOKEN_KEY = "fleet_backend_access_token";
@@ -176,12 +176,12 @@ export function createFleetSocket(): Socket {
 }
 
 function writeStorage(key: string, value: unknown) {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || !ALLOW_CACHE_FALLBACK) return;
   window.localStorage.setItem(key, JSON.stringify(value));
 }
 
 function readStorage<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined") return fallback;
+  if (typeof window === "undefined" || !ALLOW_CACHE_FALLBACK) return fallback;
   try {
     const raw = window.localStorage.getItem(key);
     if (!raw) return fallback;

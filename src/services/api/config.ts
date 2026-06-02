@@ -8,7 +8,7 @@ function parseBooleanFlag(value: string | undefined, fallback = false): boolean 
 
 function normalizeBaseUrl(value: string | undefined): string {
   const raw = value?.trim();
-  if (!raw) return "http://localhost:3001/api/v1";
+  if (!raw) return "/api/v1";
   return raw.replace(/\/+$/, "");
 }
 
@@ -30,6 +30,7 @@ export const SOCKET_BASE_URL = normalizeSocketBaseUrl(env.VITE_SOCKET_BASE_URL, 
 export const SOCKET_PATH = (env.VITE_SOCKET_PATH || "/socket.io").trim() || "/socket.io";
 export const APP_ID = (env.VITE_APP_ID || "fleet").trim() || "fleet";
 export const ALLOW_DEV_AUTH_FALLBACK = parseBooleanFlag(env.VITE_ALLOW_DEV_AUTH_FALLBACK, false) && IS_NON_PROD;
+export const ALLOW_CACHE_FALLBACK = IS_NON_PROD;
 const BACKEND_FLAG_STORAGE_KEY = `evzone_backend_flag_${APP_ID}`;
 
 function readStoredBackendFlag(): boolean | undefined {

@@ -7,6 +7,7 @@ import {
   patchFleetPortalSettings,
   patchFleetProfile,
 } from "../../services/api/fleetApi";
+import { normalizeFleetProfileInput } from "../../services/api/validators";
 import { toastManager } from "../../utils/toastManager";
 
 type ProfileForm = {
@@ -83,14 +84,23 @@ export default function FleetPartnerProfilePage() {
   }, [form, twoFactorEnabled]);
 
   const handleSaveProfile = async () => {
+    let profilePayload;
+    try {
+      profilePayload = normalizeFleetProfileInput({
+        companyName: form.companyName,
+        contactEmail: form.contactEmail,
+        contactPhone: form.contactPhone,
+      });
+    } catch (validationError) {
+      const message = validationError instanceof Error ? validationError.message : "Please review the profile form.";
+      toastManager.show(message, "error");
+      return;
+    }
+
     setSaving(true);
     try {
       await Promise.all([
-        patchFleetProfile({
-          companyName: form.companyName,
-          contactEmail: form.contactEmail,
-          contactPhone: form.contactPhone,
-        }),
+        patchFleetProfile(profilePayload),
         patchFleetPortalSettings({
           language: form.language,
           notifications: form.notifications,
