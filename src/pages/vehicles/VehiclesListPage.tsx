@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Modal from "../../components/ui/Modal";
+import { auth } from "../../utils/auth";
 import { getCachedFleetVehicles, isFleetBackendEnabled, refreshFleetWorkspaceState } from "../../services/api/fleetApi";
 
 export interface Vehicle {
@@ -34,6 +35,8 @@ export default function VehiclesListPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [activeKpi, setActiveKpi] = useState<string | null>(null);
   const backendMode = isFleetBackendEnabled();
+  const canManageVehicles = auth.hasPermission("vehicles:write");
+  const canExportVehicles = auth.hasPermission("vehicles:export");
 
   useEffect(() => {
     const load = async () => {
@@ -165,7 +168,9 @@ export default function VehiclesListPage() {
             </Link>
             <Link
               to="/vehicles/create"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-ev-green to-emerald-600 text-white text-sm font-medium shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition"
+              aria-disabled={!canManageVehicles}
+              onClick={(event) => { if (!canManageVehicles) event.preventDefault(); }}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ${canManageVehicles ? "bg-gradient-to-r from-ev-green to-emerald-600 text-white shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30" : "bg-slate-200 text-slate-500 cursor-not-allowed"}`}
             >
               + Add Vehicle
             </Link>
@@ -218,7 +223,8 @@ export default function VehiclesListPage() {
           </button>
           <button
             onClick={handleExport}
-            className="flex-1 sm:flex-none px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
+            disabled={!canExportVehicles}
+            className="flex-1 sm:flex-none px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
           >
             Export
           </button>
