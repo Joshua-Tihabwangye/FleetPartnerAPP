@@ -8,6 +8,10 @@ import {
 } from "../services/api/authApi";
 import { ALLOW_DEV_AUTH_FALLBACK } from "../services/api/config";
 import {
+  normalizeFleetLoginInput,
+  normalizeFleetRegistrationInput,
+} from "../services/api/validators";
+import {
   clearFleetBackendTokens,
   readFleetBackendAccessToken,
   saveFleetBackendTokens,
@@ -197,10 +201,8 @@ export const auth = {
   },
 
   async login(email: string, password: string): Promise<AuthState> {
-    const normalizedEmail = email.trim().toLowerCase();
-    if (!normalizedEmail || !password.trim()) {
-      throw new Error("Please enter both email and password.");
-    }
+    const credentials = normalizeFleetLoginInput({ email, password });
+    const normalizedEmail = credentials.email;
 
     if (shouldUseDevelopmentAuth()) {
       const authData = createDevelopmentAuthState(normalizedEmail);
@@ -216,7 +218,7 @@ export const auth = {
     }
 
     try {
-      const backend = await backendLogin({ email: normalizedEmail, password });
+      const backend = await backendLogin(credentials);
       saveFleetBackendTokens(backend.accessToken, backend.refreshToken);
 
       const claimRoles = resolveCurrentBackendRoles();
@@ -255,21 +257,10 @@ export const auth = {
     metadata?: Record<string, unknown>;
     password: string;
   }): Promise<void> {
-    const normalizedEmail = input.email.trim().toLowerCase();
-    const password = input.password.trim();
-    if (!normalizedEmail || !password) {
-      throw new Error("Email and password are required.");
-    }
+    const registration = normalizeFleetRegistrationInput(input);
 
     if (shouldUseDevelopmentAuth()) {
-      saveDevelopmentRegistration({
-        ...input,
-        companyName: input.companyName.trim() || "Fleet Partner",
-        email: normalizedEmail,
-        password,
-        registrationNumber: input.registrationNumber?.trim(),
-        taxId: input.taxId?.trim(),
-      });
+      saveDevelopmentRegistration(registration);
       return;
     }
 
@@ -281,19 +272,19 @@ export const auth = {
 
     try {
       await backendRegister({
-        fullName: input.companyName.trim() || "Fleet Partner",
-        email: normalizedEmail,
-        phone: input.phone?.trim(),
-        password,
+        fullName: registration.companyName,
+        email: registration.email,
+        phone: registration.phone,
+        password: registration.password,
         fleetProfile: {
-          companyName: input.companyName.trim() || "Fleet Partner",
-          contactEmail: normalizedEmail,
-          contactPhone: input.phone?.trim(),
-          registrationNumber: input.registrationNumber?.trim(),
-          taxId: input.taxId?.trim(),
-          fleetSize: input.fleetSize?.trim(),
-          services: input.services ?? [],
-          metadata: input.metadata ?? {},
+          companyName: registration.companyName,
+          contactEmail: registration.email,
+          contactPhone: registration.phone,
+          registrationNumber: registration.registrationNumber,
+          taxId: registration.taxId,
+          fleetSize: registration.fleetSize,
+          services: registration.services,
+          metadata: registration.metadata,
         },
       });
     } catch (error) {

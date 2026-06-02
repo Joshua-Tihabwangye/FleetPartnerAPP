@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toastManager } from "../../utils/toastManager";
 import { auth } from "../../utils/auth";
+import { normalizeFleetRegistrationInput } from "../../services/api/validators";
 import "./FleetPartnerRegistrationPage.css";
 
 export default function FleetPartnerRegistrationPage() {
@@ -15,26 +16,28 @@ export default function FleetPartnerRegistrationPage() {
     taxId: "",
     fleetSize: "",
     password: "",
-    services: [] as string[]
+    services: [] as string[],
   });
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    let registration;
     try {
-      await auth.register({
-        companyName: formData.companyName,
-        email: formData.email,
-        phone: formData.phone,
-        registrationNumber: formData.registrationNumber,
-        taxId: formData.taxId,
-        fleetSize: formData.fleetSize,
-        services: formData.services,
+      registration = normalizeFleetRegistrationInput({
+        ...formData,
         metadata: {
           source: "fleet-partner-registration-page",
         },
-        password: formData.password,
       });
+    } catch (validationError) {
+      const message = validationError instanceof Error ? validationError.message : "Please review the registration form.";
+      toastManager.show(message, "error");
+      return;
+    }
+
+    try {
+      await auth.register(registration);
     } catch (registrationError) {
       const message =
         registrationError instanceof Error
@@ -49,21 +52,21 @@ export default function FleetPartnerRegistrationPage() {
   };
 
   const handleServiceToggle = (service: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       services: prev.services.includes(service)
-        ? prev.services.filter(s => s !== service)
-        : [...prev.services, service]
+        ? prev.services.filter((item) => item !== service)
+        : [...prev.services, service],
     }));
   };
 
   const services = [
-    { id: "Rides", icon: "🚗" },
-    { id: "Delivery", icon: "📦" },
-    { id: "Rentals", icon: "🚘" },
-    { id: "School Shuttles", icon: "🚌" },
-    { id: "Tours", icon: "🌍" },
-    { id: "EMS", icon: "🚑" }
+    { id: "ride", label: "Rides", icon: "🚗" },
+    { id: "delivery", label: "Delivery", icon: "📦" },
+    { id: "rental", label: "Rentals", icon: "🚘" },
+    { id: "school_shuttle", label: "School Shuttles", icon: "🚌" },
+    { id: "tour", label: "Tours", icon: "🌍" },
+    { id: "ambulance", label: "EMS", icon: "🚑" },
   ];
 
   return (
@@ -210,7 +213,7 @@ export default function FleetPartnerRegistrationPage() {
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   className="form-control"
-                  placeholder="Enter any password for development"
+                  placeholder="Create a secure password"
                   required
                 />
                 <button
@@ -237,7 +240,7 @@ export default function FleetPartnerRegistrationPage() {
                       className={`service-card${selected ? " selected" : ""}`}
                     >
                       <div className="service-icon">{service.icon}</div>
-                      <div className="service-name">{service.id}</div>
+                      <div className="service-name">{service.label}</div>
                     </button>
                   );
                 })}
