@@ -9,6 +9,9 @@ import "./FleetPartnerRegistrationPage.css";
 export default function FleetPartnerRegistrationPage() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [submitSuccess, setSubmitSuccess] = useState("");
   const [formData, setFormData] = useState({
     companyName: "",
     email: "",
@@ -22,6 +25,9 @@ export default function FleetPartnerRegistrationPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setSubmitError("");
+    setSubmitSuccess("");
+    setIsSubmitting(true);
 
     let registration;
     try {
@@ -33,7 +39,9 @@ export default function FleetPartnerRegistrationPage() {
       });
     } catch (validationError) {
       const message = validationError instanceof Error ? validationError.message : "Please review the registration form.";
+      setSubmitError(message);
       toastManager.show(message, "error");
+      setIsSubmitting(false);
       return;
     }
 
@@ -45,15 +53,21 @@ export default function FleetPartnerRegistrationPage() {
         registrationError instanceof Error
           ? registrationError.message
           : "Unable to submit registration right now.";
+      setSubmitError(message);
       toastManager.show(message, "error");
+      setIsSubmitting(false);
       return;
     }
 
-    toastManager.show("Registration successful. You can now sign in with this email and password.", "success");
+    const successMessage = "Registration successful. You can now sign in with this email and password.";
+    setSubmitSuccess(successMessage);
+    toastManager.show(successMessage, "success");
+    setIsSubmitting(false);
     setTimeout(() => navigate("/login"), 1500);
   };
 
   const handleServiceToggle = (service: string) => {
+    setSubmitError("");
     setFormData((prev) => ({
       ...prev,
       services: prev.services.includes(service)
@@ -128,13 +142,24 @@ export default function FleetPartnerRegistrationPage() {
             Register your fleet and start managing everything from one platform
           </p>
 
-          <form onSubmit={handleSubmit} className="fleet-register-form">
+          <form onSubmit={handleSubmit} className="fleet-register-form" noValidate>
+            {submitError ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700" role="alert">
+                {submitError}
+              </div>
+            ) : null}
+
+            {submitSuccess ? (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700" role="status">
+                {submitSuccess}
+              </div>
+            ) : null}
             <label className="form-group">
               <span>Company name</span>
               <input
                 type="text"
                 value={formData.companyName}
-                onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                onChange={(e) => { setFormData({ ...formData, companyName: e.target.value }); setSubmitError(""); }}
                 className="form-control"
                 placeholder="Your Fleet Company"
                 required
@@ -147,7 +172,7 @@ export default function FleetPartnerRegistrationPage() {
                 <input
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) => { setFormData({ ...formData, email: e.target.value }); setSubmitError(""); }}
                   className="form-control"
                   placeholder="you@fleet.co"
                   required
@@ -159,7 +184,7 @@ export default function FleetPartnerRegistrationPage() {
                 <input
                   type="tel"
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  onChange={(e) => { setFormData({ ...formData, phone: e.target.value }); setSubmitError(""); }}
                   className="form-control"
                   placeholder="+256 700..."
                   required
@@ -171,7 +196,7 @@ export default function FleetPartnerRegistrationPage() {
               <span>Fleet size</span>
               <select
                 value={formData.fleetSize}
-                onChange={(e) => setFormData({ ...formData, fleetSize: e.target.value })}
+                onChange={(e) => { setFormData({ ...formData, fleetSize: e.target.value }); setSubmitError(""); }}
                 className="form-control"
                 required
               >
@@ -189,7 +214,7 @@ export default function FleetPartnerRegistrationPage() {
                 <input
                   type="text"
                   value={formData.registrationNumber}
-                  onChange={(e) => setFormData({ ...formData, registrationNumber: e.target.value })}
+                  onChange={(e) => { setFormData({ ...formData, registrationNumber: e.target.value }); setSubmitError(""); }}
                   className="form-control"
                   placeholder="Company registration no."
                 />
@@ -200,7 +225,7 @@ export default function FleetPartnerRegistrationPage() {
                 <input
                   type="text"
                   value={formData.taxId}
-                  onChange={(e) => setFormData({ ...formData, taxId: e.target.value })}
+                  onChange={(e) => { setFormData({ ...formData, taxId: e.target.value }); setSubmitError(""); }}
                   className="form-control"
                   placeholder="Tax identification no."
                 />
@@ -213,7 +238,7 @@ export default function FleetPartnerRegistrationPage() {
                 <input
                   type={showPassword ? "text" : "password"}
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onChange={(e) => { setFormData({ ...formData, password: e.target.value }); setSubmitError(""); }}
                   className="form-control"
                   placeholder="Create a secure password"
                   required
@@ -249,8 +274,8 @@ export default function FleetPartnerRegistrationPage() {
               </div>
             </div>
 
-            <button type="submit" className="become-partner-button">
-              Become a Partner
+            <button type="submit" className="become-partner-button" disabled={isSubmitting}>
+              {isSubmitting ? "Submitting..." : "Become a Partner"}
             </button>
           </form>
 
