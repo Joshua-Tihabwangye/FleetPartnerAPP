@@ -33,6 +33,14 @@ export const ALLOW_DEV_AUTH_FALLBACK = parseBooleanFlag(env.VITE_ALLOW_DEV_AUTH_
 export const ALLOW_CACHE_FALLBACK = IS_NON_PROD;
 const BACKEND_FLAG_STORAGE_KEY = `evzone_backend_flag_${APP_ID}`;
 
+interface RuntimeFlagEnvelope {
+  data?: {
+    backendEnabled?: boolean;
+  };
+  backendEnabled?: boolean;
+}
+
+
 function readStoredBackendFlag(): boolean | undefined {
   if (typeof window === "undefined") return undefined;
   if (FRONTEND_ONLY_MODE) return false;
@@ -48,6 +56,7 @@ function readStoredBackendFlag(): boolean | undefined {
 }
 
 let runtimeBackendEnabled: boolean | undefined = readStoredBackendFlag();
+let runtimeFlagLoadPromise: Promise<boolean> | null = null;
 
 export function getBackendEnabled(): boolean {
   if (FRONTEND_ONLY_MODE) return false;
@@ -66,4 +75,43 @@ export function setBackendEnabled(enabled: boolean): void {
     JSON.stringify({ enabled, updatedAt: Date.now() }),
   );
   window.dispatchEvent(new CustomEvent(BACKEND_FLAG_EVENT, { detail: { appId: APP_ID, enabled } }));
+}
+
+
+export async function loadBackendRuntimeFlag(force = false): Promise<boolean> {
+  if (typeof window === "undefined") {
+    return getBackendEnabled();
+  }
+
+  if (!force && runtimeFlagLoadPromise) {
+    return runtimeFlagLoadPromise;
+  }
+
+  if (force && USE_BACKEND) {
+    runtimeBackendEnabled = true;
+  }
+
+  runtimeFlagLoadPromise = (async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/compat/flags/${APP_ID}`);
+      if (!response.ok) {
+        throw new Error(`Runtime flag request failed with status ${response.status}`);
+      }
+
+      const payload = (await response.json()) as RuntimeFlagEnvelope;
+      const enabled = payload.data?.backendEnabled ?? payload.backendEnabled;
+      if (typeof enabled === "boolean") {
+        setBackendEnabled(enabled);
+      }
+      return getBackendEnabled();
+    } catch {
+      return USE_BACKEND && (runtimeBackendEnabled ?? true);
+    }
+  })();
+
+  return runtimeFlagLoadPromise;
+}
+
+if (typeof window !== "undefined") {
+  void loadBackendRuntimeFlag().catch(() => undefined);
 }
