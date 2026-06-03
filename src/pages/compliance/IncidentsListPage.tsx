@@ -1,9 +1,12 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import Modal from "../../components/ui/Modal";
+import PageState from "../../components/ui/PageState";
 import { toastManager } from "../../utils/toastManager";
 import {
+  createFallbackFleetComplianceIncident,
   createFleetComplianceIncident,
   getCachedFleetDrivers,
+  getCachedFleetIncidents,
   getCachedFleetVehicles,
   isFleetBackendEnabled,
   listFleetComplianceIncidents,
@@ -28,16 +31,18 @@ export default function IncidentsListPage() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [availableVehicles, setAvailableVehicles] = useState<string[]>([]);
   const [availableDrivers, setAvailableDrivers] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [reportForm, setReportForm] = useState({
     type: "",
     vehicle: "",
     driver: "",
     severity: "",
-    description: ""
+    description: "",
   });
 
-  async function syncIncidentsFromBackend() {
-    if (!isFleetBackendEnabled()) return;
+  const syncIncidentsFromBackend = useCallback(async () => {
     await refreshFleetWorkspaceState();
     setAvailableVehicles(
       (getCachedFleetVehicles() as any[])
@@ -62,36 +67,16 @@ export default function IncidentsListPage() {
       description: item.description,
     }));
     setIncidents(mapped);
-  }
+  }, []);
 
-  // Load incidents on mount
-  React.useEffect(() => {
-    if (isFleetBackendEnabled()) {
-      void syncIncidentsFromBackend().catch((error) => {
-        console.warn("Failed to load incidents from backend.", error);
-        toastManager.show("Failed to load incidents from backend.", "error");
-      });
-      return;
-    }
-
-    const storedIncidents: Incident[] = JSON.parse(localStorage.getItem("incidents") || "[]");
-    if (storedIncidents.length === 0) {
-      // Initialize with mock data if empty
-      const mockIncidents: Incident[] = [
-        { id: 1, incidentId: "INC-001", type: "Accident", vehicle: "UAA 123A", driver: "John Doe", date: "2024-01-15", severity: "minor", status: "resolved" },
-        { id: 2, incidentId: "INC-002", type: "Traffic violation", vehicle: "UAA 124B", driver: "Jane Smith", date: "2024-01-14", severity: "low", status: "pending" },
-        { id: 3, incidentId: "INC-003", type: "Vehicle breakdown", vehicle: "UAA 125C", driver: "Mike Johnson", date: "2024-01-13", severity: "medium", status: "investigating" }
-      ];
-      localStorage.setItem("incidents", JSON.stringify(mockIncidents));
-      setIncidents(mockIncidents);
-    } else {
-      setIncidents(storedIncidents);
-    }
+  const load = useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
 
     setAvailableVehicles(
       Array.from(
         new Set(
-          ((JSON.parse(localStorage.getItem("vehicles") || "[]") as any[]) || [])
+          (getCachedFleetVehicles() as any[])
             .map((item) => String(item.plate || item.vehiclePlate || "").trim())
             .filter((item) => item.length > 0),
         ),
@@ -100,52 +85,67 @@ export default function IncidentsListPage() {
     setAvailableDrivers(
       Array.from(
         new Set(
-          ((JSON.parse(localStorage.getItem("drivers") || "[]") as any[]) || [])
+          (getCachedFleetDrivers() as any[])
             .map((item) => String(item.name || item.fullName || "").trim())
             .filter((item) => item.length > 0),
         ),
       ),
     );
-  }, []);
+
+    if (isFleetBackendEnabled()) {
+      try {
+        await syncIncidentsFromBackend();
+        setLoading(false);
+        return;
+      } catch (error) {
+        console.warn("Failed to load incidents from backend.", error);
+        setLoadError("Failed to load incidents from backend. Showing the last synced cache if available.");
+      }
+    }
+
+    setIncidents(getCachedFleetIncidents() as Incident[]);
+    setLoading(false);
+  }, [syncIncidentsFromBackend]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const handleReportSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isFleetBackendEnabled()) {
-      try {
-        await createFleetComplianceIncident({
-          category: reportForm.type || "General",
-          severity: (reportForm.severity || "medium") as "low" | "medium" | "high" | "critical",
-          description: reportForm.description || `${reportForm.type || "Incident"} reported from fleet console.`,
-        });
+    setSubmitting(true);
+
+    try {
+      const payload = {
+        category: reportForm.type || "General",
+        severity: (reportForm.severity || "medium") as "low" | "medium" | "high" | "critical",
+        description: reportForm.description || `${reportForm.type || "Incident"} reported from fleet console.`,
+      };
+
+      if (isFleetBackendEnabled()) {
+        await createFleetComplianceIncident(payload);
         await syncIncidentsFromBackend();
-        toastManager.show("Incident reported successfully!", "success");
-        setShowReportModal(false);
-        setReportForm({ type: "", vehicle: "", driver: "", severity: "", description: "" });
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : "Incident submission failed.";
-        toastManager.show(msg, "error");
+      } else {
+        createFallbackFleetComplianceIncident({
+          ...payload,
+          vehicle: reportForm.vehicle || "Unassigned",
+          driver: reportForm.driver || "Unassigned",
+        });
+        setIncidents(getCachedFleetIncidents() as Incident[]);
       }
-      return;
+
+      toastManager.show("Incident reported successfully!", "success");
+      setShowReportModal(false);
+      setReportForm({ type: "", vehicle: "", driver: "", severity: "", description: "" });
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Incident submission failed.";
+      toastManager.show(msg, "error");
+    } finally {
+      setSubmitting(false);
     }
-
-    const newIncident = {
-      id: Date.now(),
-      incidentId: `INC-${String(incidents.length + 1).padStart(3, '0')}`,
-      ...reportForm,
-      date: new Date().toISOString().split('T')[0],
-      status: "pending"
-    };
-
-    const updatedIncidents = [newIncident, ...incidents];
-    setIncidents(updatedIncidents);
-    localStorage.setItem("incidents", JSON.stringify(updatedIncidents));
-
-    toastManager.show("Incident reported successfully!", "success");
-    setShowReportModal(false);
-    setReportForm({ type: "", vehicle: "", driver: "", severity: "", description: "" });
   };
 
-  const filteredIncidents = incidents.filter(incident => {
+  const filteredIncidents = incidents.filter((incident) => {
     const query = searchQuery.toLowerCase();
     return (
       incident.incidentId.toLowerCase().includes(query) ||
@@ -157,7 +157,6 @@ export default function IncidentsListPage() {
 
   return (
     <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50">
-      {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900 mb-2">Incidents</h1>
@@ -171,7 +170,6 @@ export default function IncidentsListPage() {
         </button>
       </div>
 
-      {/* Search */}
       <div className="mb-6">
         <input
           type="text"
@@ -182,204 +180,154 @@ export default function IncidentsListPage() {
         />
       </div>
 
-      {/* Incidents Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-slate-50 border-b border-slate-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Incident ID
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Vehicle
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Driver
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Severity
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Date
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-slate-200">
-              {filteredIncidents.length === 0 ? (
+      {loading ? (
+        <PageState kind="loading" title="Loading incidents" message="Fetching compliance incidents from the backend." />
+      ) : loadError && incidents.length === 0 ? (
+        <PageState kind="error" title="Incident sync failed" message={loadError} actionLabel="Retry" onAction={() => void load()} />
+      ) : filteredIncidents.length === 0 ? (
+        <PageState
+          kind="empty"
+          title="No incidents found"
+          message="Report a new incident or sync the backend workspace to populate this register."
+          actionLabel="Refresh"
+          onAction={() => void load()}
+        />
+      ) : (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          {loadError ? (
+            <div className="mx-4 mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+              {loadError}
+            </div>
+          ) : null}
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-sm text-slate-500">
-                    No incidents found matching your search.
-                  </td>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Incident ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Type</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Vehicle</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Driver</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Severity</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Date</th>
                 </tr>
-              ) : (
-                filteredIncidents.map((incident) => (
+              </thead>
+              <tbody className="bg-white divide-y divide-slate-200">
+                {filteredIncidents.map((incident) => (
                   <tr key={incident.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm font-medium text-slate-900">{incident.incidentId}</div></td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{incident.type}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{incident.vehicle}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{incident.driver}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-slate-900">{incident.incidentId}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                      {incident.type}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                      {incident.vehicle}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                      {incident.driver}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 py-1 text-xs font-medium rounded-full ${incident.severity === "minor" || incident.severity === "low"
-                          ? "bg-yellow-100 text-yellow-700"
-                          : incident.severity === "medium"
-                            ? "bg-orange-100 text-orange-700"
-                            : "bg-red-100 text-red-700"
-                          }`}
-                      >
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${incident.severity === "minor" || incident.severity === "low"
+                        ? "bg-yellow-100 text-yellow-700"
+                        : incident.severity === "medium"
+                          ? "bg-orange-100 text-orange-700"
+                          : "bg-red-100 text-red-700"
+                        }`}>
                         {incident.severity}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 py-1 text-xs font-medium rounded-full ${incident.status === "resolved"
-                          ? "bg-emerald-100 text-emerald-700"
-                          : incident.status === "pending"
-                            ? "bg-yellow-100 text-yellow-700"
-                            : "bg-blue-100 text-blue-700"
-                          }`}
-                      >
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${incident.status === "resolved"
+                        ? "bg-emerald-100 text-emerald-700"
+                        : incident.status === "investigating"
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-slate-100 text-slate-700"
+                        }`}>
                         {incident.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                      {incident.date}
-                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{incident.date}</td>
                   </tr>
-                )))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Report Incident Modal */}
-      <Modal
-        isOpen={showReportModal}
-        onClose={() => {
-          setShowReportModal(false);
-          setReportForm({ type: "", vehicle: "", driver: "", severity: "", description: "" });
-        }}
-        title="Report New Incident"
-        size="md"
-      >
-        <form
-          onSubmit={handleReportSubmit}
-          className="space-y-4"
-        >
-          <div className="grid grid-cols-2 gap-4">
-            <label className="block">
-              <span className="text-sm font-medium text-slate-700 mb-1 block">Incident Type *</span>
-              <select
-                value={reportForm.type}
-                onChange={(e) => setReportForm({ ...reportForm, type: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green"
-                required
-              >
-                <option value="">Select type...</option>
-                <option value="accident">Accident</option>
-                <option value="violation">Traffic Violation</option>
-                <option value="breakdown">Vehicle Breakdown</option>
-                <option value="theft">Theft/Vandalism</option>
-                <option value="other">Other</option>
-              </select>
-            </label>
-            <label className="block">
-              <span className="text-sm font-medium text-slate-700 mb-1 block">Severity *</span>
-              <select
-                value={reportForm.severity}
-                onChange={(e) => setReportForm({ ...reportForm, severity: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green"
-                required
-              >
-                <option value="">Select severity...</option>
-                <option value="critical">Critical</option>
-                <option value="high">High</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low</option>
-                <option value="minor">Minor</option>
-              </select>
-            </label>
+                ))}
+              </tbody>
+            </table>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+        </div>
+      )}
+
+      <Modal isOpen={showReportModal} onClose={() => setShowReportModal(false)} title="Report new incident" size="md">
+        <form onSubmit={handleReportSubmit} className="space-y-4">
+          <label className="block">
+            <span className="text-sm font-medium text-slate-700 mb-1 block">Type *</span>
+            <select
+              value={reportForm.type}
+              onChange={(e) => setReportForm({ ...reportForm, type: e.target.value })}
+              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green focus:border-transparent"
+              required
+            >
+              <option value="">Select type</option>
+              <option value="Accident">Accident</option>
+              <option value="Traffic violation">Traffic violation</option>
+              <option value="Vehicle breakdown">Vehicle breakdown</option>
+              <option value="Safety complaint">Safety complaint</option>
+            </select>
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <label className="block">
-              <span className="text-sm font-medium text-slate-700 mb-1 block">Vehicle *</span>
+              <span className="text-sm font-medium text-slate-700 mb-1 block">Vehicle</span>
               <select
                 value={reportForm.vehicle}
                 onChange={(e) => setReportForm({ ...reportForm, vehicle: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green"
-                required
+                className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green focus:border-transparent"
               >
-                <option value="">Select vehicle...</option>
-                {availableVehicles.length === 0 ? (
-                  <option value="Fleet Vehicle">Fleet Vehicle</option>
-                ) : (
-                  availableVehicles.map((vehicle) => (
-                    <option key={vehicle} value={vehicle}>{vehicle}</option>
-                  ))
-                )}
+                <option value="">Select vehicle</option>
+                {availableVehicles.map((vehicle) => <option key={vehicle} value={vehicle}>{vehicle}</option>)}
               </select>
             </label>
             <label className="block">
-              <span className="text-sm font-medium text-slate-700 mb-1 block">Driver *</span>
+              <span className="text-sm font-medium text-slate-700 mb-1 block">Driver</span>
               <select
                 value={reportForm.driver}
                 onChange={(e) => setReportForm({ ...reportForm, driver: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green"
-                required
+                className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green focus:border-transparent"
               >
-                <option value="">Select driver...</option>
-                {availableDrivers.length === 0 ? (
-                  <option value="Fleet Driver">Fleet Driver</option>
-                ) : (
-                  availableDrivers.map((driver) => (
-                    <option key={driver} value={driver}>{driver}</option>
-                  ))
-                )}
+                <option value="">Select driver</option>
+                {availableDrivers.map((driver) => <option key={driver} value={driver}>{driver}</option>)}
               </select>
             </label>
           </div>
           <label className="block">
-            <span className="text-sm font-medium text-slate-700 mb-1 block">Description *</span>
+            <span className="text-sm font-medium text-slate-700 mb-1 block">Severity *</span>
+            <select
+              value={reportForm.severity}
+              onChange={(e) => setReportForm({ ...reportForm, severity: e.target.value })}
+              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green focus:border-transparent"
+              required
+            >
+              <option value="">Select severity</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="critical">Critical</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium text-slate-700 mb-1 block">Description</span>
             <textarea
               value={reportForm.description}
               onChange={(e) => setReportForm({ ...reportForm, description: e.target.value })}
               rows={4}
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green"
-              placeholder="Provide detailed description of the incident..."
-              required
+              className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green focus:border-transparent"
+              placeholder="Describe what happened"
             />
           </label>
-          <div className="flex gap-2 pt-4">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
             <button
               type="button"
-              onClick={() => {
-                setShowReportModal(false);
-                setReportForm({ type: "", vehicle: "", driver: "", severity: "", description: "" });
-              }}
-              className="flex-1 px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
+              onClick={() => setShowReportModal(false)}
+              className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark"
+              disabled={submitting}
+              className="px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark disabled:cursor-not-allowed disabled:bg-emerald-300"
             >
-              Submit Report
+              {submitting ? "Submitting..." : "Report incident"}
             </button>
           </div>
         </form>

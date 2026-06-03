@@ -1,7 +1,11 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toastManager } from "../../utils/toastManager";
-import { createFleetVehicle, isFleetBackendEnabled } from "../../services/api/fleetApi";
+import {
+  createFallbackFleetVehicle,
+  createFleetVehicle,
+  isFleetBackendEnabled,
+} from "../../services/api/fleetApi";
 
 interface VehicleFormData {
   plateNumber: string;
@@ -16,6 +20,7 @@ interface VehicleFormData {
 
 export default function VehicleCreatePage() {
   const navigate = useNavigate();
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState<VehicleFormData>({
     plateNumber: "",
     make: "",
@@ -24,54 +29,47 @@ export default function VehicleCreatePage() {
     color: "",
     vehicleType: "",
     vin: "",
-    registrationExpiry: ""
+    registrationExpiry: "",
   });
-
-  const persistLocally = () => {
-    const newVehicle = {
-      ...formData,
-      id: Date.now(),
-      plate: formData.plateNumber,
-      model: `${formData.make} ${formData.model}`,
-      status: "active",
-      driver: "Unassigned",
-      mileage: 0
-    };
-    const existingVehicles: any[] = JSON.parse(localStorage.getItem("vehicles") || "[]");
-    existingVehicles.push(newVehicle);
-    localStorage.setItem("vehicles", JSON.stringify(existingVehicles));
-  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setSubmitting(true);
 
-    if (isFleetBackendEnabled()) {
-      try {
-        await createFleetVehicle({
-          make: formData.make.trim(),
-          model: formData.model.trim(),
-          year: Number(formData.year),
-          plate: formData.plateNumber.trim(),
-          type: formData.vehicleType,
-          status: "active",
+    try {
+      const payload = {
+        make: formData.make.trim(),
+        model: formData.model.trim(),
+        year: Number(formData.year),
+        plate: formData.plateNumber.trim(),
+        type: formData.vehicleType,
+        status: "active" as const,
+      };
+
+      if (isFleetBackendEnabled()) {
+        await createFleetVehicle(payload);
+      } else {
+        createFallbackFleetVehicle({
+          ...payload,
+          color: formData.color.trim(),
+          vin: formData.vin.trim(),
+          registrationExpiry: formData.registrationExpiry,
         });
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Failed to create vehicle from backend.";
-        toastManager.show(message, "error");
-        return;
       }
-    } else {
-      persistLocally();
-    }
 
-    toastManager.show("Vehicle created successfully!", "success");
-    navigate("/vehicles");
+      toastManager.show("Vehicle created successfully!", "success");
+      navigate("/vehicles");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to create vehicle.";
+      toastManager.show(message, "error");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
     <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50">
       <div className="w-full">
-        {/* Header */}
         <div className="mb-6">
           <Link
             to="/vehicles"
@@ -83,14 +81,11 @@ export default function VehicleCreatePage() {
           <p className="text-sm text-slate-600">Enter vehicle information to add it to your fleet</p>
         </div>
 
-        {/* Form */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <label className="block">
-                <span className="text-sm font-medium text-slate-700 mb-1 block">
-                  License plate *
-                </span>
+                <span className="text-sm font-medium text-slate-700 mb-1 block">License plate *</span>
                 <input
                   type="text"
                   value={formData.plateNumber}
@@ -101,9 +96,7 @@ export default function VehicleCreatePage() {
                 />
               </label>
               <label className="block">
-                <span className="text-sm font-medium text-slate-700 mb-1 block">
-                  Vehicle type *
-                </span>
+                <span className="text-sm font-medium text-slate-700 mb-1 block">Vehicle type *</span>
                 <select
                   value={formData.vehicleType}
                   onChange={(e) => setFormData({ ...formData, vehicleType: e.target.value })}
@@ -174,9 +167,7 @@ export default function VehicleCreatePage() {
                 />
               </label>
               <label className="block">
-                <span className="text-sm font-medium text-slate-700 mb-1 block">
-                  Registration expiry
-                </span>
+                <span className="text-sm font-medium text-slate-700 mb-1 block">Registration expiry</span>
                 <input
                   type="date"
                   value={formData.registrationExpiry}
@@ -195,9 +186,10 @@ export default function VehicleCreatePage() {
               </Link>
               <button
                 type="submit"
-                className="px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark"
+                disabled={submitting}
+                className="px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark disabled:cursor-not-allowed disabled:bg-emerald-300"
               >
-                Create vehicle
+                {submitting ? "Creating..." : "Create vehicle"}
               </button>
             </div>
           </form>

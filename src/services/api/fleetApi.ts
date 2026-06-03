@@ -821,3 +821,79 @@ export function getCachedFleetDispatches() {
 export function getCachedFleetRentals() {
   return readStorage<any[]>("rentals", []);
 }
+
+export function getCachedFleetIncidents() {
+  return readStorage<any[]>("incidents", []);
+}
+
+export function createFallbackFleetDriver(input: FleetCreateDriverInput) {
+  const existing = getCachedFleetDrivers();
+  const next = {
+    id: Date.now(),
+    backendId: undefined,
+    name: input.fullName.trim(),
+    fullName: input.fullName.trim(),
+    email: input.email.trim(),
+    phone: input.phone.trim(),
+    status: "available",
+    trips: 0,
+    rating: 5,
+    cancelRate: 0,
+    lastSeen: "just now",
+    zone: input.city ?? "Unassigned",
+    vehicle: "-",
+    docsStatus: "ok",
+  };
+  writeStorage("drivers", [next, ...existing]);
+  return next;
+}
+
+export function createFallbackFleetVehicle(input: FleetCreateVehicleInput & Partial<{ color: string; vin: string; registrationExpiry: string }>) {
+  const existing = getCachedFleetVehicles();
+  const next = {
+    id: Date.now(),
+    backendId: undefined,
+    plate: input.plate.trim(),
+    licensePlate: input.plate.trim(),
+    model: `${input.make} ${input.model}`.trim(),
+    make: input.make.trim(),
+    year: input.year,
+    color: input.color ?? "",
+    vin: input.vin ?? "",
+    registrationExpiry: input.registrationExpiry ?? "",
+    status: input.status === "maintenance" ? "maintenance" : "available",
+    opsStatus: input.status === "active" || !input.status ? "ready" : "unavailable",
+    driver: "-",
+    mileage: 0,
+    vehicleType: input.type,
+    soc: 50,
+    estimatedRange: 200,
+    lastSeen: "just now",
+    zone: "Fleet",
+    condition: "good",
+    compliance: {
+      insurance: { status: "ok", expiry: "" },
+      inspection: { status: "ok", expiry: "" },
+    },
+  };
+  writeStorage("vehicles", [next, ...existing]);
+  return next;
+}
+
+export function createFallbackFleetComplianceIncident(input: FleetCreateComplianceIncidentInput & Partial<{ vehicle: string; driver: string }>) {
+  const existing = getCachedFleetIncidents();
+  const next = {
+    id: Date.now(),
+    backendId: undefined,
+    incidentId: `INC-${String(existing.length + 1).padStart(3, "0")}` ,
+    type: input.category,
+    vehicle: input.vehicle ?? "Unassigned",
+    driver: input.driver ?? "Unassigned",
+    date: new Date().toISOString().slice(0, 10),
+    severity: input.severity,
+    status: "open",
+    description: input.description,
+  };
+  writeStorage("incidents", [next, ...existing]);
+  return next;
+}
