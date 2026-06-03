@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { auth } from "../../utils/auth";
+import { readAuthPrefill, saveAuthPrefill } from "../../utils/authPrefill";
 
 export default function FleetPartnerForgotPasswordPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const prefill = React.useMemo(() => readAuthPrefill(), []);
+  const [email, setEmail] = useState(prefill.email || prefill.identity || "");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
@@ -14,9 +16,11 @@ export default function FleetPartnerForgotPasswordPage() {
     setMessage("");
 
     try {
-      await auth.forgotPassword(email);
+      const normalizedEmail = email.trim().toLowerCase();
+      await auth.forgotPassword(normalizedEmail);
+      saveAuthPrefill({ email: normalizedEmail, identity: normalizedEmail });
       // Navigate to OTP verification passing email
-      navigate("/auth/verify-otp", { state: { email } });
+      navigate("/auth/verify-otp", { state: { email: normalizedEmail } });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unable to send reset email. Please try again.";
       setError(msg);

@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { auth } from "../../utils/auth";
+import { clearAuthPrefillPassword, readAuthPrefill, saveAuthPrefill } from "../../utils/authPrefill";
 import "./FleetPartnerLoginPage.css";
 
 export default function FleetPartnerLoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const prefill = React.useMemo(() => readAuthPrefill(), []);
+  const [email, setEmail] = useState(prefill.email || prefill.identity || "");
+  const [password, setPassword] = useState(prefill.password || "");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -17,7 +19,10 @@ export default function FleetPartnerLoginPage() {
 
     if (email && password) {
       try {
-        await auth.login(email, password);
+        const normalizedEmail = email.trim().toLowerCase();
+        await auth.login(normalizedEmail, password);
+        saveAuthPrefill({ email: normalizedEmail, identity: normalizedEmail });
+        clearAuthPrefillPassword();
         const from = location.state?.from?.pathname || "/dashboard";
         navigate(from, { replace: true });
       } catch (loginError) {

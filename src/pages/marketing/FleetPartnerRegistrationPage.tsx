@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { toastManager } from "../../utils/toastManager";
 import { auth } from "../../utils/auth";
 import { normalizeFleetRegistrationInput } from "../../services/api/validators";
+import { saveAuthPrefill } from "../../utils/authPrefill";
 import "./FleetPartnerRegistrationPage.css";
 
 export default function FleetPartnerRegistrationPage() {
@@ -38,6 +39,7 @@ export default function FleetPartnerRegistrationPage() {
 
     try {
       await auth.register(registration);
+      saveAuthPrefill({ email: registration.email, identity: registration.email, password: registration.password });
     } catch (registrationError) {
       const message =
         registrationError instanceof Error
