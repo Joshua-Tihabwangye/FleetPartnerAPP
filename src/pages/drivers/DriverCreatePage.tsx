@@ -1,80 +1,69 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toastManager } from "../../utils/toastManager";
-import { createFleetDriver, isFleetBackendEnabled } from "../../services/api/fleetApi";
+import {
+  createFallbackFleetDriver,
+  createFleetDriver,
+  isFleetBackendEnabled,
+} from "../../services/api/fleetApi";
 
 export default function DriverCreatePage() {
   const navigate = useNavigate();
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
     licenseNumber: "",
     licenseExpiry: "",
-    address: ""
+    address: "",
   });
-
-  const persistLocally = () => {
-    const newDriver = {
-      id: Date.now(),
-      status: "active",
-      trips: 0,
-      rating: 5.0,
-      ...formData
-    };
-    const existingDrivers = JSON.parse(localStorage.getItem("drivers") || "[]");
-    existingDrivers.push(newDriver);
-    localStorage.setItem("drivers", JSON.stringify(existingDrivers));
-  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setSubmitting(true);
 
-    if (isFleetBackendEnabled()) {
-      try {
-        await createFleetDriver({
-          fullName: formData.name.trim(),
-          email: formData.email.trim(),
-          phone: formData.phone.trim(),
-          city: "Kampala",
-          serviceModes: ["ride"],
-        });
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : "Failed to create driver from backend.";
-        toastManager.show(msg, "error");
-        return;
+    try {
+      const payload = {
+        fullName: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        city: "Kampala",
+        serviceModes: ["ride"],
+      };
+
+      if (isFleetBackendEnabled()) {
+        await createFleetDriver(payload);
+      } else {
+        createFallbackFleetDriver(payload);
       }
-    } else {
-      persistLocally();
-    }
 
-    toastManager.show("Driver created successfully!", "success");
-    navigate("/drivers");
+      toastManager.show("Driver created successfully!", "success");
+      navigate("/drivers");
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Failed to create driver.";
+      toastManager.show(msg, "error");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
     <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50">
       <div className="w-full">
-        {/* Header */}
         <div className="mb-6">
-          <Link
-            to="/drivers"
-            className="text-sm text-slate-600 hover:text-slate-900 mb-2 inline-block"
-          >
+          <Link to="/drivers" className="text-sm text-slate-600 hover:text-slate-900 mb-2 inline-block">
             ← Back to drivers
           </Link>
           <h1 className="text-2xl font-semibold text-slate-900 mb-2">Add new driver</h1>
           <p className="text-sm text-slate-600">Enter driver information to add them to your fleet</p>
         </div>
 
-        {/* Form */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <label className="block">
-                <span className="text-sm font-medium text-slate-700 mb-1 block">
-                  Full name *
-                </span>
+                <span className="text-sm font-medium text-slate-700 mb-1 block">Full name *</span>
                 <input
                   type="text"
                   value={formData.name}
@@ -84,9 +73,7 @@ export default function DriverCreatePage() {
                 />
               </label>
               <label className="block">
-                <span className="text-sm font-medium text-slate-700 mb-1 block">
-                  Email address *
-                </span>
+                <span className="text-sm font-medium text-slate-700 mb-1 block">Email address *</span>
                 <input
                   type="email"
                   value={formData.email}
@@ -96,9 +83,7 @@ export default function DriverCreatePage() {
                 />
               </label>
               <label className="block">
-                <span className="text-sm font-medium text-slate-700 mb-1 block">
-                  Phone number *
-                </span>
+                <span className="text-sm font-medium text-slate-700 mb-1 block">Phone number *</span>
                 <input
                   type="tel"
                   value={formData.phone}
@@ -109,9 +94,7 @@ export default function DriverCreatePage() {
                 />
               </label>
               <label className="block">
-                <span className="text-sm font-medium text-slate-700 mb-1 block">
-                  License number *
-                </span>
+                <span className="text-sm font-medium text-slate-700 mb-1 block">License number *</span>
                 <input
                   type="text"
                   value={formData.licenseNumber}
@@ -121,9 +104,7 @@ export default function DriverCreatePage() {
                 />
               </label>
               <label className="block">
-                <span className="text-sm font-medium text-slate-700 mb-1 block">
-                  License expiry *
-                </span>
+                <span className="text-sm font-medium text-slate-700 mb-1 block">License expiry *</span>
                 <input
                   type="date"
                   value={formData.licenseExpiry}
@@ -152,9 +133,10 @@ export default function DriverCreatePage() {
               </Link>
               <button
                 type="submit"
-                className="px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark"
+                disabled={submitting}
+                className="px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark disabled:cursor-not-allowed disabled:bg-emerald-300"
               >
-                Create driver
+                {submitting ? "Creating..." : "Create driver"}
               </button>
             </div>
           </form>

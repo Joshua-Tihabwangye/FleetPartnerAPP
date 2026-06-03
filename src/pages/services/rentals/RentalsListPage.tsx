@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import PageState from "../../../components/ui/PageState";
 import {
   getCachedFleetRentals,
   isFleetBackendEnabled,
@@ -22,52 +23,46 @@ interface Rental {
 export default function RentalsListPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [rentals, setRentals] = useState<Rental[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Load rentals from backend/cache
-  React.useEffect(() => {
-    const load = async () => {
-      if (isFleetBackendEnabled()) {
-        try {
-          await refreshFleetWorkspaceState();
-          const backendRentals = await listFleetRentals();
-          const mapped: Rental[] = backendRentals.map((item, index) => ({
-            id: index + 1,
-            backendId: item.id,
-            bookingId: item.id,
-            customerName: item.customerName,
-            vehicleName: item.assetId || "Fleet vehicle",
-            vehiclePlate: item.assetId || "-",
-            status: item.status,
-            startDate: new Date(item.scheduledAt).toISOString().slice(0, 10),
-            endDate: new Date(item.scheduledAt).toISOString().slice(0, 10),
-          }));
-          setRentals(mapped);
-          return;
-        } catch (error) {
-          console.warn("Fleet backend rentals fetch failed. Using cached rentals.", error);
-          setRentals(getCachedFleetRentals() as Rental[]);
-          return;
-        }
-      }
+  const load = useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
 
-      const storedRentals = JSON.parse(localStorage.getItem("rentals") || "[]");
-      if (storedRentals.length === 0) {
-        // Initialize with mock data if empty
-        const mockRentals: Rental[] = [
-          { id: 1, bookingId: "RNT-001", customerName: "John Customer", vehicleName: "Tesla Model 3", vehiclePlate: "UAA 123A", status: "active", startDate: "2024-01-15", endDate: "2024-01-20" },
-          { id: 2, bookingId: "RNT-002", customerName: "Jane Client", vehicleName: "Nissan Leaf", vehiclePlate: "UAA 124B", status: "upcoming", startDate: "2024-01-18", endDate: "2024-01-25" },
-          { id: 3, bookingId: "RNT-003", customerName: "Mike User", vehicleName: "BYD E6", vehiclePlate: "UAA 125C", status: "completed", startDate: "2024-01-10", endDate: "2024-01-14" }
-        ];
-        localStorage.setItem("rentals", JSON.stringify(mockRentals));
-        setRentals(mockRentals);
-      } else {
-        setRentals(storedRentals);
+    if (isFleetBackendEnabled()) {
+      try {
+        await refreshFleetWorkspaceState();
+        const backendRentals = await listFleetRentals();
+        const mapped: Rental[] = backendRentals.map((item, index) => ({
+          id: index + 1,
+          backendId: item.id,
+          bookingId: item.id,
+          customerName: item.customerName,
+          vehicleName: item.assetId || "Fleet vehicle",
+          vehiclePlate: item.assetId || "-",
+          status: item.status,
+          startDate: new Date(item.scheduledAt).toISOString().slice(0, 10),
+          endDate: new Date(item.scheduledAt).toISOString().slice(0, 10),
+        }));
+        setRentals(mapped);
+        setLoading(false);
+        return;
+      } catch (error) {
+        console.warn("Fleet backend rentals fetch failed. Using cached rentals.", error);
+        setLoadError("Failed to refresh rentals from backend. Showing the last synced cache if available.");
       }
-    };
-    void load();
+    }
+
+    setRentals(getCachedFleetRentals() as Rental[]);
+    setLoading(false);
   }, []);
 
-  const filteredRentals = rentals.filter(rental => {
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const filteredRentals = rentals.filter((rental) => {
     const query = searchQuery.toLowerCase();
     return (
       (rental.bookingId && rental.bookingId.toLowerCase().includes(query)) ||
@@ -78,7 +73,6 @@ export default function RentalsListPage() {
 
   return (
     <div className="min-h-full w-full px-4 sm:px-6 lg:px-8 xl:px-12 py-6 bg-slate-50">
-      {/* Header */}
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900 mb-2">Rental bookings</h1>
@@ -106,7 +100,6 @@ export default function RentalsListPage() {
         </div>
       </div>
 
-      {/* Search */}
       <div className="mb-6">
         <input
           type="text"
@@ -117,57 +110,71 @@ export default function RentalsListPage() {
         />
       </div>
 
-      {/* Rentals Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredRentals.length === 0 ? (
-          <div className="col-span-full text-center py-8 text-slate-500">
-            No rentals found. Visit the catalog to rent a vehicle.
+      {loading ? (
+        <PageState kind="loading" title="Loading rentals" message="Fetching rental bookings from the backend." />
+      ) : loadError && rentals.length === 0 ? (
+        <PageState kind="error" title="Rental sync failed" message={loadError} actionLabel="Retry" onAction={() => void load()} />
+      ) : filteredRentals.length === 0 ? (
+        <PageState
+          kind="empty"
+          title="No rentals found"
+          message="Create a rental booking or sync the backend workspace to populate this list."
+          actionLabel="Refresh"
+          onAction={() => void load()}
+        />
+      ) : (
+        <>
+          {loadError ? (
+            <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
+              {loadError}
+            </div>
+          ) : null}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredRentals.map((rental) => (
+              <Link
+                key={rental.id}
+                to={`/rentals/${rental.backendId || rental.id}`}
+                className="bg-white rounded-xl border border-slate-200 p-6 hover:border-ev-green hover:shadow-md transition-all"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <div className="text-lg font-semibold text-slate-900 mb-1">{rental.bookingId || `RNT-${rental.id}`}</div>
+                    <div className="text-sm text-slate-600">{rental.customerName}</div>
+                  </div>
+                  <span
+                    className={`px-2 py-1 text-xs font-medium rounded-full ${rental.status === "active"
+                      ? "bg-emerald-100 text-emerald-700"
+                      : rental.status === "upcoming"
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-slate-100 text-slate-700"
+                      }`}
+                  >
+                    {rental.status}
+                  </span>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Vehicle</span>
+                    <span className="font-medium text-slate-900">{rental.vehicleName || rental.vehiclePlate}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Plate</span>
+                    <span className="font-medium text-slate-900">{rental.vehiclePlate}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Start date</span>
+                    <span className="font-medium text-slate-900">{rental.startDate}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">End date</span>
+                    <span className="font-medium text-slate-900">{rental.endDate}</span>
+                  </div>
+                </div>
+              </Link>
+            ))}
           </div>
-        ) : (
-          filteredRentals.map((rental) => (
-            <Link
-              key={rental.id}
-              to={`/rentals/${rental.backendId || rental.id}`}
-              className="bg-white rounded-xl border border-slate-200 p-6 hover:border-ev-green hover:shadow-md transition-all"
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <div className="text-lg font-semibold text-slate-900 mb-1">{rental.bookingId || `RNT-${rental.id}`}</div>
-                  <div className="text-sm text-slate-600">{rental.customerName}</div>
-                </div>
-                <span
-                  className={`px-2 py-1 text-xs font-medium rounded-full ${rental.status === "active"
-                    ? "bg-emerald-100 text-emerald-700"
-                    : rental.status === "upcoming"
-                      ? "bg-blue-100 text-blue-700"
-                      : "bg-slate-100 text-slate-700"
-                    }`}
-                >
-                  {rental.status}
-                </span>
-              </div>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500">Vehicle</span>
-                  <span className="font-medium text-slate-900">{rental.vehicleName || rental.vehiclePlate}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500">Plate</span>
-                  <span className="font-medium text-slate-900">{rental.vehiclePlate}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500">Start date</span>
-                  <span className="font-medium text-slate-900">{rental.startDate}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500">End date</span>
-                  <span className="font-medium text-slate-900">{rental.endDate}</span>
-                </div>
-              </div>
-            </Link>
-          ))
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }
