@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { auth } from "../../utils/auth";
+import { saveAuthPrefill } from "../../utils/authPrefill";
 
 export default function FleetPartnerResetPasswordPage() {
   const navigate = useNavigate();
@@ -27,8 +28,10 @@ export default function FleetPartnerResetPasswordPage() {
     setIsSubmitting(true);
     setError("");
     try {
-      const result = await auth.resetPassword(email, otp, password);
+      const normalizedEmail = email.trim().toLowerCase();
+      const result = await auth.resetPassword(normalizedEmail, otp, password);
       if (result.reset) {
+        saveAuthPrefill({ email: normalizedEmail, identity: normalizedEmail, password });
         navigate("/login", { replace: true });
       } else {
         setError("Password reset failed. Please try again.");
