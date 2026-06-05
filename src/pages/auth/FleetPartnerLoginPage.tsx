@@ -20,10 +20,12 @@ export default function FleetPartnerLoginPage() {
     if (email && password) {
       try {
         const normalizedEmail = email.trim().toLowerCase();
-        await auth.login(normalizedEmail, password);
+        const authState = await auth.login(normalizedEmail, password);
         saveAuthPrefill({ email: normalizedEmail, identity: normalizedEmail });
         clearAuthPrefillPassword();
-        const from = location.state?.from?.pathname || "/dashboard";
+        const from =
+          location.state?.from?.pathname
+          || (authState.hasFinishedOnboarding ? "/dashboard" : "/setup/fleet-partner-profile");
         navigate(from, { replace: true });
       } catch (loginError) {
         const message =
