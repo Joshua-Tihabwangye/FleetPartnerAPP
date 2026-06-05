@@ -60,17 +60,12 @@ export default function FleetPartnerRegistrationPage() {
       return;
     }
 
-    const successMessage =
-      authState && typeof authState === "object"
-        ? "Registration successful. Redirecting to your fleet workspace."
-        : "Registration successful. You can now sign in with this email and password.";
+    const successMessage = "Registration successful. You can now sign in with this email and password.";
     setSubmitSuccess(successMessage);
     toastManager.show(successMessage, "success");
     setIsSubmitting(false);
-    setTimeout(
-      () => navigate(authState && typeof authState === "object" && !authState.hasFinishedOnboarding ? "/setup/fleet-partner-profile" : "/dashboard"),
-      800,
-    );
+    auth.logout();
+    setTimeout(() => navigate("/login"), 800);
   };
 
   const handleServiceToggle = (service: string) => {

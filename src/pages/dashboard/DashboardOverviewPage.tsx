@@ -2,13 +2,48 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { BarChart, PieChart, Sparkline } from "../../components/ui/Charts";
 import PeriodSelector from "../../components/ui/PeriodSelector";
-import { isFleetBackendEnabled, listFleetComplianceIncidents } from "../../services/api/fleetApi";
+import {
+  isFleetBackendEnabled,
+  listFleetComplianceIncidents,
+  refreshFleetWorkspaceState,
+  getCachedFleetVehicles,
+  getCachedFleetDrivers,
+  getCachedFleetDispatches,
+  getCachedFleetIncidents,
+} from "../../services/api/fleetApi";
+
+function makeSparkline(value: number): number[] {
+  if (value <= 0) return [0, 0, 0, 0, 0, 0, 0];
+  const base = value * 0.75;
+  const step = (value - base) / 6;
+  return Array.from({ length: 7 }, (_, i) => Math.round(base + step * i));
+}
 
 export default function DashboardOverviewPage() {
   const navigate = useNavigate();
   const [dateRange, setDateRange] = useState<"today" | "week" | "month" | "year">("today");
   const [messagesCount, setMessagesCount] = useState(0);
   const [lastMessageSubject, setLastMessageSubject] = useState("No messages");
+  const [loading, setLoading] = useState(true);
+
+  const [stats, setStats] = useState([
+    { label: "Vehicles online", value: "0", change: "+0", color: "emerald", sparkline: makeSparkline(0) },
+    { label: "Active drivers", value: "0", change: "+0", color: "blue", sparkline: makeSparkline(0) },
+    { label: "Trips today", value: "0", change: "+0", color: "purple", sparkline: makeSparkline(0) },
+  ]);
+
+  const [fleetStatus, setFleetStatus] = useState([
+    { label: "Online", value: 0, color: "#10b981" },
+    { label: "On Trip", value: 0, color: "#3b82f6" },
+    { label: "Offline", value: 0, color: "#ef4444" },
+    { label: "Maintenance", value: 0, color: "#f59e0b" },
+  ]);
+
+  const [alerts, setAlerts] = useState({
+    offlineVehicles: { count: 0, hours: 0 },
+    highCancellations: { count: 0, drivers: [] as string[] },
+    pendingIncidents: { count: 0, type: "ambulance" },
+  });
 
   // Load support activity from backend incidents when backend mode is enabled.
   useEffect(() => {
@@ -44,6 +79,68 @@ export default function DashboardOverviewPage() {
     void hydrate();
   }, []);
 
+  // Load and compute fleet stats from cache on mount.
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      await refreshFleetWorkspaceState();
+
+      const vehicles = getCachedFleetVehicles();
+      const drivers = getCachedFleetDrivers();
+      const dispatches = getCachedFleetDispatches();
+      const incidents = getCachedFleetIncidents();
+
+      const vehiclesOnline = vehicles.filter((v: any) => v.status === "available").length;
+      const activeDrivers = drivers.filter((d: any) => d.status === "available").length;
+      const tripsToday = dispatches.length;
+
+      setStats([
+        { label: "Vehicles online", value: String(vehiclesOnline), change: "+0", color: "emerald", sparkline: makeSparkline(vehiclesOnline) },
+        { label: "Active drivers", value: String(activeDrivers), change: "+0", color: "blue", sparkline: makeSparkline(activeDrivers) },
+        { label: "Trips today", value: String(tripsToday), change: "+0", color: "purple", sparkline: makeSparkline(tripsToday) },
+      ]);
+
+      const offlineCount = vehicles.filter((v: any) => v.status === "offline").length;
+      const maintenanceCount = vehicles.filter((v: any) => v.status === "maintenance").length;
+      const onlineCount = vehicles.filter((v: any) => v.status === "available").length;
+
+      const onTripPlates = new Set(
+        dispatches
+          .filter((d: any) => d.status === "in-progress")
+          .map((d: any) => d.vehicle)
+          .filter(Boolean)
+      );
+      const onTripCount = vehicles.filter((v: any) => onTripPlates.has(v.plate)).length;
+
+      setFleetStatus([
+        { label: "Online", value: onlineCount, color: "#10b981" },
+        { label: "On Trip", value: onTripCount, color: "#3b82f6" },
+        { label: "Offline", value: offlineCount, color: "#ef4444" },
+        { label: "Maintenance", value: maintenanceCount, color: "#f59e0b" },
+      ]);
+
+      const cancelledDispatches = dispatches.filter((d: any) => d.status === "cancelled");
+      const cancellationDrivers = cancelledDispatches
+        .map((d: any) => d.driver)
+        .filter((name: string) => name && name !== "-");
+
+      const pendingIncidentsCount = incidents.filter((i: any) => i.status === "open").length;
+
+      setAlerts({
+        offlineVehicles: { count: offlineCount, hours: 4 },
+        highCancellations: {
+          count: cancelledDispatches.length,
+          drivers: cancellationDrivers.slice(0, 3),
+        },
+        pendingIncidents: { count: pendingIncidentsCount, type: "ambulance" },
+      });
+
+      setLoading(false);
+    };
+
+    void load();
+  }, []);
+
   // Revenue data based on date range
   const revenueData: Record<"today" | "week" | "month" | "year", { value: string; change: string }> = {
     today: { value: "UGX 12.4M", change: "+15%" },
@@ -51,12 +148,6 @@ export default function DashboardOverviewPage() {
     month: { value: "UGX 324.5M", change: "+18%" },
     year: { value: "UGX 3.8B", change: "+24%" }
   };
-
-  const stats = [
-    { label: "Vehicles online", value: "128", change: "+12", color: "emerald", sparkline: [95, 102, 110, 108, 115, 120, 128] },
-    { label: "Active drivers", value: "94", change: "+5", color: "blue", sparkline: [78, 82, 85, 88, 90, 92, 94] },
-    { label: "Trips today", value: "1,420", change: "+8%", color: "purple", sparkline: [980, 1100, 1250, 1180, 1320, 1380, 1420] }
-  ];
 
   // Chart data
   const weeklyRevenue = [
@@ -68,13 +159,6 @@ export default function DashboardOverviewPage() {
     { label: "Sat", value: 22100000 },
     { label: "Sun", value: 17800000 }
   ];
-
-  // Alert data
-  const alerts = {
-    offlineVehicles: { count: 7, hours: 4 },
-    highCancellations: { count: 3, drivers: ["John M.", "Sarah K.", "Mike T."] },
-    pendingIncidents: { count: 2, type: "ambulance" }
-  };
 
   // Recent activity
   const recentActivity = [
@@ -120,6 +204,10 @@ export default function DashboardOverviewPage() {
           </div>
         </div>
       </div>
+
+      {loading && (
+        <div className="mb-6 text-sm text-slate-500">Loading fleet data…</div>
+      )}
 
       {/* Stats Grid - First Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -215,12 +303,7 @@ export default function DashboardOverviewPage() {
           </div>
           <div className="flex justify-center">
             <PieChart
-              data={[
-                { label: "Online", value: 128, color: "#10b981" },
-                { label: "On Trip", value: 94, color: "#3b82f6" },
-                { label: "Offline", value: 7, color: "#ef4444" },
-                { label: "Maintenance", value: 5, color: "#f59e0b" }
-              ]}
+              data={fleetStatus}
               size={140}
               donut={true}
               showLabels={true}
@@ -255,7 +338,7 @@ export default function DashboardOverviewPage() {
                 <span className="text-3xl z-10 opacity-50 grayscale group-hover:grayscale-0 transition-all">🗺️</span>
               </div>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-600 font-medium">128 vehicles active</span>
+                <span className="text-slate-600 font-medium">{fleetStatus.find(s => s.label === "Online")?.value ?? 0} vehicles active</span>
                 <span className="text-emerald-600 font-medium group-hover:translate-x-1 transition-transform">View →</span>
               </div>
             </div>
