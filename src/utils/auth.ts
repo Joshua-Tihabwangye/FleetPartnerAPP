@@ -1,4 +1,5 @@
 import {
+  backendFetchSession,
   backendForgotPassword,
   backendLogin,
   backendRegister,
@@ -188,6 +189,23 @@ function createDevelopmentAuthState(email: string): AuthState {
   };
 }
 
+function buildBackendAuthState(input: {
+  email: string;
+  roles: FleetBackendRole[];
+  defaultRedirect?: string;
+}): AuthState {
+  return {
+    isAuthenticated: true,
+    hasFinishedOnboarding: input.defaultRedirect !== "/setup/fleet-partner-profile",
+    user: {
+      email: input.email,
+      roles: input.roles,
+      role: mapFleetPrimaryRole(input.roles),
+      name: input.email.split("@")[0] || "fleet-user",
+    },
+  };
+}
+
 function saveDevelopmentRegistration(input: {
   companyName: string;
   email: string;
@@ -295,6 +313,7 @@ export const auth = {
     try {
       const backend = await backendLogin(credentials);
       saveFleetBackendTokens(backend.accessToken, backend.refreshToken);
+      const session = await backendFetchSession();
 
       const claimRoles = resolveCurrentBackendRoles();
       if (claimRoles.hasUnknownRoles) {
@@ -302,23 +321,23 @@ export const auth = {
         throw new Error("Received unsupported fleet role claims.");
       }
 
-      const roles = claimRoles.roles.length > 0 ? claimRoles.roles : sanitizeFleetRoles(backend.user.roles);
+      const sessionRoles = sanitizeFleetRoles(session.user.roles);
+      const roles =
+        sessionRoles.length > 0
+          ? sessionRoles
+          : claimRoles.roles.length > 0
+            ? claimRoles.roles
+            : sanitizeFleetRoles(backend.user.roles);
       if (roles.length === 0) {
         auth.logout();
         throw new Error("Fleet account has no supported backend role.");
       }
       const resolvedRoles: FleetBackendRole[] = roles;
-
-      const authData: AuthState = {
-        isAuthenticated: true,
-        hasFinishedOnboarding: true,
-        user: {
-          email: backend.user.email,
-          roles: resolvedRoles,
-          role: mapFleetPrimaryRole(resolvedRoles),
-          name: backend.user.email.split("@")[0] || "fleet-user",
-        },
-      };
+      const authData = buildBackendAuthState({
+        email: session.user.email,
+        roles: resolvedRoles,
+        defaultRedirect: session.defaultRedirect,
+      });
       auth.setAuth(authData);
       void syncFleetWorkspaceState().catch((error) => {
         console.warn("Fleet backend bootstrap sync failed.", error);
@@ -340,7 +359,7 @@ export const auth = {
     services?: string[];
     metadata?: Record<string, unknown>;
     password: string;
-  }): Promise<void> {
+  }): Promise<AuthState | void> {
     const registration = normalizeFleetRegistrationInput(input);
 
     if (shouldUseDevelopmentAuth()) {
@@ -355,7 +374,7 @@ export const auth = {
     }
 
     try {
-      await backendRegister({
+      const backend = await backendRegister({
         fullName: registration.companyName,
         email: registration.email,
         phone: registration.phone,
@@ -371,6 +390,23 @@ export const auth = {
           metadata: registration.metadata,
         },
       });
+      saveFleetBackendTokens(backend.accessToken, backend.refreshToken);
+      const session = await backendFetchSession();
+      const roles = sanitizeFleetRoles(session.user.roles);
+      if (roles.length === 0) {
+        auth.logout();
+        throw new Error("Fleet account has no supported backend role.");
+      }
+      const authData = buildBackendAuthState({
+        email: session.user.email,
+        roles,
+        defaultRedirect: session.defaultRedirect,
+      });
+      auth.setAuth(authData);
+      void syncFleetWorkspaceState().catch((error) => {
+        console.warn("Fleet backend bootstrap sync failed.", error);
+      });
+      return authData;
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Registration failed.";
       throw new Error(msg);
