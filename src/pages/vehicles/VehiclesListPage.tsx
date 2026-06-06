@@ -2,10 +2,10 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Modal from "../../components/ui/Modal";
 import { auth } from "../../utils/auth";
-import { getCachedFleetVehicles, isFleetBackendEnabled, refreshFleetWorkspaceState } from "../../services/api/fleetApi";
+import { getCachedFleetVehicles, isFleetBackendEnabled, listFleetVehicles, refreshFleetWorkspaceState } from "../../services/api/fleetApi";
 
 export interface Vehicle {
-  id: number;
+  id: string | number;
   plate: string;
   model: string;
   status: "available" | "offline" | "maintenance" | "out-of-service";
@@ -49,16 +49,19 @@ export default function VehiclesListPage() {
         return;
       }
 
+      let sourceVehicles: any[] = [];
       try {
         await refreshFleetWorkspaceState();
+        sourceVehicles = await listFleetVehicles();
       } catch (error) {
         console.warn("Fleet backend vehicle sync failed.", error);
         setLoadError("Failed to refresh vehicles from backend. Showing last synced cache if available.");
+        sourceVehicles = getCachedFleetVehicles() as any[];
       }
 
-      const storedVehicles = (getCachedFleetVehicles() as any[]).map(v => ({
+      const storedVehicles = sourceVehicles.map(v => ({
         ...v,
-        compliance: v.compliance || { insurance: { status: "ok" }, inspection: { status: "ok" } },
+        compliance: v.compliance || { insurance: { status: "ok", expiry: "" }, inspection: { status: "ok", expiry: "" } },
         soc: v.soc ?? 50,
         condition: v.condition || "good",
         opsStatus: v.opsStatus || (v.status === "available" ? "ready" : "unavailable"),

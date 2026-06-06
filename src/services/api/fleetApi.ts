@@ -810,6 +810,38 @@ export function getCachedFleetDrivers() {
   return readStorage<any[]>("drivers", []);
 }
 
+export async function listFleetVehicles() {
+  if (!isFleetBackendEnabled() || !readFleetBackendAccessToken()) {
+    return getCachedFleetVehicles();
+  }
+
+  const vehicles = await request<FleetVehicleResponse[]>("/fleet/vehicles");
+  const mappedVehicles = vehicles.map((vehicle, index) => ({
+    id: vehicle.id,
+    backendId: vehicle.id,
+    plate: vehicle.plate ?? vehicle.licensePlate ?? "-",
+    model: `${vehicle.make} ${vehicle.model}`.trim(),
+    status: vehicleStatus(vehicle.status),
+    opsStatus: vehicle.status === "active" ? "ready" : "unavailable",
+    driver: "-",
+    mileage: 0,
+    vehicleType: vehicle.type,
+    soc: 50,
+    estimatedRange: 200,
+    lastSeen: "recently",
+    zone: "Fleet",
+    condition: "good",
+    compliance: {
+      insurance: { status: "ok", expiry: "" },
+      inspection: { status: "ok", expiry: "" },
+    },
+    sortOrder: index,
+  }));
+
+  writeStorage("vehicles", mappedVehicles);
+  return mappedVehicles;
+}
+
 export function getCachedFleetVehicles() {
   return readStorage<any[]>("vehicles", []);
 }
