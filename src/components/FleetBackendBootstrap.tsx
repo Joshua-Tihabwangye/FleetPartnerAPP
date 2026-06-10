@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { API_BASE_URL, BACKEND_FLAG_EVENT, loadBackendRuntimeFlag } from "../services/api/config";
+import { API_BASE_URL, BACKEND_FLAG_EVENT, FRONTEND_ONLY_MODE, loadBackendRuntimeFlag } from "../services/api/config";
 import { auth } from "../utils/auth";
 import {
   createFleetSocket,
@@ -19,6 +19,10 @@ export default function FleetBackendBootstrap() {
       setFleetBackendEnabled(isFleetBackendEnabled());
     };
 
+    if (FRONTEND_ONLY_MODE) {
+      return undefined;
+    }
+
     void loadBackendRuntimeFlag(true)
       .catch(() => undefined)
       .finally(syncBackendFlag);
@@ -32,7 +36,7 @@ export default function FleetBackendBootstrap() {
   }, []);
 
   useEffect(() => {
-    if (!fleetBackendEnabled || !auth.isAuthenticated()) {
+    if (FRONTEND_ONLY_MODE || !fleetBackendEnabled || !auth.isAuthenticated()) {
       return;
     }
 
@@ -42,7 +46,7 @@ export default function FleetBackendBootstrap() {
   }, [fleetBackendEnabled, location.pathname]);
 
   useEffect(() => {
-    if (!fleetBackendEnabled || !auth.isAuthenticated()) {
+    if (FRONTEND_ONLY_MODE || !fleetBackendEnabled || !auth.isAuthenticated()) {
       return;
     }
 

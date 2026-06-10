@@ -7,7 +7,7 @@ import {
   backendResetPassword,
   isBackendAuthEnabled,
 } from "../services/api/authApi";
-import { ALLOW_DEV_AUTH_FALLBACK } from "../services/api/config";
+import { ALLOW_DEV_AUTH_FALLBACK, FRONTEND_ONLY_MODE } from "../services/api/config";
 import {
   normalizeFleetLoginInput,
   normalizeFleetRegistrationInput,
@@ -97,7 +97,7 @@ const defaultAuthState: AuthState = {
 const DEV_REGISTERED_USERS_KEY = "fleet_partner_dev_registered_users";
 
 function shouldUseDevelopmentAuth(): boolean {
-  return ALLOW_DEV_AUTH_FALLBACK && !isBackendAuthEnabled();
+  return FRONTEND_ONLY_MODE || (ALLOW_DEV_AUTH_FALLBACK && !isBackendAuthEnabled());
 }
 
 function parseJwtPayload(token: string): { exp?: number; roles?: unknown } | null {
@@ -257,7 +257,7 @@ export const auth = {
       return storedAuth;
     }
 
-    if (!isBackendAuthEnabled()) {
+    if (FRONTEND_ONLY_MODE || !isBackendAuthEnabled()) {
       return storedAuth;
     }
 
@@ -297,17 +297,11 @@ export const auth = {
     const credentials = normalizeFleetLoginInput({ email, password });
     const normalizedEmail = credentials.email;
 
-    if (shouldUseDevelopmentAuth()) {
+    if (FRONTEND_ONLY_MODE || shouldUseDevelopmentAuth() || !isBackendAuthEnabled()) {
       const authData = createDevelopmentAuthState(normalizedEmail);
       clearFleetBackendTokens();
       auth.setAuth(authData);
       return authData;
-    }
-
-    if (!isBackendAuthEnabled()) {
-      throw new Error(
-        "Fleet backend authentication is disabled. Enable VITE_BACKEND_ENABLED=true or VITE_ALLOW_DEV_AUTH_FALLBACK=true in non-production.",
-      );
     }
 
     try {
@@ -362,15 +356,11 @@ export const auth = {
   }): Promise<AuthState | void> {
     const registration = normalizeFleetRegistrationInput(input);
 
-    if (shouldUseDevelopmentAuth()) {
+    if (FRONTEND_ONLY_MODE || shouldUseDevelopmentAuth() || !isBackendAuthEnabled()) {
       saveDevelopmentRegistration(registration);
-      return;
-    }
-
-    if (!isBackendAuthEnabled()) {
-      throw new Error(
-        "Fleet backend authentication is disabled. Enable VITE_BACKEND_ENABLED=true or VITE_ALLOW_DEV_AUTH_FALLBACK=true in non-production.",
-      );
+      const authData = createDevelopmentAuthState(registration.email);
+      auth.setAuth(authData);
+      return authData;
     }
 
     try {
@@ -379,16 +369,6 @@ export const auth = {
         email: registration.email,
         phone: registration.phone,
         password: registration.password,
-        fleetProfile: {
-          companyName: registration.companyName,
-          contactEmail: registration.email,
-          contactPhone: registration.phone,
-          registrationNumber: registration.registrationNumber,
-          taxId: registration.taxId,
-          fleetSize: registration.fleetSize,
-          services: registration.services,
-          metadata: registration.metadata,
-        },
       });
       saveFleetBackendTokens(backend.accessToken, backend.refreshToken);
       const session = await backendFetchSession();
@@ -414,8 +394,8 @@ export const auth = {
   },
 
   async forgotPassword(email: string): Promise<void> {
-    if (!isBackendAuthEnabled()) {
-      throw new Error("Authentication service is unavailable.");
+    if (FRONTEND_ONLY_MODE || !isBackendAuthEnabled()) {
+      return;
     }
     try {
       await backendForgotPassword({ email: email.trim().toLowerCase() });
@@ -426,8 +406,8 @@ export const auth = {
   },
 
   async verifyOtp(email: string, otp: string): Promise<{ verified: boolean; resetRequired?: boolean }> {
-    if (!isBackendAuthEnabled()) {
-      throw new Error("Authentication service is unavailable.");
+    if (FRONTEND_ONLY_MODE || !isBackendAuthEnabled()) {
+      return { verified: true, resetRequired: false };
     }
     try {
       return await backendVerifyOtp({ email: email.trim().toLowerCase(), otp });
@@ -438,8 +418,8 @@ export const auth = {
   },
 
   async resetPassword(email: string, otp: string, newPassword: string): Promise<{ reset: boolean }> {
-    if (!isBackendAuthEnabled()) {
-      throw new Error("Authentication service is unavailable.");
+    if (FRONTEND_ONLY_MODE || !isBackendAuthEnabled()) {
+      return { reset: true };
     }
     try {
       return await backendResetPassword({ email: email.trim().toLowerCase(), otp, newPassword });
