@@ -22,7 +22,7 @@ const backendBaseUrlEnv = env.VITE_BACKEND_BASE_URL ?? env.VITE_API_BASE_URL;
 const backendEnabledEnv = env.VITE_BACKEND_ENABLED ?? env.VITE_USE_BACKEND;
 const IS_NON_PROD = (env.MODE?.trim().toLowerCase() ?? "development") !== "production";
 
-export const FRONTEND_ONLY_MODE = parseBooleanFlag(env.VITE_FRONTEND_ONLY_MODE, false);
+export const FRONTEND_ONLY_MODE = parseBooleanFlag(env.VITE_FRONTEND_ONLY_MODE, true);
 export const USE_BACKEND = parseBooleanFlag(backendEnabledEnv, true) && !FRONTEND_ONLY_MODE;
 export const BACKEND_FLAG_EVENT = "evzone:backend-flag";
 export const API_BASE_URL = normalizeBaseUrl(backendBaseUrlEnv);
@@ -79,7 +79,7 @@ export function setBackendEnabled(enabled: boolean): void {
 
 
 export async function loadBackendRuntimeFlag(force = false): Promise<boolean> {
-  if (typeof window === "undefined") {
+  if (typeof window === "undefined" || FRONTEND_ONLY_MODE) {
     return getBackendEnabled();
   }
 
