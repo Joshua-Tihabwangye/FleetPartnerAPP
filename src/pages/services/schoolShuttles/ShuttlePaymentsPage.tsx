@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { toastManager } from "../../../utils/toastManager";
+import { requireAal2 } from "../../../utils/stepUp";
 import Modal from "../../../components/ui/Modal";
 
 // Mock Data
@@ -32,8 +33,16 @@ export default function ShuttlePaymentsPage() {
     const outstandingAmount = INITIAL_OUTSTANDING.reduce((sum, i) => sum + i.amount, 0);
     const collectionRate = Math.round((totalRevenue / (totalRevenue + outstandingAmount)) * 100);
 
-    const handleRecordPayment = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleRecordPayment = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        try {
+          await requireAal2();
+        } catch (error) {
+          if (error instanceof Error && error.message !== "AAL2 step-up required") {
+            toastManager.show(error.message, "error");
+          }
+          return;
+        }
         const payment = {
             id: `TXN-${Date.now()}`,
             student: newPayment.student,

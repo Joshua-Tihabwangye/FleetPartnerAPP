@@ -1,21 +1,45 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useMemo, useState } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
+import { auth, useAuthState } from "../../utils/auth";
 
 export default function FleetPartnerChooseOrganisationPage() {
   const navigate = useNavigate();
+  const { authState, loading } = useAuthState();
+  const organizations = useMemo(() => auth.getOrganizations(), []);
   const [selectedOrg, setSelectedOrg] = useState("");
 
-  // Sample organizations - replace with actual data from API
-  const organizations = [
-    { id: "1", name: "Green Fleet Services", role: "Fleet Owner" },
-    { id: "2", name: "City Transport Co.", role: "Manager" },
-    { id: "3", name: "Metro Shuttle Ltd", role: "Dispatcher" }
-  ];
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-50">
+        <div className="h-8 w-8 border-2 border-ev-green border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!authState.isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (organizations.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-900 via-emerald-950 to-slate-950 text-slate-50 px-4">
+        <div className="w-full max-w-md rounded-2xl border border-emerald-500/40 bg-black/40 shadow-xl shadow-black/40 p-5 sm:p-6 text-center space-y-4">
+          <div className="text-4xl">🏢</div>
+          <h1 className="text-[18px] font-semibold">No Fleet Partner workspace</h1>
+          <p className="text-[12px] text-emerald-100/80">
+            Your EVzone account is not linked to any Fleet Partner organization. Contact your
+            administrator to request access.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (selectedOrg) {
-      alert(`Switched to ${organizations.find(o => o.id === selectedOrg)?.name}. Wire to your auth API.`);
+    const org = organizations.find((o) => o.id === selectedOrg);
+    if (org) {
+      auth.setSelectedOrganization(org);
       navigate("/dashboard");
     }
   };
@@ -29,9 +53,7 @@ export default function FleetPartnerChooseOrganisationPage() {
           </div>
           <div className="flex flex-col">
             <span className="text-sm font-semibold">EVzone Fleet Partner</span>
-            <span className="text-[11px] text-emerald-100/90">
-              Fleet Partner workspace
-            </span>
+            <span className="text-[11px] text-emerald-100/90">Fleet Partner workspace</span>
           </div>
         </div>
         <h1 className="text-[18px] font-semibold mb-1">Switch organisation</h1>
@@ -58,7 +80,7 @@ export default function FleetPartnerChooseOrganisationPage() {
                 />
                 <div className="flex-1">
                   <div className="font-medium text-slate-50">{org.name}</div>
-                  <div className="text-[11px] text-emerald-200/80">{org.role}</div>
+                  <div className="text-[11px] text-emerald-200/80">{org.role || "Member"}</div>
                 </div>
               </label>
             ))}

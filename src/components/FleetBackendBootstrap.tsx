@@ -1,27 +1,23 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { API_BASE_URL, BACKEND_FLAG_EVENT, FRONTEND_ONLY_MODE, loadBackendRuntimeFlag } from "../services/api/config";
-import { auth } from "../utils/auth";
+import { API_BASE_URL, BACKEND_FLAG_EVENT, loadBackendRuntimeFlag } from "../services/api/config";
+import { auth, useAuthState } from "../utils/auth";
 import {
   createFleetSocket,
-  isFleetBackendEnabled,
   syncFleetWorkspaceState,
 } from "../services/api/fleetApi";
 
 export default function FleetBackendBootstrap() {
   const location = useLocation();
-  const [fleetBackendEnabled, setFleetBackendEnabled] = useState(() => isFleetBackendEnabled());
+  const { authState } = useAuthState();
+  const [fleetBackendEnabled, setFleetBackendEnabled] = useState(true);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
 
     const syncBackendFlag = () => {
-      setFleetBackendEnabled(isFleetBackendEnabled());
+      setFleetBackendEnabled(true);
     };
-
-    if (FRONTEND_ONLY_MODE) {
-      return undefined;
-    }
 
     void loadBackendRuntimeFlag(true)
       .catch(() => undefined)
@@ -36,17 +32,17 @@ export default function FleetBackendBootstrap() {
   }, []);
 
   useEffect(() => {
-    if (FRONTEND_ONLY_MODE || !fleetBackendEnabled || !auth.isAuthenticated()) {
+    if (!fleetBackendEnabled || !authState.isAuthenticated) {
       return;
     }
 
     void syncFleetWorkspaceState().catch((error) => {
       console.warn("Fleet backend sync failed. Keeping current local storage state.", error);
     });
-  }, [fleetBackendEnabled, location.pathname]);
+  }, [fleetBackendEnabled, authState.isAuthenticated, location.pathname]);
 
   useEffect(() => {
-    if (FRONTEND_ONLY_MODE || !fleetBackendEnabled || !auth.isAuthenticated()) {
+    if (!fleetBackendEnabled || !authState.isAuthenticated) {
       return;
     }
 
@@ -112,7 +108,7 @@ export default function FleetBackendBootstrap() {
       });
       socket.disconnect();
     };
-  }, [fleetBackendEnabled]);
+  }, [fleetBackendEnabled, authState.isAuthenticated]);
 
   return null;
 }

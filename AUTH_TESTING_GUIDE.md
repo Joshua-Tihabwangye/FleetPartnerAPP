@@ -1,109 +1,38 @@
 # Authentication Testing Guide
 
-## How to Test Login Without Database
+The Fleet Partner app authenticates through **EVzone Accounts OIDC**. It no longer uses localStorage-based fake auth or a local email/password form.
 
-The app now uses **localStorage-based authentication** for frontend testing. You can login with **any email and password** to test all pages.
+## OIDC Configuration
 
-## Quick Start
+Defaults are in `src/services/auth/oidcConfig.ts` and can be overridden via environment variables in `.env`:
 
-1. **Go to login page**: `/login`
-2. **Enter any email and password** (e.g., `test@example.com` / `password123`)
-3. **Click "Sign in"** - you'll be redirected to `/dashboard`
-4. **You're now logged in!** You can navigate to any page.
+- `VITE_OIDC_AUTHORITY` (default: `https://accounts.evzone.app`)
+- `VITE_OIDC_CLIENT_ID` (default: `evzone-charging-fleet-web`)
+- `VITE_OIDC_REDIRECT_URI` (default: `https://fleet.evzonecharging.com/auth/callback`)
+- `VITE_OIDC_POST_LOGOUT_REDIRECT_URI`
+- `VITE_OIDC_SCOPE`
+
+## Authentication Flow
+
+1. User visits `/login` and clicks **Sign in with EVzone Accounts**.
+2. The app redirects to EVzone Accounts with PKCE enabled.
+3. After successful authentication, EVzone Accounts redirects back to `/auth/callback`.
+4. The app completes the OIDC callback and redirects to `/dashboard`.
+
+## Organization Membership
+
+Protected routes require the authenticated user to have at least one organization in the `evzone.organizations` claim. If the user has multiple organizations, they are redirected to `/switch-organisation` to select a workspace.
+
+## AAL2 Step-Up
+
+Sensitive actions (role/policy changes, payment/payout operations, pricing updates) call `requireAal2()` before mutating data. If the current session is not AAL2, the user is redirected back to EVzone Accounts with `acr_values=aal2`.
 
 ## Files That Handle Authentication
 
-### 1. **`src/utils/auth.ts`** - Auth Utility
-   - Stores auth state in `localStorage`
-   - Functions: `login()`, `logout()`, `isAuthenticated()`, `getUser()`
-   - **Location**: This is where authentication logic lives
-
-### 2. **`src/routes/ProtectedRoute.tsx`** - Protected Routes Guard
-   - **Blocks access** if not authenticated
-   - Redirects to `/login` if not logged in
-   - **Used for**: All main app pages (dashboard, drivers, vehicles, etc.)
-
-### 3. **`src/routes/OnboardingGuard.tsx`** - Onboarding Flow Guard
-   - **Blocks access** if onboarding not complete
-   - Redirects to `/setup/fleet-partner-profile` if onboarding incomplete
-   - **Used for**: Onboarding setup pages
-
-### 4. **`src/routes/RoleGuard.tsx`** - Role-Based Access Control
-   - **Blocks access** if user role doesn't match
-   - Redirects to `/access-denied` if role doesn't match
-   - **Used for**: Pages that require specific roles (e.g., `/settings/roles`, `/ambulance/dispatch`)
-
-### 5. **`src/pages/auth/FleetPartnerLoginPage.tsx`** - Login Page
-   - **Accepts any email/password** for testing
-   - Sets auth state in localStorage
-   - Redirects to dashboard after login
-
-## Testing Different Scenarios
-
-### Test Onboarding Flow
-1. Open browser console (F12)
-2. Run: `localStorage.setItem('fleet_partner_auth', JSON.stringify({isAuthenticated: true, hasFinishedOnboarding: false, user: {email: 'test@test.com', role: 'FleetOwner'}}))`
-3. Navigate to any protected route
-4. You'll be redirected to `/setup/fleet-partner-profile`
-
-### Test Role-Based Access
-1. Login normally
-2. Open browser console (F12)
-3. Run: `localStorage.setItem('fleet_partner_auth', JSON.stringify({isAuthenticated: true, hasFinishedOnboarding: true, user: {email: 'test@test.com', role: 'Dispatcher'}}))`
-4. Try accessing `/settings/roles` (requires FleetOwner or Manager)
-5. You'll be redirected to `/access-denied`
-
-### Test Logout
-1. Open browser console (F12)
-2. Run: `localStorage.removeItem('fleet_partner_auth')`
-3. Refresh page - you'll be redirected to login
-
-## Pages That Require Authentication
-
-All pages under these routes require login:
-- `/dashboard` and all dashboard pages
-- `/drivers` and all driver pages
-- `/vehicles` and all vehicle pages
-- `/trips` and all trip pages
-- `/earnings` and all earnings pages
-- `/compliance` and all compliance pages
-- `/settings` and all settings pages
-- All service pages (rentals, tours, shuttles)
-
-## Pages That Don't Require Authentication
-
-- `/` (homepage)
-- `/login`
-- `/forgot-password`
-- `/reset-password/:token`
-- `/fleet-partner/register`
-- `/verify-email`
-- `/access-denied`
-- `/*` (404 page)
-
-## Default User Role
-
-When you login, the default role is **"FleetOwner"** which has access to all pages.
-
-Available roles:
-- `FleetOwner` - Full access
-- `Manager` - Most access except some settings
-- `Dispatcher` - Operations access
-- `Finance` - Financial pages access
-
-## Switching to Real Backend
-
-When you're ready to connect to a real backend:
-
-1. **Update `src/utils/auth.ts`**:
-   - Replace `login()` function to call your API
-   - Replace localStorage with API calls
-   - Handle tokens/sessions from your backend
-
-2. **Update guards** (`ProtectedRoute.tsx`, etc.):
-   - They already use `auth.getAuth()` so they'll work automatically once you update `auth.ts`
-
-3. **Update login page**:
-   - Replace the simple login with API call
-   - Handle errors from backend
-   - Store tokens/sessions appropriately
+- `src/services/auth/oidcConfig.ts` — OIDC client settings.
+- `src/utils/auth.ts` — Auth state helpers, role/permission parsing, AAL2 helpers.
+- `src/utils/stepUp.ts` — AAL2 guard helper.
+- `src/services/auth/OidcAuthInitializer.tsx` — Bootstraps OIDC on app load and handles `/auth/callback`.
+- `src/routes/ProtectedRoute.tsx` — Requires authentication + organization membership.
+- `src/routes/OnboardingGuard.tsx` — Guards onboarding routes.
+- `src/routes/RoleGuard.tsx` — Role-based access control.

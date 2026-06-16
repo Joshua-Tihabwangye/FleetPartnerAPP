@@ -59,8 +59,12 @@ You can safely introduce MUI components into any page — the theme is already i
 
 ## Auth & guards
 
-For now, `ProtectedRoute`, `OnboardingGuard` and `RoleGuard` use **fake auth objects**. Replace them with real auth state from your backend / auth provider when you integrate:
+Authentication is handled by **EVzone Accounts OIDC** (`src/services/auth/oidcConfig.ts`). The app uses PKCE, requests the `evzone-charging-fleet-web` client scopes, and stores the OIDC user in `sessionStorage` only.
 
-- `src/routes/ProtectedRoute.tsx`
-- `src/routes/OnboardingGuard.tsx`
-- `src/routes/RoleGuard.tsx`
+- `src/services/auth/OidcAuthInitializer.tsx` — handles the OIDC callback and loads the user on startup.
+- `src/routes/ProtectedRoute.tsx` — requires authentication and organization membership.
+- `src/routes/OnboardingGuard.tsx` — guards onboarding routes.
+- `src/routes/RoleGuard.tsx` — role-based access control.
+- `src/utils/auth.ts` — auth state, role/permission parsing, organization helpers, and AAL2 step-up.
+
+Copy `.env.example` to `.env` and update the OIDC variables for your environment.

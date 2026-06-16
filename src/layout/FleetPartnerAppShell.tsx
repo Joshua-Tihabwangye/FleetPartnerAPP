@@ -343,7 +343,7 @@ export default function FleetPartnerAppShell() {
             </div>
             <NotificationCenter />
             <ThemeToggle />
-            <UserProfileMenu userName="Fleet Manager" userEmail="manager@evzone.com" />
+            <UserProfileMenu />
           </div>
           
           {/* Desktop Header Items */}
@@ -353,7 +353,7 @@ export default function FleetPartnerAppShell() {
             <div className="h-4 w-px bg-slate-300 dark:bg-slate-600 mx-1"></div>
             <ThemeToggle />
             <div className="h-4 w-px bg-slate-300 dark:bg-slate-600 mx-1"></div>
-            <UserProfileMenu userName="Fleet Manager" userEmail="manager@evzone.com" />
+            <UserProfileMenu />
           </div>
         </header>
 

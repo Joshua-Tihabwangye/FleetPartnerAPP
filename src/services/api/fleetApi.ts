@@ -1,10 +1,7 @@
-import { request, configureHttpClientAuth, type TokenRefreshResult } from "./httpClient";
+import { request, configureHttpClientAuth } from "./httpClient";
 import { ALLOW_CACHE_FALLBACK, SOCKET_BASE_URL, SOCKET_PATH, getBackendEnabled } from "./config";
+import { auth } from "../../utils/auth";
 import { io, type Socket } from "socket.io-client";
-
-export const FLEET_BACKEND_ACCESS_TOKEN_KEY = "fleet_backend_access_token";
-export const FLEET_BACKEND_REFRESH_TOKEN_KEY = "fleet_backend_refresh_token";
-const FLEET_AUTH_STORAGE_KEY = "fleet_partner_auth";
 
 type FleetProfileResponse = {
   fleetId: string;
@@ -104,62 +101,31 @@ type FleetEarningsSummaryResponse = {
 };
 
 export function isFleetBackendEnabled(): boolean {
-  // Backend features require both the runtime flag and an authenticated backend session.
-  return getBackendEnabled() && !!readFleetBackendAccessToken();
-}
-
-export function readFleetBackendAccessToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(FLEET_BACKEND_ACCESS_TOKEN_KEY);
-}
-
-export function readFleetBackendRefreshToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(FLEET_BACKEND_REFRESH_TOKEN_KEY);
-}
-
-export function saveFleetBackendTokens(accessToken: string, refreshToken: string): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(FLEET_BACKEND_ACCESS_TOKEN_KEY, accessToken);
-  window.localStorage.setItem(FLEET_BACKEND_REFRESH_TOKEN_KEY, refreshToken);
-}
-
-export function clearFleetBackendTokens(): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.removeItem(FLEET_BACKEND_ACCESS_TOKEN_KEY);
-  window.localStorage.removeItem(FLEET_BACKEND_REFRESH_TOKEN_KEY);
-}
-
-function clearFleetSession(): void {
-  if (typeof window === "undefined") return;
-  clearFleetBackendTokens();
-  window.localStorage.removeItem(FLEET_AUTH_STORAGE_KEY);
-}
-
-async function refreshFleetTokens(refreshToken: string): Promise<TokenRefreshResult> {
-  const payload = await request<{ accessToken: string; refreshToken: string }>("/auth/refresh", {
-    method: "POST",
-    body: { refreshToken },
-    retryOnUnauthorized: false,
-  });
-
-  return {
-    accessToken: payload.accessToken,
-    refreshToken: payload.refreshToken,
-  };
+  // Backend features require both the runtime flag and an authenticated OIDC session.
+  return getBackendEnabled() && auth.isAuthenticated();
 }
 
 configureHttpClientAuth({
-  getAccessToken: readFleetBackendAccessToken,
-  getRefreshToken: readFleetBackendRefreshToken,
-  setTokens: saveFleetBackendTokens,
-  clearSession: clearFleetSession,
-  refresh: refreshFleetTokens,
-  onUnauthorized: () => {
-    if (typeof window === "undefined") return;
-    if (window.location.hash !== "#/login") {
-      window.location.assign("/#/login");
+  getAccessToken: () => auth.getAccessToken(),
+  getRefreshToken: () => auth.getRefreshToken(),
+  setTokens: () => {
+    // Tokens are managed by the OIDC user manager; no-op here.
+  },
+  clearSession: () => {
+    void auth.logout();
+  },
+  refresh: async () => {
+    const user = await auth.signinSilent();
+    if (!user?.access_token) {
+      throw new Error("Session expired");
     }
+    return {
+      accessToken: user.access_token,
+      refreshToken: user.refresh_token ?? "",
+    };
+  },
+  onUnauthorized: () => {
+    void auth.logout();
   },
 });
 
@@ -170,7 +136,7 @@ export function createFleetSocket(): Socket {
     autoConnect: false,
     withCredentials: false,
     auth: {
-      token: readFleetBackendAccessToken(),
+      token: auth.getAccessToken() ?? undefined,
     },
   });
 }
@@ -227,7 +193,7 @@ function dispatchStatus(status: FleetDispatchResponse["status"]) {
 }
 
 export async function syncFleetWorkspaceState(): Promise<void> {
-  if (typeof window === "undefined" || !getBackendEnabled() || !readFleetBackendAccessToken()) {
+  if (typeof window === "undefined" || !getBackendEnabled() || !auth.getAccessToken()) {
     return;
   }
 
@@ -789,7 +755,7 @@ export async function createFleetComplianceIncident(input: FleetCreateCompliance
 }
 
 export async function refreshFleetWorkspaceState() {
-  if (!isFleetBackendEnabled() || !readFleetBackendAccessToken()) {
+  if (!isFleetBackendEnabled() || !auth.getAccessToken()) {
     return;
   }
   await syncFleetWorkspaceState();
@@ -811,7 +777,7 @@ export function getCachedFleetDrivers() {
 }
 
 export async function listFleetVehicles() {
-  if (!isFleetBackendEnabled() || !readFleetBackendAccessToken()) {
+  if (!isFleetBackendEnabled() || !auth.getAccessToken()) {
     return getCachedFleetVehicles();
   }
 

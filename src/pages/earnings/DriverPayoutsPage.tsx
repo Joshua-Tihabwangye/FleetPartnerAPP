@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Modal from "../../components/ui/Modal";
 import { toastManager } from "../../utils/toastManager";
+import { requireAal2 } from "../../utils/stepUp";
 
 interface Payout {
   id: string;
@@ -190,7 +191,17 @@ export default function DriverPayoutsPage() {
                         </button>
                         {payout.status === "pending" && (
                           <button
-                            onClick={() => toastManager.show(`Payment of ${payout.amount} initiated for ${payout.name}`, "success")}
+                            onClick={() => {
+                            void requireAal2()
+                              .then(() => {
+                                toastManager.show(`Payment of ${payout.amount} initiated for ${payout.name}`, "success");
+                              })
+                              .catch((error) => {
+                                if (error instanceof Error && error.message !== "AAL2 step-up required") {
+                                  toastManager.show(error.message, "error");
+                                }
+                              });
+                          }}
                             className="px-3 py-1 bg-ev-green hover:bg-ev-green-dark text-white text-xs font-medium rounded transition-colors"
                           >
                             Pay Now
@@ -268,8 +279,16 @@ export default function DriverPayoutsPage() {
             </button>
             <button
               onClick={() => {
-                toastManager.show(`Processing ${payouts.filter(p => p.status === 'pending').length} payouts...`, "success");
-                setShowProcessModal(false);
+                void requireAal2()
+                  .then(() => {
+                    toastManager.show(`Processing ${payouts.filter(p => p.status === 'pending').length} payouts...`, "success");
+                    setShowProcessModal(false);
+                  })
+                  .catch((error) => {
+                    if (error instanceof Error && error.message !== "AAL2 step-up required") {
+                      toastManager.show(error.message, "error");
+                    }
+                  });
               }}
               className="flex-1 px-4 py-2 rounded-lg bg-ev-green text-white text-sm font-medium hover:bg-ev-green-dark"
             >

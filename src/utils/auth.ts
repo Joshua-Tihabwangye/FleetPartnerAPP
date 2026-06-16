@@ -1,25 +1,6 @@
-import {
-  backendFetchSession,
-  backendForgotPassword,
-  backendLogin,
-  backendRegister,
-  backendVerifyOtp,
-  backendResetPassword,
-  isBackendAuthEnabled,
-} from "../services/api/authApi";
-import { ALLOW_DEV_AUTH_FALLBACK, FRONTEND_ONLY_MODE } from "../services/api/config";
-import {
-  normalizeFleetLoginInput,
-  normalizeFleetRegistrationInput,
-} from "../services/api/validators";
-import {
-  clearFleetBackendTokens,
-  readFleetBackendAccessToken,
-  saveFleetBackendTokens,
-  syncFleetWorkspaceState,
-} from "../services/api/fleetApi";
-
-const AUTH_KEY = "fleet_partner_auth";
+import { useEffect, useState } from "react";
+import { User as OidcUser, UserManager } from "oidc-client-ts";
+import { oidcSettings } from "../services/auth/oidcConfig";
 
 export const FLEET_BACKEND_ROLE_ENUMS = [
   "fleet_owner",
@@ -41,12 +22,40 @@ export type FleetPermission =
   | "settings:roles:view"
   | "settings:roles:write";
 
+export interface User {
+  email: string;
+  role: FleetBackendRole;
+  roles: FleetBackendRole[];
+  name: string;
+}
+
+export interface AuthState {
+  isAuthenticated: boolean;
+  hasFinishedOnboarding: boolean;
+  user: User | null;
+}
+
+export interface FleetOrganization {
+  id: string;
+  name: string;
+  role?: string;
+}
+
+type AuthListener = () => void;
+
 type FleetRoleClaimStatus = {
   roles: FleetBackendRole[];
   hasUnknownRoles: boolean;
 };
 
+const defaultAuthState: AuthState = {
+  isAuthenticated: false,
+  hasFinishedOnboarding: false,
+  user: null,
+};
+
 const FLEET_ROLE_SET = new Set<string>(FLEET_BACKEND_ROLE_ENUMS);
+
 const FLEET_ROLE_PERMISSIONS: Record<FleetBackendRole, readonly FleetPermission[]> = {
   fleet_owner: [
     "drivers:view",
@@ -75,43 +84,50 @@ const FLEET_ROLE_PERMISSIONS: Record<FleetBackendRole, readonly FleetPermission[
   fleet_finance: ["dispatch:view"],
 };
 
-export interface User {
-  email: string;
-  role: FleetBackendRole;
-  roles: FleetBackendRole[];
-  name: string;
+const SELECTED_ORG_KEY = "evz_fleet_selected_org";
+
+let userManager: UserManager | null = null;
+let currentOidcUser: OidcUser | null = null;
+let currentAuthState: AuthState = defaultAuthState;
+let initPromise: Promise<void> | null = null;
+const listeners = new Set<AuthListener>();
+
+function getManager(): UserManager {
+  if (userManager) return userManager;
+
+  userManager = new UserManager(oidcSettings);
+  userManager.events.addUserLoaded(handleUserLoaded);
+  userManager.events.addUserUnloaded(handleUserUnloaded);
+  userManager.events.addUserSignedOut(handleUserUnloaded);
+  userManager.events.addAccessTokenExpired(handleTokenExpired);
+  return userManager;
 }
 
-export interface AuthState {
-  isAuthenticated: boolean;
-  hasFinishedOnboarding: boolean;
-  user: User | null;
+function notifyListeners(): void {
+  listeners.forEach((listener) => listener());
 }
 
-const defaultAuthState: AuthState = {
-  isAuthenticated: false,
-  hasFinishedOnboarding: false,
-  user: null,
-};
-
-const DEV_REGISTERED_USERS_KEY = "fleet_partner_dev_registered_users";
-
-function shouldUseDevelopmentAuth(): boolean {
-  return FRONTEND_ONLY_MODE || (ALLOW_DEV_AUTH_FALLBACK && !isBackendAuthEnabled());
+function handleUserLoaded(user: OidcUser): void {
+  currentOidcUser = user;
+  currentAuthState = buildAuthState(user);
+  notifyListeners();
 }
 
-function parseJwtPayload(token: string): { exp?: number; roles?: unknown } | null {
-  const parts = token.split(".");
-  if (parts.length < 2) return null;
+function handleUserUnloaded(): void {
+  currentOidcUser = null;
+  currentAuthState = defaultAuthState;
+  notifyListeners();
+}
 
-  try {
-    const normalized = parts[1]!.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
-    const json = atob(padded);
-    return JSON.parse(json) as { exp?: number; roles?: unknown };
-  } catch {
-    return null;
-  }
+function handleTokenExpired(): void {
+  void getManager()
+    .signinSilent()
+    .then((user) => {
+      if (user) handleUserLoaded(user);
+    })
+    .catch(() => {
+      handleUserUnloaded();
+    });
 }
 
 function parseFleetRoleClaims(input?: unknown): FleetRoleClaimStatus {
@@ -139,19 +155,35 @@ function parseFleetRoleClaims(input?: unknown): FleetRoleClaimStatus {
   return { roles: Array.from(normalized), hasUnknownRoles };
 }
 
-function sanitizeFleetRoles(input?: unknown): FleetBackendRole[] {
-  return parseFleetRoleClaims(input).roles;
+function getNestedClaim(profile: Record<string, unknown>, ...keys: string[]): unknown {
+  for (const key of keys) {
+    if (key in profile) return profile[key];
+  }
+  return undefined;
 }
 
-function getClaimRolesFromToken(token: string): FleetRoleClaimStatus {
-  const payload = parseJwtPayload(token);
-  return parseFleetRoleClaims(payload?.roles);
-}
+function extractRolesFromProfile(profile: Record<string, unknown>): FleetBackendRole[] {
+  const rawRoles = getNestedClaim(
+    profile,
+    "roles",
+    "evzone.principal",
+    "evzone_principal",
+    "https://evzone.app/roles",
+    "fleet_roles",
+  );
 
-function isAccessTokenExpired(token: string): boolean {
-  const payload = parseJwtPayload(token);
-  if (!payload?.exp) return false;
-  return payload.exp * 1000 <= Date.now();
+  if (Array.isArray(rawRoles)) {
+    return parseFleetRoleClaims(rawRoles).roles;
+  }
+
+  if (rawRoles && typeof rawRoles === "object") {
+    const nested = (rawRoles as Record<string, unknown>).roles;
+    if (Array.isArray(nested)) {
+      return parseFleetRoleClaims(nested).roles;
+    }
+  }
+
+  return [];
 }
 
 function mapFleetPrimaryRole(roles: FleetBackendRole[]): FleetBackendRole {
@@ -161,14 +193,170 @@ function mapFleetPrimaryRole(roles: FleetBackendRole[]): FleetBackendRole {
   return "fleet_owner";
 }
 
-function resolveCurrentBackendRoles(): FleetRoleClaimStatus {
-  const token = readFleetBackendAccessToken();
-  if (!token) return { roles: [], hasUnknownRoles: false };
-  return getClaimRolesFromToken(token);
+function normalizeUser(user: OidcUser): User | null {
+  if (!user || user.expired) return null;
+
+  const profile = user.profile || {};
+  const email = String(
+    profile.email ?? profile.preferred_username ?? "",
+  ).toLowerCase();
+  const name = String(
+    profile.name ?? profile.given_name ?? email.split("@")[0] ?? "Fleet User",
+  );
+  const roles = extractRolesFromProfile(profile);
+  const resolvedRoles = roles.length > 0 ? roles : ["fleet_owner" as FleetBackendRole];
+
+  return {
+    email: email || "fleet-user@evzone.com",
+    name,
+    roles: resolvedRoles,
+    role: mapFleetPrimaryRole(resolvedRoles),
+  };
 }
 
-function hasAnyFleetPermissionByRoles(roles: FleetBackendRole[], required: readonly FleetPermission[]): boolean {
+function buildAuthState(user: OidcUser | null): AuthState {
+  if (!user) return defaultAuthState;
+  const fleetUser = normalizeUser(user);
+  if (!fleetUser) return defaultAuthState;
+
+  return {
+    isAuthenticated: true,
+    hasFinishedOnboarding: hasOrganization(),
+    user: fleetUser,
+  };
+}
+
+function canUseSessionStorage(): boolean {
+  return typeof window !== "undefined" && typeof window.sessionStorage !== "undefined";
+}
+
+function parseOrganizations(raw: unknown): FleetOrganization[] {
+  if (!Array.isArray(raw)) return [];
+
+  return raw
+    .map((entry: unknown) => {
+      if (!entry || typeof entry !== "object") return null;
+      const item = entry as Record<string, unknown>;
+      const id = String(item.id ?? item.organizationId ?? item.orgId ?? "");
+      const name = String(item.name ?? item.displayName ?? item.organizationName ?? "");
+      const role = item.role ? String(item.role) : undefined;
+      if (!id || !name) return null;
+      const org: FleetOrganization = { id, name, role: role ? role : undefined };
+      return org;
+    })
+    .filter((org): org is FleetOrganization => org !== null);
+}
+
+export function getOrganizations(): FleetOrganization[] {
+  if (!currentOidcUser) return [];
+  const profile = currentOidcUser.profile || {};
+  const raw = getNestedClaim(
+    profile,
+    "evzone.organizations",
+    "evzone_organizations",
+    "organizations",
+    "org_memberships",
+  );
+  return parseOrganizations(raw);
+}
+
+export function hasOrganization(): boolean {
+  return getOrganizations().length > 0;
+}
+
+export function getSelectedOrganization(): FleetOrganization | null {
+  if (!canUseSessionStorage()) return null;
+  try {
+    const raw = window.sessionStorage.getItem(SELECTED_ORG_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as FleetOrganization;
+    if (parsed?.id && parsed?.name) return parsed;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function setSelectedOrganization(org: FleetOrganization): void {
+  if (!canUseSessionStorage()) return;
+  window.sessionStorage.setItem(SELECTED_ORG_KEY, JSON.stringify(org));
+}
+
+export function clearSelectedOrganization(): void {
+  if (!canUseSessionStorage()) return;
+  window.sessionStorage.removeItem(SELECTED_ORG_KEY);
+}
+
+export function hasSelectedOrganization(): boolean {
+  return hasOrganization() && !!getSelectedOrganization();
+}
+
+export function isAal2(): boolean {
+  if (!currentOidcUser) return false;
+  const profile = currentOidcUser.profile || {};
+  const acr = String(profile.acr ?? "").toLowerCase();
+  const amr = profile.amr;
+
+  if (acr === "aal2" || acr.includes("mfa")) return true;
+  if (Array.isArray(amr)) {
+    return amr.some((method) =>
+      String(method).toLowerCase().includes("mfa") ||
+      String(method).toLowerCase().includes("aal2"),
+    );
+  }
+  return false;
+}
+
+export function isCallbackUrl(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.location.pathname === "/auth/callback" ||
+    window.location.pathname === "/auth/callback/";
+}
+
+export function subscribe(listener: AuthListener): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+export function getAuth(): AuthState {
+  return currentAuthState;
+}
+
+export function getUser(): User | null {
+  return currentAuthState.user;
+}
+
+export function getUserEmail(): string {
+  return currentAuthState.user?.email ?? "";
+}
+
+export function getUserRoles(): FleetBackendRole[] {
+  return currentAuthState.user?.roles ?? [];
+}
+
+export function isAuthenticated(): boolean {
+  return currentAuthState.isAuthenticated;
+}
+
+export function hasFinishedOnboarding(): boolean {
+  return currentAuthState.hasFinishedOnboarding;
+}
+
+export function getAccessToken(): string | null {
+  return currentOidcUser?.access_token ?? null;
+}
+
+export function getRefreshToken(): string | null {
+  return currentOidcUser?.refresh_token ?? null;
+}
+
+export function hasPermission(permission: FleetPermission): boolean {
+  return hasAnyPermission([permission]);
+}
+
+export function hasAnyPermission(required: FleetPermission[]): boolean {
   if (required.length === 0) return true;
+  const roles = getUserRoles();
   const granted = new Set<FleetPermission>();
   roles.forEach((role) => {
     FLEET_ROLE_PERMISSIONS[role].forEach((permission) => granted.add(permission));
@@ -176,289 +364,120 @@ function hasAnyFleetPermissionByRoles(roles: FleetBackendRole[], required: reado
   return required.some((permission) => granted.has(permission));
 }
 
-function createDevelopmentAuthState(email: string): AuthState {
-  return {
-    isAuthenticated: true,
-    hasFinishedOnboarding: true,
-    user: {
-      email,
-      role: "fleet_owner",
-      roles: ["fleet_owner"],
-      name: email.split("@")[0] || "fleet-user",
-    },
-  };
+export async function initializeAuth(): Promise<void> {
+  if (initPromise) return initPromise;
+
+  initPromise = (async () => {
+    const user = await getManager().getUser();
+    if (user) {
+      handleUserLoaded(user);
+    } else {
+      handleUserUnloaded();
+    }
+  })();
+
+  return initPromise;
 }
 
-function buildBackendAuthState(input: {
-  email: string;
-  roles: FleetBackendRole[];
-  defaultRedirect?: string;
-}): AuthState {
-  return {
-    isAuthenticated: true,
-    hasFinishedOnboarding: input.defaultRedirect !== "/setup/fleet-partner-profile",
-    user: {
-      email: input.email,
-      roles: input.roles,
-      role: mapFleetPrimaryRole(input.roles),
-      name: input.email.split("@")[0] || "fleet-user",
-    },
-  };
+export async function signinRedirect(
+  extra: Record<string, unknown> = {},
+): Promise<void> {
+  await getManager().signinRedirect(extra);
 }
 
-function saveDevelopmentRegistration(input: {
-  companyName: string;
-  email: string;
-  phone?: string;
-  registrationNumber?: string;
-  taxId?: string;
-  fleetSize?: string;
-  services?: string[];
-  metadata?: Record<string, unknown>;
-  password: string;
-}): void {
-  if (typeof window === "undefined") return;
+export async function signinRedirectCallback(url?: string): Promise<OidcUser> {
+  const user = await getManager().signinRedirectCallback(url);
+  handleUserLoaded(user);
+  return user;
+}
+
+export async function signinSilent(): Promise<OidcUser | null> {
+  return getManager().signinSilent();
+}
+
+export async function requestAal2StepUp(): Promise<void> {
+  const loginHint = getUserEmail() || undefined;
+  await signinRedirect({
+    acr_values: "aal2",
+    prompt: "login",
+    login_hint: loginHint,
+  });
+}
+
+export async function logout(): Promise<void> {
+  clearSelectedOrganization();
+  const mgr = getManager();
   try {
-    const stored = window.localStorage.getItem(DEV_REGISTERED_USERS_KEY);
-    const existing = stored ? (JSON.parse(stored) as Array<Record<string, unknown>>) : [];
-    existing.unshift({
-      companyName: input.companyName,
-      email: input.email,
-      phone: input.phone ?? "",
-      registrationNumber: input.registrationNumber ?? "",
-      taxId: input.taxId ?? "",
-      fleetSize: input.fleetSize ?? "",
-      services: input.services ?? [],
-      metadata: input.metadata ?? {},
-      password: input.password,
-      createdAt: new Date().toISOString(),
-    });
-    window.localStorage.setItem(DEV_REGISTERED_USERS_KEY, JSON.stringify(existing.slice(0, 100)));
+    await mgr.signoutRedirect();
   } catch {
-    // No-op: local fallback only.
+    await mgr.removeUser();
+    handleUserUnloaded();
   }
 }
 
+export function useAuthState(): { authState: AuthState; loading: boolean } {
+  const [authState, setAuthState] = useState(() => getAuth());
+  const [loading, setLoading] = useState(
+    () => !currentAuthState.isAuthenticated && typeof window !== "undefined",
+  );
+
+  useEffect(() => {
+    let mounted = true;
+    const listener = () => {
+      if (mounted) setAuthState(getAuth());
+    };
+
+    const unsubscribe = subscribe(listener);
+    initializeAuth().finally(() => {
+      if (mounted) {
+        setAuthState(getAuth());
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, []);
+
+  return { authState, loading };
+}
+
 export const auth = {
-  getAuth(): AuthState {
-    if (typeof window === "undefined") {
-      return defaultAuthState;
-    }
-
-    let storedAuth: AuthState;
-    try {
-      const raw = localStorage.getItem(AUTH_KEY);
-      storedAuth = raw ? (JSON.parse(raw) as AuthState) : defaultAuthState;
-    } catch {
-      return defaultAuthState;
-    }
-
-    if (!storedAuth.isAuthenticated || !storedAuth.user) {
-      return storedAuth;
-    }
-
-    if (FRONTEND_ONLY_MODE || !isBackendAuthEnabled()) {
-      return storedAuth;
-    }
-
-    const accessToken = readFleetBackendAccessToken();
-    if (!accessToken || isAccessTokenExpired(accessToken)) {
-      auth.logout();
-      return defaultAuthState;
-    }
-
-    const claimRoles = resolveCurrentBackendRoles();
-    if (claimRoles.hasUnknownRoles) {
-      auth.logout();
-      return defaultAuthState;
-    }
-
-    if (claimRoles.roles.length > 0) {
-      const nextUser: User = {
-        ...storedAuth.user,
-        roles: claimRoles.roles,
-        role: mapFleetPrimaryRole(claimRoles.roles),
-      };
-      const nextAuth = { ...storedAuth, user: nextUser };
-      auth.setAuth(nextAuth);
-      return nextAuth;
-    }
-
-    return storedAuth;
+  getAuth,
+  setAuth: () => {
+    // Intentional no-op: auth state is driven by the OIDC user manager.
   },
-
-  setAuth(authData: AuthState): void {
-    if (typeof window !== "undefined") {
-      localStorage.setItem(AUTH_KEY, JSON.stringify(authData));
-    }
+  login: (_email?: string, _password?: string) => signinRedirect(),
+  register: (_input?: Record<string, unknown>) => signinRedirect({ screen_hint: "signup" }),
+  forgotPassword: (_email?: string) => signinRedirect({ screen_hint: "reset" }),
+  async verifyOtp(_email?: string, _otp?: string): Promise<{ verified: boolean; resetRequired?: boolean }> {
+    return { verified: false, resetRequired: false };
   },
-
-  async login(email: string, password: string): Promise<AuthState> {
-    const credentials = normalizeFleetLoginInput({ email, password });
-    const normalizedEmail = credentials.email;
-
-    if (FRONTEND_ONLY_MODE || shouldUseDevelopmentAuth() || !isBackendAuthEnabled()) {
-      const authData = createDevelopmentAuthState(normalizedEmail);
-      clearFleetBackendTokens();
-      auth.setAuth(authData);
-      return authData;
-    }
-
-    try {
-      const backend = await backendLogin(credentials);
-      saveFleetBackendTokens(backend.accessToken, backend.refreshToken);
-      const session = await backendFetchSession();
-
-      const claimRoles = resolveCurrentBackendRoles();
-      if (claimRoles.hasUnknownRoles) {
-        auth.logout();
-        throw new Error("Received unsupported fleet role claims.");
-      }
-
-      const sessionRoles = sanitizeFleetRoles(session.user.roles);
-      const roles =
-        sessionRoles.length > 0
-          ? sessionRoles
-          : claimRoles.roles.length > 0
-            ? claimRoles.roles
-            : sanitizeFleetRoles(backend.user.roles);
-      if (roles.length === 0) {
-        auth.logout();
-        throw new Error("Fleet account has no supported backend role.");
-      }
-      const resolvedRoles: FleetBackendRole[] = roles;
-      const authData = buildBackendAuthState({
-        email: session.user.email,
-        roles: resolvedRoles,
-        defaultRedirect: session.defaultRedirect,
-      });
-      auth.setAuth(authData);
-      void syncFleetWorkspaceState().catch((error) => {
-        console.warn("Fleet backend bootstrap sync failed.", error);
-      });
-      return authData;
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : "Fleet sign in failed.";
-      throw new Error(msg);
-    }
+  async resetPassword(_email?: string, _otp?: string, _newPassword?: string): Promise<{ reset: boolean }> {
+    return { reset: false };
   },
-
-  async register(input: {
-    companyName: string;
-    email: string;
-    phone?: string;
-    registrationNumber?: string;
-    taxId?: string;
-    fleetSize?: string;
-    services?: string[];
-    metadata?: Record<string, unknown>;
-    password: string;
-  }): Promise<AuthState | void> {
-    const registration = normalizeFleetRegistrationInput(input);
-
-    if (FRONTEND_ONLY_MODE || shouldUseDevelopmentAuth() || !isBackendAuthEnabled()) {
-      saveDevelopmentRegistration(registration);
-      const authData = createDevelopmentAuthState(registration.email);
-      auth.setAuth(authData);
-      return authData;
-    }
-
-    try {
-      const backend = await backendRegister({
-        fullName: registration.companyName,
-        email: registration.email,
-        phone: registration.phone,
-        password: registration.password,
-      });
-      saveFleetBackendTokens(backend.accessToken, backend.refreshToken);
-      const session = await backendFetchSession();
-      const roles = sanitizeFleetRoles(session.user.roles);
-      if (roles.length === 0) {
-        auth.logout();
-        throw new Error("Fleet account has no supported backend role.");
-      }
-      const authData = buildBackendAuthState({
-        email: session.user.email,
-        roles,
-        defaultRedirect: session.defaultRedirect,
-      });
-      auth.setAuth(authData);
-      void syncFleetWorkspaceState().catch((error) => {
-        console.warn("Fleet backend bootstrap sync failed.", error);
-      });
-      return authData;
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : "Registration failed.";
-      throw new Error(msg);
-    }
-  },
-
-  async forgotPassword(email: string): Promise<void> {
-    if (FRONTEND_ONLY_MODE || !isBackendAuthEnabled()) {
-      return;
-    }
-    try {
-      await backendForgotPassword({ email: email.trim().toLowerCase() });
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : "Failed to send reset link.";
-      throw new Error(msg);
-    }
-  },
-
-  async verifyOtp(email: string, otp: string): Promise<{ verified: boolean; resetRequired?: boolean }> {
-    if (FRONTEND_ONLY_MODE || !isBackendAuthEnabled()) {
-      return { verified: true, resetRequired: false };
-    }
-    try {
-      return await backendVerifyOtp({ email: email.trim().toLowerCase(), otp });
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : "OTP verification failed.";
-      throw new Error(msg);
-    }
-  },
-
-  async resetPassword(email: string, otp: string, newPassword: string): Promise<{ reset: boolean }> {
-    if (FRONTEND_ONLY_MODE || !isBackendAuthEnabled()) {
-      return { reset: true };
-    }
-    try {
-      return await backendResetPassword({ email: email.trim().toLowerCase(), otp, newPassword });
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : "Password reset failed.";
-      throw new Error(msg);
-    }
-  },
-
-  logout(): void {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem(AUTH_KEY);
-    }
-    clearFleetBackendTokens();
-  },
-
-  isAuthenticated(): boolean {
-    const state = auth.getAuth();
-    return state.isAuthenticated && !!state.user;
-  },
-
-  hasFinishedOnboarding(): boolean {
-    return auth.getAuth().hasFinishedOnboarding;
-  },
-
-  getUser(): User | null {
-    return auth.getAuth().user;
-  },
-
-  getUserRoles(): FleetBackendRole[] {
-    const user = auth.getUser();
-    return user?.roles ?? [];
-  },
-
-  hasPermission(permission: FleetPermission): boolean {
-    return hasAnyFleetPermissionByRoles(auth.getUserRoles(), [permission]);
-  },
-
-  hasAnyPermission(required: FleetPermission[]): boolean {
-    return hasAnyFleetPermissionByRoles(auth.getUserRoles(), required);
-  },
+  logout,
+  signinRedirect,
+  signinRedirectCallback,
+  signinSilent,
+  initializeAuth,
+  isCallbackUrl,
+  isAuthenticated,
+  hasFinishedOnboarding,
+  getUser,
+  getUserEmail,
+  getUserRoles,
+  getAccessToken,
+  getRefreshToken,
+  getOrganizations,
+  hasOrganization,
+  hasSelectedOrganization,
+  setSelectedOrganization,
+  clearSelectedOrganization,
+  hasPermission,
+  hasAnyPermission,
+  isAal2,
+  requestAal2StepUp,
 };

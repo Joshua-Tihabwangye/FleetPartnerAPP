@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { getFleetRoles, patchFleetRoles } from "../../services/api/fleetApi";
 import { toastManager } from "../../utils/toastManager";
+import { requireAal2 } from "../../utils/stepUp";
 
 type RolePermissions = Record<string, boolean | Record<string, boolean>>;
 
@@ -107,6 +108,7 @@ export default function RolesAndPermissionsPage() {
   const persistRoles = async (nextRoles: Role[], successMessage: string) => {
     setSaving(true);
     try {
+      await requireAal2();
       await patchFleetRoles({ roles: nextRoles });
       setRoles(nextRoles);
       toastManager.show(successMessage, "success");
