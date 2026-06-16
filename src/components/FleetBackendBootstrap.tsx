@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { API_BASE_URL, BACKEND_FLAG_EVENT, loadBackendRuntimeFlag } from "../services/api/config";
-import { auth, useAuthState } from "../utils/auth";
+import { API_BASE_URL, BACKEND_FLAG_EVENT } from "../services/api/config";
+import { useAuthState } from "../utils/auth";
 import {
   createFleetSocket,
   syncFleetWorkspaceState,
@@ -18,10 +18,6 @@ export default function FleetBackendBootstrap() {
     const syncBackendFlag = () => {
       setFleetBackendEnabled(true);
     };
-
-    void loadBackendRuntimeFlag(true)
-      .catch(() => undefined)
-      .finally(syncBackendFlag);
 
     window.addEventListener(BACKEND_FLAG_EVENT, syncBackendFlag as EventListener);
     syncBackendFlag();
