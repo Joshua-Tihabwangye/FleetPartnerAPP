@@ -14,6 +14,7 @@ interface VehicleFormData {
   year: string;
   color: string;
   vehicleType: string;
+  powertrain: string;
   vin: string;
   registrationExpiry: string;
 }
@@ -28,6 +29,7 @@ export default function VehicleCreatePage() {
     year: "",
     color: "",
     vehicleType: "",
+    powertrain: "BEV",
     vin: "",
     registrationExpiry: "",
   });
@@ -43,7 +45,10 @@ export default function VehicleCreatePage() {
         year: Number(formData.year),
         plate: formData.plateNumber.trim(),
         type: formData.vehicleType,
+        powertrain: formData.powertrain as "BEV" | "PHEV" | "HEV" | "ICE",
         status: "active" as const,
+        color: formData.color.trim(),
+        vin: formData.vin.trim(),
       };
 
       if (isFleetBackendEnabled()) {
@@ -109,6 +114,20 @@ export default function VehicleCreatePage() {
                   <option value="van">Van</option>
                   <option value="bus">Bus</option>
                   <option value="motorcycle">Motorcycle</option>
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-sm font-medium text-slate-700 mb-1 block">Powertrain *</span>
+                <select
+                  value={formData.powertrain}
+                  onChange={(e) => setFormData({ ...formData, powertrain: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ev-green focus:border-transparent"
+                  required
+                >
+                  <option value="BEV">BEV (Battery Electric)</option>
+                  <option value="PHEV">PHEV (Plug-in Hybrid)</option>
+                  <option value="HEV">HEV (Hybrid)</option>
+                  <option value="ICE">ICE (Internal Combustion)</option>
                 </select>
               </label>
               <label className="block">

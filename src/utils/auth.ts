@@ -350,6 +350,10 @@ export function getRefreshToken(): string | null {
   return currentOidcUser?.refresh_token ?? null;
 }
 
+export function getUserId(): string | null {
+  return currentOidcUser?.profile?.sub ?? null;
+}
+
 export function hasPermission(permission: FleetPermission): boolean {
   return hasAnyPermission([permission]);
 }
@@ -471,6 +475,7 @@ export const auth = {
   getUserRoles,
   getAccessToken,
   getRefreshToken,
+  getUserId,
   getOrganizations,
   hasOrganization,
   hasSelectedOrganization,

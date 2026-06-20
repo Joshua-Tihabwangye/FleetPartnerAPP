@@ -4,7 +4,7 @@ export interface Driver {
     name: string;
     phone?: string;
     email?: string;
-    status: 'active' | 'inactive' | 'offline';
+    status: 'available' | 'on-trip' | 'offline' | 'suspended';
     trips?: number;
     rating?: number;
     earnings?: string;
@@ -22,7 +22,7 @@ export interface Vehicle {
     color?: string;
     vin?: string;
     type?: string;
-    status: 'active' | 'maintenance' | 'inactive';
+    status: 'available' | 'offline' | 'maintenance' | 'out-of-service';
     driver?: string;
     mileage?: number;
 }
@@ -107,7 +107,7 @@ export interface Tour {
     id: number;
     name: string;
     vehicle: string;
-    status: 'active' | 'scheduled' | 'completed';
+    status: 'active' | 'scheduled' | 'completed' | 'cancelled';
     bookings: number;
     capacity: number;
 }
@@ -119,7 +119,7 @@ export interface Rental {
     customerName: string;
     vehicleName?: string;
     vehiclePlate: string;
-    status: 'active' | 'upcoming' | 'completed';
+    status: 'active' | 'upcoming' | 'completed' | 'cancelled';
     startDate: string;
     endDate: string;
 }
